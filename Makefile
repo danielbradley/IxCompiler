@@ -4,9 +4,8 @@ VERSION=001
 CC=cc
 MAX2MARKDOWN=libexec/Max2Markdown/bin/max2markdown.sh
 QUASI=libexec/quasi/_bin/quasi
-DOCUMENTATION=documentation/$(VERSION)/documentation.md
 
-all: quasi _bin/ixc
+all: quasi _bin/ixc doco
 
 quasi: $(QUASI)
 	mkdir -p _gen
@@ -16,11 +15,10 @@ _bin/ixc:
 	mkdir -p _bin
 	$(CC) -o _bin/ixc -I_gen/include _gen/c/*.c
 
-doco: $(DOCUMENTATION)
-
-$(DOCUMENTATION): $(MAX2MARKDOWN)
+doco: $(MAX2MARKDOWN)
 	mkdir -p documentation/$(VERSION)
-	$(MAX2MARKDOWN) source/mt/*.txt > $(DOCUMENTATION)
+	$(MAX2MARKDOWN) source/mt/*.txt > documentation/$(VERSION)/README.md
+	$(MAX2MARKDOWN) source/mt/*.txt > README.md
 
 clean:
 	make -C libexec/quasi clean

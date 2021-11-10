@@ -1,0 +1,42 @@
+
+~!include/todo.h~
+#ifndef _todo_h_
+#define _todo_h_
+
+typedef void Arguments;
+typedef void AST;
+typedef void File;
+typedef void FilesIterator;
+typedef void Generator;
+typedef void IxParser;
+typedef void Path;
+typedef void Tokenizer;
+
+AST*           AST_free               ( AST* self)                            { return null; }
+Arguments*     Arguments_new          ( int argc, char** argv )               { return null; }
+Arguments*     Arguments_free         ( Arguments* self )                     { return null; }
+bool           Arguments_hasFlag      ( Arguments* self )                     { return null; }
+const char*    Arguments_getOption    ( Arguments* self )                     { return null; }
+FilesIterator* Arguments_filesIterator( Arguments* self )                     { return null; }
+void           Console_Write          ( const char*, const char* )            {}
+bool           File_canRead           ( File* self )                          { return null; }
+bool           File_exists            ( File* self )                          { return null; }
+File*          File_free              ( File* self )                          { return null; }
+FilesIterator* FilesIterator_free     ( FilesIterator* self )                 { return null; }
+bool           FilesIterator_hasNext  ( FilesIterator* self )                 { return null; }
+File*          FilesIterator_next     ( FilesIterator* self )                 { return null; }
+Generator*     Generator_new          ( const char* lang )                    { return null; }
+Generator*     Generator_free         ( Generator* self )                     { return null; }
+int            Generator_writeAST     ( Generator* self, AST*, Path*, File* ) { return null; }
+IxParser*      IxParser_new           ( Tokenizer* tokenizer )                { return null; }
+AST*           IxParser_parse         ( IxParser* self )                      { return null; }
+IxParser*      IxParser_free          ( IxParser* self )                      { return null; }
+Path*          Path_new               ( const char* target )                  { return null; }
+Path*          Path_free              ( Path* self )                          { return null; }
+bool           Path_exists            ( Path* self )                          { return null; }
+bool           Path_canWrite          ( Path* self )                          { return null; }
+Tokenizer*     Tokenizer_new          ( File* file )                          { return null; }
+Tokenizer*     Tokenizer_free         ( Tokenizer* self )                     { return null; }
+
+#endif
+~

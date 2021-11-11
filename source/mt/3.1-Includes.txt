@@ -1,0 +1,45 @@
+.. Includes
+
+~!include/ixcompiler.h~
+//
+// Copyright 2021 Daniel Robert Bradley
+//
+
+#ifndef IXCOMPILER_H
+#define IXCOMPILER_H
+
+#define ABORT_DIRECTORY_DOES_NOT_EXIST      "Aborting, output directory does not exist - %s"
+#define ABORT_DIRECTORY_IS_NOT_WRITABLE     "Aborting, cannot write to output directory - %s"
+#define ABORT_TARGET_LANGUAGE_NOT_SUPPORTED "Aborting, could not find generator for target language - %s"
+
+#define ARGUMENT_DRY_RUN         "--dry-run"
+#define ARGUMENT_OUTPUT_DIR      "--output-dir"
+#define ARGUMENT_TARGET_LANGUAGE "--target-language"
+
+#ifndef bool
+#define bool int
+#endif
+
+#ifndef null
+#define null 0
+#endif
+
+#ifndef TRUE
+#define TRUE 1
+#endif
+
+#ifndef FALSE
+#define FALSE 0
+#endif
+
+typedef struct _Arguments     Arguments;
+typedef struct _AST           AST;
+typedef struct _File          File;
+typedef struct _FilesIterator FilesIterator;
+typedef struct _Generator     Generator;
+typedef struct _IxParser      IxParser;
+typedef struct _Path          Path;
+typedef struct _Tokenizer     Tokenizer;
+
+#endif
+~

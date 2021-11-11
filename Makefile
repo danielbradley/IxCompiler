@@ -5,13 +5,13 @@ CC=cc
 MAX2MARKDOWN=libexec/Max2Markdown/bin/max2markdown.sh
 QUASI=libexec/quasi/_bin/quasi
 
-all: quasi _bin/ixc doco
+all: quasi ixc doco
 
 quasi: $(QUASI)
 	mkdir -p _gen
 	$(QUASI) -f _gen source/mt/*.txt
 
-_bin/ixc:
+ixc:
 	mkdir -p _bin
 	$(CC) -o _bin/ixc -I_gen/include _gen/c/*.c
 

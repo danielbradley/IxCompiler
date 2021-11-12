@@ -5,8 +5,6 @@
 #ifndef IXCOMPILER_ARGUMENTS_H
 #define IXCOMPILER_ARGUMENTS_H
 
-typedef struct _Arguments Arguments;
-
 Arguments*     Arguments_new          ( int argc, char** argv );
 Arguments*     Arguments_free         ( Arguments** self );
 bool           Arguments_hasFlag      ( Arguments* self, const char* argument );
@@ -21,22 +19,30 @@ FilesIterator* Arguments_filesIterator( Arguments* self );
 
 #include "ixcompiler.h"
 #include "ixcompiler.Arguments.h"
+#include "ixcompiler.Console.h"
+#include "ixcompiler.FilesIterator.h"
+#include "ixcompiler.String.h"
 #include "todo.h"
 
 struct _Arguments
 {
-    bool        dryRun;
-    const char* outputDir;
-    const char* targetLanguage;
+    bool         dryRun;
+    const char*  outputDir;
+    const char*  targetLanguage;
+    const char** files;
 };
 ~
 
 ~c/ixcompiler.Arguments.c~
 Arguments* Arguments_new( int argc, char** argv )
 {
+    int index = 0;
+
     Arguments* self = calloc( 1, sizeof( Arguments ) );
     if ( self )
     {
+        self->files = calloc( argc, sizeof( char* ) );
+
         for ( int i=0; i < argc; i++ )
         {
             if ( String_Equals( argv[i], ARGUMENT_DRY_RUN ) )
@@ -61,6 +67,16 @@ Arguments* Arguments_new( int argc, char** argv )
                     self->targetLanguage = argv[i];
                 }
             }
+            else
+            {
+                self->files[index++] = argv[i];
+            }
+        }
+
+        if ( null == self->outputDir )
+        {
+            Console_Write( ABORT_NO_OUTPUT_DIR, "" );
+            exit( -1 );
         }
     }
     return self;
@@ -70,9 +86,11 @@ Arguments* Arguments_new( int argc, char** argv )
 ~c/ixcompiler.Arguments.c~
 Arguments* Arguments_free( Arguments** self )
 {
-    free( *self );
-    self = 0;
-    return null;
+    free( (*self)->files );
+
+    free( *self ); *self = 0;
+
+    return *self;
 }
 ~
 
@@ -128,5 +146,8 @@ const char* Arguments_getOption( Arguments* self, const char* argument )
 ~
 
 ~c/ixcompiler.Arguments.c~
-FilesIterator* Arguments_filesIterator( Arguments* self )                     { return null; }
+FilesIterator* Arguments_filesIterator( Arguments* self )
+{
+    return FilesIterator_new( self->files );
+}
 ~

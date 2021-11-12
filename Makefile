@@ -1,5 +1,5 @@
 
-VERSION=001
+VERSION=002
 
 CC=cc
 MAX2MARKDOWN=libexec/Max2Markdown/bin/max2markdown.sh

@@ -8,9 +8,10 @@
 #ifndef IXCOMPILER_H
 #define IXCOMPILER_H
 
-#define ABORT_DIRECTORY_DOES_NOT_EXIST      "Aborting, output directory does not exist - %s"
-#define ABORT_DIRECTORY_IS_NOT_WRITABLE     "Aborting, cannot write to output directory - %s"
-#define ABORT_TARGET_LANGUAGE_NOT_SUPPORTED "Aborting, could not find generator for target language - %s"
+#define ABORT_DIRECTORY_DOES_NOT_EXIST      "Aborting, output directory does not exist - %s\n"
+#define ABORT_DIRECTORY_IS_NOT_WRITABLE     "Aborting, cannot write to output directory - %s\n"
+#define ABORT_NO_OUTPUT_DIR                 "Aborting, no output directory specified (--output-dir)\n"
+#define ABORT_TARGET_LANGUAGE_NOT_SUPPORTED "Aborting, could not find generator for target language - %s\n"
 
 #define ARGUMENT_DRY_RUN         "--dry-run"
 #define ARGUMENT_OUTPUT_DIR      "--output-dir"

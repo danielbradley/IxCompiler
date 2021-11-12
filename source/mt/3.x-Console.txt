@@ -1,0 +1,24 @@
+
+.. Console
+
+~!include/ixcompiler.Console.h~
+#ifndef IXCOMPILER_CONSOLE_H
+#define IXCOMPILER_CONSOLE_H
+
+void Console_Write( const char* format, const char* optional );
+
+#endif
+~
+
+~!c/ixcompiler.Console.c~
+#include <stdio.h>
+#include "ixcompiler.h"
+#include "ixcompiler.Console.h"
+~
+
+~c/ixcompiler.Console.c~
+void Console_Write( const char* format, const char* optional )
+{
+    fprintf( stdout, format, optional );
+}
+~

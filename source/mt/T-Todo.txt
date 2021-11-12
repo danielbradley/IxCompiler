@@ -5,24 +5,12 @@
 #define TODO_H
 
 AST*           AST_free               ( AST** self)                           ;
-void           Console_Write          ( const char*, const char* )            ;
-bool           File_canRead           ( File* self )                          ;
-bool           File_exists            ( File* self )                          ;
-File*          File_free              ( File** self )                         ;
-FilesIterator* FilesIterator_free     ( FilesIterator** self )                ;
-bool           FilesIterator_hasNext  ( FilesIterator* self )                 ;
-File*          FilesIterator_next     ( FilesIterator* self )                 ;
 Generator*     Generator_new          ( const char* lang )                    ;
 Generator*     Generator_free         ( Generator** self )                    ;
 int            Generator_writeAST     ( Generator* self, AST*, Path*, File* ) ;
 IxParser*      IxParser_new           ( Tokenizer* tokenizer )                ;
 AST*           IxParser_parse         ( IxParser* self )                      ;
 IxParser*      IxParser_free          ( IxParser** self )                     ;
-Path*          Path_new               ( const char* target )                  ;
-Path*          Path_free              ( Path** self )                         ;
-bool           Path_exists            ( Path* self )                          ;
-bool           Path_canWrite          ( Path* self )                          ;
-bool           String_Equals          ( const char*, const char* )            ;
 Tokenizer*     Tokenizer_new          ( File* file )                          ;
 Tokenizer*     Tokenizer_free         ( Tokenizer** self )                    ;
 
@@ -30,28 +18,23 @@ Tokenizer*     Tokenizer_free         ( Tokenizer** self )                    ;
 ~
 
 ~!c/todo.c~
+#include <stdio.h>
 #include "ixcompiler.h"
 #include "todo.h"
 
-AST*           AST_free               ( AST** self)                           { return null; }
-void           Console_Write          ( const char*, const char* )            {}
-bool           File_canRead           ( File* self )                          { return null; }
-bool           File_exists            ( File* self )                          { return null; }
-File*          File_free              ( File** self )                         { return null; }
-FilesIterator* FilesIterator_free     ( FilesIterator** self )                { return null; }
-bool           FilesIterator_hasNext  ( FilesIterator* self )                 { return null; }
-File*          FilesIterator_next     ( FilesIterator* self )                 { return null; }
-Generator*     Generator_new          ( const char* lang )                    { return null; }
-Generator*     Generator_free         ( Generator** self )                    { return null; }
-int            Generator_writeAST     ( Generator* self, AST*, Path*, File* ) { return null; }
-IxParser*      IxParser_new           ( Tokenizer* tokenizer )                { return null; }
-AST*           IxParser_parse         ( IxParser* self )                      { return null; }
-IxParser*      IxParser_free          ( IxParser** self )                     { return null; }
-Path*          Path_new               ( const char* target )                  { return null; }
-Path*          Path_free              ( Path** self )                         { return null; }
-bool           Path_exists            ( Path* self )                          { return null; }
-bool           Path_canWrite          ( Path* self )                          { return null; }
-bool           String_Equals          ( const char*, const char* )            { return 0;    }
-Tokenizer*     Tokenizer_new          ( File* file )                          { return null; }
-Tokenizer*     Tokenizer_free         ( Tokenizer** self )                    { return null; }
+static void Todo( const char* fn )
+{
+    fprintf( stderr, "Todo: %s\n", fn );
+    fflush( stderr );
+}
+
+AST*           AST_free               ( AST** self)                           {  Todo( "AST_free"              ); return null; }
+Generator*     Generator_new          ( const char* lang )                    {  Todo( "Generator_new"         ); return null; }
+Generator*     Generator_free         ( Generator** self )                    {  Todo( "Generator_free"        ); return null; }
+int            Generator_writeAST     ( Generator* self, AST*, Path*, File* ) {  Todo( "Generator_writeAST"    ); return null; }
+IxParser*      IxParser_new           ( Tokenizer* tokenizer )                {  Todo( "IxParser_new"          ); return null; }
+AST*           IxParser_parse         ( IxParser* self )                      {  Todo( "IxParser_parse"        ); return null; }
+IxParser*      IxParser_free          ( IxParser** self )                     {  Todo( "IxParser_free"         ); return null; }
+Tokenizer*     Tokenizer_new          ( File* file )                          {  Todo( "Tokenizer_new"         ); return null; }
+Tokenizer*     Tokenizer_free         ( Tokenizer** self )                    {  Todo( "Tokenizer_free"        ); return null; }
 ~

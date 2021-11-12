@@ -1,0 +1,97 @@
+
+.. File
+
+~!include/ixcompiler.File.h~
+#ifndef IXCOMPILER_FILE_H
+#define IXCOMPILER_FILE_H
+
+File* File_new    ( const char* filepath );
+File* File_free   ( File** self )         ;
+bool  File_canRead( File*  self )         ;
+bool  File_exists ( File*  self )         ;
+
+#endif
+~
+
+~!c/ixcompiler.File.c~
+#include <stdlib.h>
+#include <unistd.h>
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <unistd.h>
+#include <fcntl.h>
+#include "ixcompiler.h"
+#include "ixcompiler.File.h"
+
+struct _File
+{
+    const char* filepath;
+    bool        canRead;
+    bool        exists;
+};
+
+static bool File_IsReadable   ( const char* filepath );
+static bool File_IsRegularFile( const char* filepath );
+~
+
+~c/ixcompiler.File.c~
+File* File_new( const char* filepath )
+{
+    File* self = calloc( 1, sizeof( File ) );
+    if ( self )
+    {
+        self->filepath = filepath;
+        self->canRead  = File_IsReadable   ( filepath );
+        self->exists   = File_IsRegularFile( filepath );
+    }
+    return self;
+}
+~
+
+~c/ixcompiler.File.c~
+File* File_free( File** self )
+{
+    free( *self ); *self = 0;
+
+    return *self;
+}
+~
+
+~c/ixcompiler.File.c~
+bool File_canRead( File* self )
+{
+    return FALSE;
+}
+~
+
+~c/ixcompiler.File.c~
+bool File_exists( File* self )
+{
+    return FALSE;
+}
+~
+
+~c/ixcompiler.File.c~
+bool File_IsReadable( const char* filepath )
+{
+    return (F_OK == access( filepath, R_OK ));
+}
+~
+
+~c/ixcompiler.File.c~
+bool File_IsRegularFile( const char* filepath )
+{
+    struct stat sb;
+
+    stat( filepath, &sb );
+
+    switch( sb.st_mode & S_IFMT )
+    {
+    case S_IFREG:
+        return TRUE;
+    
+    default:
+        return FALSE;
+    }
+}
+~

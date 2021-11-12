@@ -14,6 +14,10 @@ ixc --output-dir _gen/c --target-language C [--dry-run]
 
 #include "ixcompiler.h"
 #include "ixcompiler.Arguments.h"
+#include "ixcompiler.Console.h"
+#include "ixcompiler.File.h"
+#include "ixcompiler.FilesIterator.h"
+#include "ixcompiler.Path.h"
 #include "todo.h"
 
 int main( int argc, char** argv )
@@ -74,9 +78,9 @@ int main( int argc, char** argv )
         Generator_free( &generator );
     }
 
-    Path_free         ( &output_path );
     Arguments_free    ( &args );
     FilesIterator_free( &files );
+    Path_free         ( &output_path );
 
     return !status;
 }

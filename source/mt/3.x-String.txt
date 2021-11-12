@@ -1,0 +1,31 @@
+
+.. String
+
+~!include/ixcompiler.String.h~
+#ifndef IXCOMPILER_STRING_H
+#define IXCOMPILER_STRING_H
+
+bool String_Equals( const char* string1, const char* string2 );
+
+#endif
+~
+
+~!c/ixcompiler.String.c~
+#include <string.h>
+#include "ixcompiler.h"
+#include "ixcompiler.String.h"
+~
+
+~c/ixcompiler.String.c~
+bool String_Equals( const char* string1, const char* string2 )
+{
+    if ( (NULL == string1) || (NULL == string2) )
+    {
+        return FALSE;
+    }
+    else
+    {
+        return (0 == strcmp( string1, string2 ));
+    }
+}
+~

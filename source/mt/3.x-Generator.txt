@@ -17,6 +17,7 @@ int        Generator_writeAST( Generator* self, AST* ast, Path* output_path, Fil
 #include "ixcompiler.h"
 #include "ixcompiler.Generator.h"
 #include "ixcompiler.String.h"
+#include "todo.h"
 
 struct _Generator
 {
@@ -30,6 +31,7 @@ Generator* Generator_new( const char* target_language )
     Generator* self = calloc( 1, sizeof( Generator ) );
     if ( self )
     {
+        Todo( "Generator_new" );
     }    
 
     if ( String_Equals( target_language, LANG_C ) )

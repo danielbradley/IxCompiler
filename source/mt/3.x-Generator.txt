@@ -1,0 +1,60 @@
+
+.. Generator
+
+~!include/ixcompiler.Generator.h~
+#ifndef IXCOMPILER_GENERATOR_H
+#define IXCOMPILER_GENERATOR_H
+
+Generator* Generator_new     ( const char* lang );
+Generator* Generator_free    ( Generator** self );
+int        Generator_writeAST( Generator* self, AST* ast, Path* output_path, File* source_file );
+
+#endif
+~
+
+~!c/ixcompiler.Generator.c~
+#include <stdlib.h>
+#include "ixcompiler.h"
+#include "ixcompiler.Generator.h"
+#include "ixcompiler.String.h"
+
+struct _Generator
+{
+    int placeholder;
+};
+~
+
+~c/ixcompiler.Generator.c~
+Generator* Generator_new( const char* target_language )
+{
+    Generator* self = calloc( 1, sizeof( Generator ) );
+    if ( self )
+    {
+    }    
+
+    if ( String_Equals( target_language, LANG_C ) )
+    {
+        return self;
+    }
+    else
+    {
+        return Generator_free( &self );
+    }
+}
+~
+
+~c/ixcompiler.Generator.c~
+Generator* Generator_free( Generator** self )
+{
+    free( *self ); *self = 0;
+
+    return *self;
+}
+~
+
+~c/ixcompiler.Generator.c~
+int Generator_writeAST( Generator* self, AST* ast, Path* output_path, File* source_file )
+{
+    return 0;
+}
+~

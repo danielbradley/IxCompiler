@@ -17,18 +17,20 @@ ixc --output-dir _gen/c --target-language C [--dry-run]
 #include "ixcompiler.Console.h"
 #include "ixcompiler.File.h"
 #include "ixcompiler.FilesIterator.h"
+#include "ixcompiler.Generator.h"
 #include "ixcompiler.Path.h"
 #include "todo.h"
 
 int main( int argc, char** argv )
 {
     int            status      = 1;
-    Arguments*     args        = Arguments_new( argc, argv );
+    Arguments*     args        = Arguments_new          ( argc, argv );
     bool           dry_run     = Arguments_hasFlag      ( args, ARGUMENT_DRY_RUN );
     const char*    target_lang = Arguments_getOption    ( args, ARGUMENT_TARGET_LANGUAGE );
     const char*    output_dir  = Arguments_getOption    ( args, ARGUMENT_OUTPUT_DIR );
     FilesIterator* files       = Arguments_filesIterator( args );
-    Path*          output_path = Path_new( output_dir );
+    Path*          output_path = Path_new               ( output_dir );
+    Generator*     generator   = Generator_new          ( target_lang );
 
     if ( !Path_exists( output_path ) )
     {
@@ -42,45 +44,58 @@ int main( int argc, char** argv )
         exit( -1 );
     }
     else
+    if ( !generator )
     {
-        Generator* generator = Generator_new( target_lang );
+        Console_Write( ABORT_TARGET_LANGUAGE_NOT_SUPPORTED, target_lang );
+        exit( -1 );
+    }
+    else
+    if ( !FilesIterator_hasNext( files ) )
+    {
+        Console_Write( ABORT_NO_SOURCE_FILES, "" );
+        exit( -1 );
+    }
+    else
+    {
+        while ( FilesIterator_hasNext( files ) )
+        {
+            File* file = FilesIterator_next( files );
 
-        if ( !generator )
-        {
-            Console_Write( ABORT_TARGET_LANGUAGE_NOT_SUPPORTED, target_lang );
-        }
-        else
-        {
-            while ( FilesIterator_hasNext( files ) )
+            if ( !File_exists( file ) )
             {
-                File* file = FilesIterator_next( files );
+                Console_Write( ABORT_FILE_DOES_NOT_EXIST, File_getFilepath( file ) );
+                exit( -1 );
+            }
+            else
+            if ( !File_canRead( file ) )
+            {
+                Console_Write( ABORT_FILE_CANNOT_BE_READ, File_getFilepath( file ) );
+                exit( -1 );
+            }
+            else
+            {
+                Tokenizer* tokenizer = Tokenizer_new ( file );
+                IxParser*  parser    = IxParser_new  ( tokenizer );
+                AST*       ast       = IxParser_parse( parser );
 
-                if ( File_exists( file ) && File_canRead( file ) )
+                if ( !dry_run )
                 {
-                    Tokenizer* tokenizer = Tokenizer_new ( file );
-                    IxParser*  parser    = IxParser_new  ( tokenizer );
-                    AST*       ast       = IxParser_parse( parser );
-
-                    if ( !dry_run )
-                    {
-                        status &= Generator_writeAST( generator, ast, output_path, file );
-                    }
-
-                    Tokenizer_free( &tokenizer );
-                    IxParser_free( &parser );
-                    AST_free( &ast );
+                    status &= Generator_writeAST( generator, ast, output_path, file );
                 }
 
-                File_free( &file );
+                Tokenizer_free( &tokenizer );
+                IxParser_free( &parser );
+                AST_free( &ast );
             }
-        }
 
-        Generator_free( &generator );
+            File_free( &file );
+        }
     }
 
     Arguments_free    ( &args );
     FilesIterator_free( &files );
     Path_free         ( &output_path );
+    Generator_free    ( &generator );
 
     return !status;
 }

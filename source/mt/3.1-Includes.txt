@@ -10,12 +10,18 @@
 
 #define ABORT_DIRECTORY_DOES_NOT_EXIST      "Aborting, output directory does not exist - %s\n"
 #define ABORT_DIRECTORY_IS_NOT_WRITABLE     "Aborting, cannot write to output directory - %s\n"
+#define ABORT_FILE_CANNOT_BE_READ           "Aborting, speciifed file cannot be read - %s\n"
+#define ABORT_FILE_DOES_NOT_EXIST           "Aborting, specified file does not exist - %s\n"
 #define ABORT_NO_OUTPUT_DIR                 "Aborting, no output directory specified (--output-dir)\n"
+#define ABORT_NO_SOURCE_FILES               "Aborting, no source files specified\n"
+#define ABORT_TARGET_LANGUAGE_NOT_SPECIFIED "Aborting, target language not specified (--target-language)\n"
 #define ABORT_TARGET_LANGUAGE_NOT_SUPPORTED "Aborting, could not find generator for target language - %s\n"
 
 #define ARGUMENT_DRY_RUN         "--dry-run"
 #define ARGUMENT_OUTPUT_DIR      "--output-dir"
 #define ARGUMENT_TARGET_LANGUAGE "--target-language"
+
+#define LANG_C "C"
 
 #ifndef bool
 #define bool int

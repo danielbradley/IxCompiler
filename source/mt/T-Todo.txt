@@ -5,9 +5,6 @@
 #define TODO_H
 
 AST*           AST_free               ( AST** self)                           ;
-Generator*     Generator_new          ( const char* lang )                    ;
-Generator*     Generator_free         ( Generator** self )                    ;
-int            Generator_writeAST     ( Generator* self, AST*, Path*, File* ) ;
 IxParser*      IxParser_new           ( Tokenizer* tokenizer )                ;
 AST*           IxParser_parse         ( IxParser* self )                      ;
 IxParser*      IxParser_free          ( IxParser** self )                     ;
@@ -29,9 +26,6 @@ static void Todo( const char* fn )
 }
 
 AST*           AST_free               ( AST** self)                           {  Todo( "AST_free"              ); return null; }
-Generator*     Generator_new          ( const char* lang )                    {  Todo( "Generator_new"         ); return null; }
-Generator*     Generator_free         ( Generator** self )                    {  Todo( "Generator_free"        ); return null; }
-int            Generator_writeAST     ( Generator* self, AST*, Path*, File* ) {  Todo( "Generator_writeAST"    ); return null; }
 IxParser*      IxParser_new           ( Tokenizer* tokenizer )                {  Todo( "IxParser_new"          ); return null; }
 AST*           IxParser_parse         ( IxParser* self )                      {  Todo( "IxParser_parse"        ); return null; }
 IxParser*      IxParser_free          ( IxParser** self )                     {  Todo( "IxParser_free"         ); return null; }

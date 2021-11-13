@@ -16,6 +16,7 @@ File*          FilesIterator_next     ( FilesIterator*  self   );
 ~!c/ixcompiler.FilesIterator.c~
 #include <stdlib.h>
 #include "ixcompiler.h"
+#include "ixcompiler.Console.h"
 #include "ixcompiler.File.h"
 #include "ixcompiler.FilesIterator.h"
 #include "todo.h"
@@ -41,7 +42,7 @@ FilesIterator* FilesIterator_new( const char** filepaths )
 ~
 
 ~c/ixcompiler.FilesIterator.c~
-FilesIterator* FilesIterator_free     ( FilesIterator** self )
+FilesIterator* FilesIterator_free( FilesIterator** self )
 {
     free( *self ); *self = 0;
 
@@ -52,7 +53,14 @@ FilesIterator* FilesIterator_free     ( FilesIterator** self )
 ~c/ixcompiler.FilesIterator.c~
 bool FilesIterator_hasNext( FilesIterator* self )
 {
-    return (null != self->filepaths[self->next]);
+    if ( null != self->filepaths[self->next] )
+    {
+        return TRUE;
+    }
+    else
+    {
+        return FALSE;
+    }
 }
 ~
 
@@ -61,6 +69,8 @@ File* FilesIterator_next( FilesIterator* self )
 {
     if ( FilesIterator_hasNext( self ) )
     {
+        Console_Write( "FilesIterator_next: %s\n", self->filepaths[self->next] );
+
         return File_new( self->filepaths[self->next++] );
     } else {
         return null;

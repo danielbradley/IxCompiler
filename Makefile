@@ -20,6 +20,10 @@ doco: $(MAX2MARKDOWN)
 	$(MAX2MARKDOWN) source/mt/*.txt > documentation/$(VERSION)/README.md
 	$(MAX2MARKDOWN) source/mt/*.txt > README.md
 
+test:
+	mkdir -p _output
+	_bin/ixc --output-dir _output --target-language C testdata/ix.base/String.ix
+
 clean:
 	make -C libexec/quasi clean
 	rm -rf _gen _bin

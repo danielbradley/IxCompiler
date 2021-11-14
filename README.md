@@ -1,5 +1,61 @@
 
 ## Introduction
+
+Here is documented the implementation of the Ix Compiler,
+which translates between the Ix programming language and target languages.
+Initialy, the first language to be targeted will be C,
+but later the intention is to target C++, C#, Java, and Swift.
+
+Ix is an object oriented programming language meaning the language supports:
+
+o   classes, which can be instantiated into objects
+o   single inheritance of parent classes
+o   multiple implementation of interfaces
+o   dynamic dispatch similar to Java
+
+Philosophically, Ix can be considered an evolution of Strustup's original C with Classes concept
+as the language will not include any features that cannot be implemented in C.
+However, the language itself is heavily influenced by C++ and Java.
+
+Similar to Java, source files are located within a source directory,
+however,
+in contrast to Java,
+a namespace/package of a source file is determined by the dotted notation name
+of the folder it is contained within.
+Also the name of a class is determined by the name of its source file -
+not specified _within_ the source file like most (?all?) other language.
+it .
+For example, the following source file is contained within the 'com.ixlang.package' namespace,
+and the class name will be 'SourceFile'.
+
+```
+Example file path: source/ix/com.ixlang.package/SourceFile.ix
+```
+
+```
+public class extends Object implements Interface
+{
+    @instanceMember: Type*
+
+    %classMember: Type*
+}
+
+public method( parameter1: Object*, parameter2: Reference& ) : Type*
+{
+    return parameter1.someMethod( parameter2 );
+}
+```
+
+The language has the following features:
+
+o   Instance and class members are declared/defined within a class block.
+o   Classes must indicate their visibility via public, private, etc.
+o   Methods are defined with the same source file and below the class definition.
+o   Methods must indicate their visibility via public, private, etc.
+o   Similar to C++, an asterisk denotes a pointer and an ampersand denotes a reference.
+o   When a pointer is passed, the caller losses access to that pointer (it is made null).
+o   Memory is managed by deleting an non-null pointers.
+
 ## Design
 ## Implementation
 
@@ -34,6 +90,18 @@ int main( int argc, char** argv )
     Path*          output_path = Path_new               ( output_dir );
     Generator*     generator   = Generator_new          ( target_lang );
 
+    if ( !Arguments_hasFlag( args, ARGUMENT_OUTPUT_DIR ) )
+    {
+        Console_Write( ABORT_NO_OUTPUT_DIR, "" );
+        exit( -1 );
+    }
+    else
+    if ( !Arguments_hasFlag( args, ARGUMENT_TARGET_LANGUAGE ) )
+    {
+        Console_Write( ABORT_TARGET_LANGUAGE_NOT_SPECIFIED, "" );
+        exit( -1 );
+    }
+    else
     if ( !Path_exists( output_path ) )
     {
         Console_Write( ABORT_DIRECTORY_DOES_NOT_EXIST, output_dir );
@@ -230,18 +298,6 @@ Arguments* Arguments_new( int argc, char** argv )
             {
                 self->files[index++] = argv[i];
             }
-        }
-
-        if ( null == self->outputDir )
-        {
-            Console_Write( ABORT_NO_OUTPUT_DIR, "" );
-            exit( -1 );
-        }
-        else
-        if ( null == self->targetLanguage )
-        {
-            Console_Write( ABORT_TARGET_LANGUAGE_NOT_SPECIFIED, "" );
-            exit( -1 );
         }
     }
 

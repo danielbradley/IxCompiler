@@ -32,6 +32,18 @@ int main( int argc, char** argv )
     Path*          output_path = Path_new               ( output_dir );
     Generator*     generator   = Generator_new          ( target_lang );
 
+    if ( !Arguments_hasFlag( args, ARGUMENT_OUTPUT_DIR ) )
+    {
+        Console_Write( ABORT_NO_OUTPUT_DIR, "" );
+        exit( -1 );
+    }
+    else
+    if ( !Arguments_hasFlag( args, ARGUMENT_TARGET_LANGUAGE ) )
+    {
+        Console_Write( ABORT_TARGET_LANGUAGE_NOT_SPECIFIED, "" );
+        exit( -1 );
+    }
+    else
     if ( !Path_exists( output_path ) )
     {
         Console_Write( ABORT_DIRECTORY_DOES_NOT_EXIST, output_dir );

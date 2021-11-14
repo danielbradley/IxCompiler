@@ -1,0 +1,10 @@
+
+. Commentary
+
+This section provides a chronological commentary for significant issues and design decisions.
+
+.. 2021-11-14 (Sunday)
+
+Have moved the testing of complete arguments from the Arguments class to the main method.
+The philosophy behind this is that only the main method should be allowed to call 'exit'
+so that crashes from witin methods can be better identified.

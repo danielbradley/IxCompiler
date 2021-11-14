@@ -818,6 +818,118 @@ bool String_Equals( const char* string1, const char* string2 )
     }
 }
 ```
+
+```!include/ixcompiler.Platform.h
+#ifndef IXCOMPILER_PLATFORM_H
+#define IXCOMPILER_PLATFORM_H
+
+bool  Platform_Location_Exists       ( const char* location );
+char* Platform_Location_FullPath     ( const char* location );
+bool  Platform_Location_IsDirectory  ( const char* location );
+bool  Platform_Location_IsReadable   ( const char* location );
+bool  Platform_Location_IsRegularFile( const char* location );
+bool  Platform_Location_IsWritable   ( const char* location );
+
+#endif
+```
+
+```!c/posix/ixcompiler.Platform.c
+#include <stdlib.h>
+#include <string.h>
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <unistd.h>
+#include <fcntl.h>
+#include <linux/limits.h>
+
+#include "ixcompiler.h"
+#include "ixcompiler.Platform.h"
+```
+
+```c/posix/ixcompiler.Platform.c
+bool Platform_Location_Exists( const char* location )
+{
+    struct stat sb;
+
+    return (F_OK == stat( location, &sb ));
+}
+```
+
+```c/posix/ixcompiler.Platform.c
+char* Platform_Location_FullPath( const char* location )
+{
+    char* ret = calloc( PATH_MAX, sizeof( char ) );
+
+    if ( '/' == location[0] )
+    {
+        return strcpy( ret, location );
+    }
+    else
+    {
+        getcwd( ret, PATH_MAX );
+        int last = strlen( ret );
+        if ( '/' != ret[last-1] )
+        {
+            strcpy( &ret[last++], "/" );
+        }
+        strcpy( &ret[last], location );
+    }
+
+    return ret;
+}
+```
+
+```c/posix/ixcompiler.Platform.c
+bool Platform_Location_IsDirectory( const char* location )
+{
+    struct stat sb;
+
+    stat( location, &sb );
+
+    switch( sb.st_mode & S_IFMT )
+    {
+    case S_IFDIR:
+        return TRUE;
+    
+    default:
+        return FALSE;
+    }
+}
+```
+
+```c/posix/ixcompiler.Platform.c
+bool Platform_Location_IsReadable( const char* location )
+{
+    return (F_OK == access( location, R_OK ));
+}
+```
+
+```c/posix/ixcompiler.Platform.c
+bool Platform_Location_IsRegularFile( const char* location )
+{
+    struct stat sb;
+
+    stat( location, &sb );
+
+    switch( sb.st_mode & S_IFMT )
+    {
+    case S_IFREG:
+        return TRUE;
+    
+    default:
+        return FALSE;
+    }
+}
+```
+
+```c/posix/ixcompiler.Platform.c
+bool Platform_Location_IsWritable( const char* location )
+{
+    return (F_OK == access( location, W_OK ));
+}
+```
+
+
 ### To Do
 
 ```!include/todo.h

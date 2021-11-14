@@ -1,6 +1,7 @@
 
 VERSION=006
 
+PLATFORM=posix
 CC=cc
 MAX2MARKDOWN=libexec/Max2Markdown/bin/max2markdown.sh
 QUASI=libexec/quasi/_bin/quasi
@@ -13,7 +14,7 @@ quasi: $(QUASI)
 
 ixc:
 	mkdir -p _bin
-	$(CC) -o _bin/ixc -I_gen/include _gen/c/*.c
+	$(CC) -o _bin/ixc -I_gen/include _gen/c/*.c _gen/c/$(PLATFORM)/*.c
 
 doco: $(MAX2MARKDOWN)
 	mkdir -p documentation/$(VERSION)

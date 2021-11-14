@@ -679,14 +679,9 @@ bool  Path_canWrite( Path* self )        ;
 
 ```!c/ixcompiler.Path.c
 #include <stdlib.h>
-#include <string.h>
-#include <sys/types.h>
-#include <sys/stat.h>
-#include <unistd.h>
-#include <fcntl.h>
-#include <linux/limits.h>
 #include "ixcompiler.h"
 #include "ixcompiler.Path.h"
+#include "ixcompiler.Platform.h"
 
 struct _Path
 {
@@ -694,12 +689,7 @@ struct _Path
     bool  canWrite;
     char* path;
 };
-
-static bool  IsFolderAndExists  ( const char* target );
-static bool  IsFolderAndCanWrite( const char* target );
-static char* FullyQualifiedPath ( const char* target );
 ```
-
 
 ```c/ixcompiler.Path.c
 Path* Path_new( const char* target )
@@ -707,9 +697,9 @@ Path* Path_new( const char* target )
     Path* self = calloc( 1, sizeof( Path ) );
     if ( self )
     {
-        self->exists   = IsFolderAndExists  ( target );
-        self->canWrite = IsFolderAndCanWrite( target );
-        self->path     = FullyQualifiedPath ( target );
+        self->exists   = Platform_Location_IsDirectory( target );
+        self->canWrite = Platform_Location_IsWritable ( target );
+        self->path     = Platform_Location_FullPath   ( target );
     }
 
     return self;
@@ -740,54 +730,6 @@ bool Path_canWrite( Path* self )
 }
 ```
 
-```c/ixcompiler.Path.c
-bool IsFolderAndExists( const char* target )
-{
-    struct stat sb;
-
-    stat( target, &sb );
-
-    switch( sb.st_mode & S_IFMT )
-    {
-    case S_IFDIR:
-        return TRUE;
-    
-    default:
-        return FALSE;
-    }
-};
-```
-
-```c/ixcompiler.Path.c
-bool IsFolderAndCanWrite( const char* target )
-{
-    return (F_OK == access( target, W_OK ));
-}
-```
-
-```c/ixcompiler.Path.c
-char* FullyQualifiedPath ( const char* target )
-{
-    char* ret = calloc( PATH_MAX, sizeof( char ) );
-
-    if ( '/' == target[0] )
-    {
-        return strcpy( ret, target );
-    }
-    else
-    {
-        getcwd( ret, PATH_MAX );
-        int last = strlen( ret );
-        if ( '/' != ret[last-1] )
-        {
-            strcpy( &ret[last++], "/" );
-        }
-        strcpy( &ret[last], target );
-    }
-
-    return ret;
-}
-```
 ### String
 
 ```!include/ixcompiler.String.h
@@ -823,6 +765,10 @@ bool String_Equals( const char* string1, const char* string2 )
 #ifndef IXCOMPILER_PLATFORM_H
 #define IXCOMPILER_PLATFORM_H
 
+void* Platform_Alloc                 ( size_t size_of );
+void* Platform_Array                 ( size_t num, size_t size_of );
+void* Platform_Free                  ( void** mem );
+
 bool  Platform_Location_Exists       ( const char* location );
 char* Platform_Location_FullPath     ( const char* location );
 bool  Platform_Location_IsDirectory  ( const char* location );
@@ -844,6 +790,29 @@ bool  Platform_Location_IsWritable   ( const char* location );
 
 #include "ixcompiler.h"
 #include "ixcompiler.Platform.h"
+```
+
+```c/posix/ixcompiler.Platform.c
+void* Platform_Alloc( size_t size_of )
+{
+    return calloc( 1, size_of );
+}
+```
+
+```c/posix/ixcompiler.Platform.c
+void* Platform_Array( size_t num, size_t size_of )
+{
+    return calloc( num, size_of );
+}
+```
+
+```c/posix/ixcompiler.Platform.c
+void* Platform_Free( void** mem )
+{
+    free( *mem ); *mem = 0;
+
+    return *mem;
+}
 ```
 
 ```c/posix/ixcompiler.Platform.c

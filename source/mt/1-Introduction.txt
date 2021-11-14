@@ -28,21 +28,41 @@ it .
 For example, the following source file is contained within the 'com.ixlang.package' namespace,
 and the class name will be 'SourceFile'.
 
+See: [ixlang.org](https://ixlang.org) for more details.
+
 ~
-Example file path: source/ix/com.ixlang.package/SourceFile.ix
+Example file path: source/ix/ix.base/StringBuffer.ix
 ~
 
 ~
 public class extends Object implements Interface
 {
-    @instanceMember: Type*
+    @data: char[]
 
-    %classMember: Type*
+    %count: int
 }
 
-public method( parameter1: Object*, parameter2: Reference& ) : Type*
+public new()
 {
-    return parameter1.someMethod( parameter2 );
+    @data[] = new char[]
+    #count++
+}
+
+public append( aString: string& )
+{
+    foreach( character in aString )
+    {
+        @data[] = character;
+    }
+}
+
+public append( aString: string* )
+{
+    foreach( character in aString )
+    {
+        @data[] = character;
+    }
+    // aString is implicitly destroyed at end of method.
 }
 ~
 

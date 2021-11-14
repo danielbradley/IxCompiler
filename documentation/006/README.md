@@ -259,12 +259,11 @@ FilesIterator* Arguments_filesIterator( Arguments* self );
 ```
 
 ```!c/ixcompiler.Arguments.c
-#include <stdlib.h>
-
 #include "ixcompiler.h"
 #include "ixcompiler.Arguments.h"
 #include "ixcompiler.Console.h"
 #include "ixcompiler.FilesIterator.h"
+#include "ixcompiler.Platform.h"
 #include "ixcompiler.String.h"
 #include "todo.h"
 
@@ -283,10 +282,10 @@ Arguments* Arguments_new( int argc, char** argv )
 {
     int index = 0;
 
-    Arguments* self = calloc( 1, sizeof( Arguments ) );
+    Arguments* self = Platform_Alloc( sizeof( Arguments ) );
     if ( self )
     {
-        self->files      = calloc( argc, sizeof( char* ) );
+        self->files      = Platform_Array( argc, sizeof( char* ) );
         self->executable = argv[0];
 
         for ( int i=1; i < argc; i++ )
@@ -327,9 +326,8 @@ Arguments* Arguments_new( int argc, char** argv )
 ```c/ixcompiler.Arguments.c
 Arguments* Arguments_free( Arguments** self )
 {
-    free( (*self)->files );
-
-    free( *self ); *self = 0;
+    Platform_Free( (*self)->files );
+    Platform_Free(   self         );
 
     return *self;
 }
@@ -354,8 +352,7 @@ bool Arguments_hasFlag( Arguments* self, const char* argument )
     }
     else
     {
-        Console_Write( "Implementation error in Arguments_hasFlag - 'argument' must be an ARGUMENT defined constant.", "" );
-        exit( -1 );
+        return FALSE;
     }
 }
 ```
@@ -363,12 +360,6 @@ bool Arguments_hasFlag( Arguments* self, const char* argument )
 ```c/ixcompiler.Arguments.c
 const char* Arguments_getOption( Arguments* self, const char* argument )
 {
-    if ( String_Equals( argument, ARGUMENT_DRY_RUN ) )
-    {
-        Console_Write( "Implementation error in Arguments_getOption - ARGUMENT_DRY_RUN is not valid for this function.", "" );
-        exit( -1 );
-    }
-    else
     if ( String_Equals( argument, ARGUMENT_OUTPUT_DIR ) )
     {
         return (0 != self->outputDir) ? self->outputDir : "";
@@ -380,8 +371,7 @@ const char* Arguments_getOption( Arguments* self, const char* argument )
     }
     else
     {
-        Console_Write( "Implementation error in Arguments_hasFlag - 'argument' must be an ARGUMENT defined constant.", "" );
-        exit( -1 );
+        return null;
     }
 }
 ```
@@ -765,9 +755,11 @@ bool String_Equals( const char* string1, const char* string2 )
 #ifndef IXCOMPILER_PLATFORM_H
 #define IXCOMPILER_PLATFORM_H
 
-void* Platform_Alloc                 ( size_t size_of );
-void* Platform_Array                 ( size_t num, size_t size_of );
-void* Platform_Free                  ( void** mem );
+void* Platform_Alloc                 ( int size_of );
+void* Platform_Array                 ( int num, int size_of );
+void* Platform_Free                  ( void* mem );
+
+void  Platform_Exit                  ( int status );
 
 bool  Platform_Location_Exists       ( const char* location );
 char* Platform_Location_FullPath     ( const char* location );
@@ -793,25 +785,34 @@ bool  Platform_Location_IsWritable   ( const char* location );
 ```
 
 ```c/posix/ixcompiler.Platform.c
-void* Platform_Alloc( size_t size_of )
+void* Platform_Alloc( int size_of )
 {
     return calloc( 1, size_of );
 }
 ```
 
 ```c/posix/ixcompiler.Platform.c
-void* Platform_Array( size_t num, size_t size_of )
+void* Platform_Array( int num, int size_of )
 {
     return calloc( num, size_of );
 }
 ```
 
 ```c/posix/ixcompiler.Platform.c
-void* Platform_Free( void** mem )
+void* Platform_Free( void* mem )
 {
-    free( *mem ); *mem = 0;
+    void** obj = (void**) mem;
 
-    return *mem;
+    free( *obj ); *obj = 0;
+
+    return *obj;
+}
+```
+
+```c/posix/ixcompiler.Platform.c
+void Platform_Exit( int status )
+{
+    exit( status );
 }
 ```
 

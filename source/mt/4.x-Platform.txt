@@ -3,9 +3,11 @@
 #ifndef IXCOMPILER_PLATFORM_H
 #define IXCOMPILER_PLATFORM_H
 
-void* Platform_Alloc                 ( size_t size_of );
-void* Platform_Array                 ( size_t num, size_t size_of );
-void* Platform_Free                  ( void** mem );
+void* Platform_Alloc                 ( int size_of );
+void* Platform_Array                 ( int num, int size_of );
+void* Platform_Free                  ( void* mem );
+
+void  Platform_Exit                  ( int status );
 
 bool  Platform_Location_Exists       ( const char* location );
 char* Platform_Location_FullPath     ( const char* location );
@@ -31,25 +33,34 @@ bool  Platform_Location_IsWritable   ( const char* location );
 ~
 
 ~c/posix/ixcompiler.Platform.c~
-void* Platform_Alloc( size_t size_of )
+void* Platform_Alloc( int size_of )
 {
     return calloc( 1, size_of );
 }
 ~
 
 ~c/posix/ixcompiler.Platform.c~
-void* Platform_Array( size_t num, size_t size_of )
+void* Platform_Array( int num, int size_of )
 {
     return calloc( num, size_of );
 }
 ~
 
 ~c/posix/ixcompiler.Platform.c~
-void* Platform_Free( void** mem )
+void* Platform_Free( void* mem )
 {
-    free( *mem ); *mem = 0;
+    void** obj = (void**) mem;
 
-    return *mem;
+    free( *obj ); *obj = 0;
+
+    return *obj;
+}
+~
+
+~c/posix/ixcompiler.Platform.c~
+void Platform_Exit( int status )
+{
+    exit( status );
 }
 ~
 

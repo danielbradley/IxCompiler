@@ -13,7 +13,7 @@ Ix is an object oriented programming language meaning the language supports:
 *   multiple implementation of interfaces
 *   dynamic dispatch similar to Java
 
-Philosophically, Ix can be considered an evolution of Strustup's original C with Classes concept
+Philosophically, Ix can be considered an evolution of Stroustrup's original C with Classes concept
 as the language will not include any features that cannot be implemented in C.
 However, the language itself is heavily influenced by C++ and Java.
 

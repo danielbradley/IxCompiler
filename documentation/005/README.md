@@ -8,10 +8,10 @@ but later the intention is to target C++, C#, Java, and Swift.
 
 Ix is an object oriented programming language meaning the language supports:
 
-o   classes, which can be instantiated into objects
-o   single inheritance of parent classes
-o   multiple implementation of interfaces
-o   dynamic dispatch similar to Java
+*   classes, which can be instantiated into objects
+*   single inheritance of parent classes
+*   multiple implementation of interfaces
+*   dynamic dispatch similar to Java
 
 Philosophically, Ix can be considered an evolution of Strustup's original C with Classes concept
 as the language will not include any features that cannot be implemented in C.
@@ -48,13 +48,13 @@ public method( parameter1: Object*, parameter2: Reference& ) : Type*
 
 The language has the following features:
 
-o   Instance and class members are declared/defined within a class block.
-o   Classes must indicate their visibility via public, private, etc.
-o   Methods are defined with the same source file and below the class definition.
-o   Methods must indicate their visibility via public, private, etc.
-o   Similar to C++, an asterisk denotes a pointer and an ampersand denotes a reference.
-o   When a pointer is passed, the caller losses access to that pointer (it is made null).
-o   Memory is managed by deleting an non-null pointers.
+*   Instance and class members are declared/defined within a class block.
+*   Classes must indicate their visibility via public, private, etc.
+*   Methods are defined with the same source file and below the class definition.
+*   Methods must indicate their visibility via public, private, etc.
+*   Similar to C++, an asterisk denotes a pointer and an ampersand denotes a reference.
+*   When a pointer is passed, the caller losses access to that pointer (it is made null).
+*   Memory is managed by deleting an non-null pointers.
 
 ## Design
 ## Implementation

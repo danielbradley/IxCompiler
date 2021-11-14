@@ -23,10 +23,9 @@ in contrast to Java,
 a namespace/package of a source file is determined by the dotted notation name
 of the folder it is contained within.
 Also the name of a class is determined by the name of its source file -
-not specified _within_ the source file like most (?all?) other language.
-it .
-For example, the following source file is contained within the 'com.ixlang.package' namespace,
-and the class name will be 'SourceFile'.
+not specified _within_ the source file like most (?all?) other languages.
+For example, the following source file is contained within the 'ix.base.' namespace,
+and the class name will be 'StringBuffer'.
 
 See: [ixlang.org](https://ixlang.org) for more details.
 
@@ -66,7 +65,7 @@ public append( aString: string* )
 }
 ```
 
-The language has the following features:
+The language has the following characteristics:
 
 *   Instance and class members are declared/defined within a class block.
 *   Classes must indicate their visibility via public, private, etc.
@@ -74,7 +73,7 @@ The language has the following features:
 *   Methods must indicate their visibility via public, private, etc.
 *   Similar to C++, an asterisk denotes a pointer and an ampersand denotes a reference.
 *   When a pointer is passed, the caller losses access to that pointer (it is made null).
-*   Memory is managed by deleting an non-null pointers.
+*   Memory is managed by deleting any non-null pointers.
 
 ## Design
 ## Implementation

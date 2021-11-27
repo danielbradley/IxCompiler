@@ -1,0 +1,191 @@
+
+.. Tokenizer
+
+~!include/ixcompiler.Tokenizer.h~
+#ifndef IXCOMPILER_TOKENIZER_H
+#define IXCOMPILER_TOKENIZER_H
+
+Tokenizer* Tokenizer_new          ( File*       file );
+Tokenizer* Tokenizer_free         ( Tokenizer** self );
+Token*     Tokenizer_nextToken    ( Tokenizer*  self );
+bool       Tokenizer_hasMoreTokens( Tokenizer*  self ); 
+
+#endif
+~
+
+
+~!c/ixcompiler.Tokenizer.c~
+#include "ixcompiler.h"
+#include "ixcompiler.EnumTokenType.h"
+#include "ixcompiler.EnumTokenGroup.h"
+#include "ixcompiler.File.h"
+#include "ixcompiler.Platform.h"
+#include "ixcompiler.PushbackReader.h"
+#include "ixcompiler.Queue.h"
+#include "ixcompiler.StringBuffer.h"
+#include "ixcompiler.Token.h"
+#include "ixcompiler.TokenGroup.h"
+#include "ixcompiler.Tokenizer.h"
+
+struct _Tokenizer
+{
+    File*           file;
+    PushbackReader* reader;
+    Queue*          queue;
+};
+
+static void primeQueue( Tokenizer* self );
+static Token*     next( Tokenizer* self );
+~
+
+~c/ixcompiler.Tokenizer.c~
+Tokenizer* Tokenizer_new( File* file )
+{
+    Tokenizer* self = Platform_Alloc( sizeof( Tokenizer ) );
+
+    if ( self )
+    {
+        self->file   = file;
+        self->reader = PushbackReader_new( File_getFilepath( self->file ) );
+        self->queue  = Queue_new();
+
+        primeQueue( self );
+    }
+    return self;
+}
+~
+
+~c/ixcompiler.Tokenizer.c~
+Tokenizer* Tokenizer_free( Tokenizer** self )
+{
+    if ( *self )
+    {
+        if ( 1 )
+        {
+            Token* tmp;
+
+            while ( (tmp = Queue_removeHead( (*self)->queue )) )
+            {
+                Token_free( &tmp );
+            }
+        }
+
+        PushbackReader_free( &(*self)->reader );
+
+        Queue_free( &(*self)->queue );
+
+        Platform_Free( self );
+    }
+    return *self;
+}
+~
+
+~c/ixcompiler.Tokenizer.c~
+Token* Tokenizer_nextToken( Tokenizer* self )
+{
+    primeQueue( self );
+
+    if ( Queue_getLength( self->queue ) > 0 )
+    {
+        return (Token*) Queue_removeHead( self->queue );
+    }
+    else
+    {
+        return null;
+    }
+}
+~
+
+~c/ixcompiler.Tokenizer.c~
+bool Tokenizer_hasMoreTokens( Tokenizer* self )
+{
+    return (Queue_getLength( self->queue ) > 0);
+}
+~
+
+~c/ixcompiler.Tokenizer.c~
+static void primeQueue( Tokenizer* self )
+{
+    Token* token = null;
+
+    if ( (token = next( self )) )
+    {
+        Queue_addTail( self->queue, (void**) &token );
+    }
+}
+~
+
+~c/ixcompiler.Tokenizer.c~
+static Token* next( Tokenizer* self )
+{
+    Token* token = null;
+    int    ch    = 0;
+    int    ch2   = 0;
+
+    if ( (ch = PushbackReader_read( self->reader )) )
+    {
+        StringBuffer*  sb = StringBuffer_new();
+        TokenGroup* group = TokenGroup_new( ch );
+
+        sb = StringBuffer_append_char( sb, ch );
+
+        while ( (ch2 = PushbackReader_read( self->reader )) )
+        {
+            EnumTokenGroup group_type = TokenGroup_getGroupType( group );
+
+            if ( ESCAPE == group_type )
+            {
+                sb  = StringBuffer_append_char( sb, ch2 );
+                ch2 = PushbackReader_read( self->reader );
+                break;
+            }
+            else
+            if ( TokenGroup_matches( group, ch2 ) )
+            {
+                if ( '\\' == ch2 )
+                {
+                    sb  = StringBuffer_append_char( sb, ch2 );
+                    ch2 = PushbackReader_read( self->reader );
+                    sb  = StringBuffer_append_char( sb, ch2 );
+                }
+                else
+                {
+                    sb  = StringBuffer_append_char( sb, ch2 );
+                }
+            }
+            else
+            if ( STRING == group_type )
+            {
+                sb = StringBuffer_append_char( sb, ch2 );
+                ch2 = PushbackReader_read( self->reader );
+                break;
+            }
+            else
+            if ( CHAR == group_type )
+            {
+                sb = StringBuffer_append_char( sb, ch2 );
+                ch2 = PushbackReader_read( self->reader );
+                break;
+            }
+            else
+            {
+                break;
+            }
+        }
+
+        if ( ch2 )
+        {
+            PushbackReader_pushback( self->reader );
+        }
+
+        if ( !StringBuffer_isEmpty( sb ) )
+        {
+            token = Token_new( self, StringBuffer_content( sb ), group );
+        }
+
+        StringBuffer_free( &sb );
+        TokenGroup_free( &group );
+    }
+    return token;
+}
+~

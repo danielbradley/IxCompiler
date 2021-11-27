@@ -82,8 +82,8 @@ Arguments* Arguments_new( int argc, char** argv )
 ~c/ixcompiler.Arguments.c~
 Arguments* Arguments_free( Arguments** self )
 {
-    Platform_Free( (*self)->files );
-    Platform_Free(   self         );
+    Platform_Free( &(*self)->files );
+    Platform_Free(   self          );
 
     return *self;
 }

@@ -5,7 +5,19 @@
 #ifndef IXCOMPILER_STRING_H
 #define IXCOMPILER_STRING_H
 
-bool String_Equals( const char* string1, const char* string2 );
+String*     String_new    ( const char* content );
+String*     String_free   ( String** self );
+
+const char* String_content( const String* self );
+int         String_length ( const String* self );
+String*     String_copy   ( const String* self );
+String*     String_cat    ( const String* self, const String* other );
+bool        String_equals ( const String* self, const String* other );
+
+char* String_Cat   ( const char* string1, const char* string2 );
+bool  String_Equals( const char* string1, const char* string2 );
+int   String_Length( const char* s );
+char* String_Copy  ( const char* s );
 
 #endif
 ~
@@ -13,7 +25,121 @@ bool String_Equals( const char* string1, const char* string2 );
 ~!c/ixcompiler.String.c~
 #include <string.h>
 #include "ixcompiler.h"
+#include "ixcompiler.Platform.h"
 #include "ixcompiler.String.h"
+
+struct _String
+{
+    char* content;
+    int   length;
+};
+~
+
+~c/ixcompiler.String.c~
+String* String_new( const char* content )
+{
+    String* self = Platform_Alloc( sizeof(String) );
+    if ( self )
+    {
+        self->content = String_Copy( content );
+        self->length  = String_Length( content );
+    }
+    return self;
+}
+~
+
+~c/ixcompiler.String.c~
+String* String_free( String** self )
+{
+    if ( *self )
+    {
+        Platform_Free( &(*self)->content );
+        Platform_Free(    self           );
+    }
+    return *self;
+}
+~
+
+~c/ixcompiler.String.c~
+const char* String_content( const String* self )
+{
+    return self->content;
+}
+~
+
+~c/ixcompiler.String.c~
+int String_length( const String* self )
+{
+    return self->length;
+}
+~
+
+~c/ixcompiler.String.c~
+String* String_copy( const String* self )
+{
+    return String_new( self->content );
+}
+~
+
+~c/ixcompiler.String.c~
+String* String_cat( const String* self, const String* other )
+{
+    char* tmp = String_Cat( self->content, other->content );
+    String* ret = String_new( tmp );
+    Platform_Free( &tmp );
+
+    return ret;
+}
+~
+
+~c/ixcompiler.String.c~
+bool String_equals( const String* self, const String* other )
+{
+    return String_Equals( self->content, other->content );
+}
+~
+
+~c/ixcompiler.String.c~
+~
+
+~c/ixcompiler.String.c~
+~
+
+~c/ixcompiler.String.c~
+char* String_Cat( const char* s1, const char* s2 )
+{
+    int len1 = String_Length( s1 );
+    int len2 = String_Length( s2 );
+    int len  = len1 + len2 + 1;
+
+    char* concatenated = Platform_Array( len, sizeof( char ) );
+
+    int t=0;
+
+    for ( int i=0; i < len1; i++ )
+    {
+        concatenated[t++] = s1[i];
+    }
+
+    for ( int i=0; i < len2; i++ )
+    {
+        concatenated[t++] = s2[i];
+    }
+
+    concatenated[t] = '\0';
+
+    return concatenated;
+}
+~
+
+~c/ixcompiler.String.c~
+char* String_Copy( const char* s )
+{
+    int   len  = String_Length( s ) + 2;
+    char* copy = Platform_Array( len, sizeof( char ) );
+
+    return strcpy( copy, s );
+}
 ~
 
 ~c/ixcompiler.String.c~
@@ -29,3 +155,11 @@ bool String_Equals( const char* string1, const char* string2 )
     }
 }
 ~
+
+~c/ixcompiler.String.c~
+int String_Length( const char* s )
+{
+    return strlen( s );
+}
+~
+

@@ -1,0 +1,423 @@
+
+.. Token
+
+~!include/ixcompiler.Token.h~
+#ifndef IXCOMPILER_TOKEN_H
+#define IXCOMPILER_TOKEN_H
+
+#include "ixcompiler.h"
+
+Token*        Token_new                      ( Tokenizer* t, const char* content, TokenGroup* aGroup );
+Token*        Token_free                     ( Token**      self );
+const char*   Token_getContent               ( const Token* self );
+TokenGroup*   Token_getTokenGroup            ( const Token* self );
+EnumTokenType Token_getTokenType             ( const Token* self );
+void          Token_print                    ( const Token* self, void* stream );
+
+#endif
+~
+
+~!c/ixcompiler.Token.c~
+#include <stdio.h>
+#include "ixcompiler.h"
+#include "ixcompiler.Token.h"
+#include "ixcompiler.EnumTokenType.h"
+#include "ixcompiler.EnumTokenGroup.h"
+#include "ixcompiler.Platform.h"
+#include "ixcompiler.String.h"
+#include "ixcompiler.Term.h"
+#include "ixcompiler.TokenGroup.h"
+
+struct _Token
+{
+    Tokenizer*    t;
+    char*         content;
+    int           length;
+    TokenGroup*   group;
+    EnumTokenType type;
+
+};
+
+EnumTokenType   Token_DetermineTokenType       ( TokenGroup* group, const char* content );
+EnumTokenType   Token_DetermineWhitespaceType  ( const char* content );
+EnumTokenType   Token_DetermineSymbolicType    ( const char* content );
+EnumTokenType   Token_DetermineAlphanumericType( const char* content );
+EnumTokenType   Token_DetermineOpenType        ( const char* content );
+EnumTokenType   Token_DetermineCloseType       ( const char* content );
+~
+
+~c/ixcompiler.Token.c~
+Token* Token_new( Tokenizer* t, const char* content, TokenGroup* aGroup )
+{
+    Token* self = Platform_Alloc( sizeof(Token) );
+
+    if ( self )
+    {
+        self->t       = t;
+        self->content = String_Copy  ( content );
+        self->length  = String_Length( content );
+        self->group   = TokenGroup_copy( aGroup );
+        self->type    = Token_DetermineTokenType( aGroup, content );
+    }
+    return self;
+}
+~
+
+~c/ixcompiler.Token.c~
+Token* Token_free( Token **self )
+{
+    if ( *self )
+    {
+        TokenGroup_free( &(*self)->group   );
+        Platform_Free  ( &(*self)->content );
+
+        (*self)->t = null;
+
+        Platform_Free( self );
+    }
+
+    return *self;
+}
+~
+
+~c/ixcompiler.Token.c~
+const char* Token_getContent( const Token* self )
+{
+    return self->content;
+}
+~
+
+~c/ixcompiler.Token.c~
+TokenGroup* Token_getTokenGroup( const Token* self )
+{
+    return self->group;
+}
+~
+
+~c/ixcompiler.Token.c~
+EnumTokenType Token_getTokenType( const Token* self )
+{
+    return self->type;
+}
+~
+
+~c/ixcompiler.Token.c~
+void Token_print( const Token* self, void* stream )
+{
+    EnumTokenGroup group_type = TokenGroup_getGroupType( self->group );
+
+    switch ( group_type )
+    {
+    case OPEN:
+    case CLOSE:
+    case SYMBOLIC:
+        switch( self->type )
+        {
+        case COMMENT:
+        case LINECOMMENT:
+            Term_Colour( stream, COLOR_COMMENT );
+            break;
+
+        default:
+            Term_Colour( stream, COLOR_BOLD );
+        }
+        break;
+
+    case STRING:
+        Term_Colour( stream, COLOR_STRING );
+        break;
+
+    case CHAR:
+        Term_Colour( stream, COLOR_CHAR );
+        break;
+
+    case ALPHANUMERIC:
+        switch ( self->type )
+        {
+        case PRIMITIVE:
+            Term_Colour( stream, COLOR_TYPE );
+            break;
+
+        case CLASS:
+        case KEYWORD:
+        case MODIFIER:
+            Term_Colour( stream, COLOR_MODIFIER );
+            break;
+
+        case WORD:
+            Term_Colour( stream, COLOR_NORMAL );
+            break;
+
+        default:
+            Term_Colour( stream, COLOR_LIGHT );
+        }
+        break;
+
+    case VALUE:
+        Term_Colour( stream, COLOR_VALUE );
+        break;        
+
+    case UNKNOWN_GROUP:
+        Term_Colour( stream, COLOR_UNKNOWN );
+        break;        
+
+    default:
+        Term_Colour( stream, COLOR_NORMAL );
+    }
+    fprintf( stream, "%s", self->content );
+    Term_Colour( stream, COLOR_NORMAL );
+}
+~
+
+
+~c/ixcompiler.Token.c~
+EnumTokenType Token_DetermineTokenType( TokenGroup* group, const char* content )
+{
+    EnumTokenType type = UNKNOWN_TYPE;
+
+    switch ( TokenGroup_getGroupType( group ) )
+    {
+    case UNKNOWN_GROUP:
+        type = UNKNOWN_TYPE;
+        break;
+
+    case WHITESPACE:
+        type = Token_DetermineWhitespaceType( content );
+        break;
+
+    case OPEN:
+        type = Token_DetermineOpenType( content );
+        break;
+
+    case CLOSE:
+        type = Token_DetermineCloseType( content );
+        break;
+
+    case SYMBOLIC:
+        type = Token_DetermineSymbolicType( content );
+        break;
+
+    case ALPHANUMERIC:
+        type = Token_DetermineAlphanumericType( content );
+        break;
+
+    case STRING:
+        type = UNKNOWN_TYPE;
+        break;
+
+    case CHAR:
+        type = FLOAT;
+        break;
+
+    case VALUE:
+        type = FLOAT;
+        break;
+
+    case HEX_VALUE:
+        type = HEX;
+        break;
+
+    default:
+        type = UNKNOWN_TYPE;
+    }
+
+    return type;
+}
+~
+
+~c/ixcompiler.Token.c~
+EnumTokenType Token_DetermineWhitespaceType( const char* content )
+{
+    switch( content[0] )
+    {
+    case ' ':
+        return SPACE;
+    case '\t':
+        return TAB;
+    case '\n':
+        return NEWLINE;
+    default:
+        return UNKNOWN_WHITESPACE;
+    }
+}
+~
+
+~c/ixcompiler.Token.c~
+EnumTokenType Token_DetermineSymbolicType( const char* content )
+{
+    switch ( content[0] )
+    {
+    case '~':   return SYMBOL;
+    case '!':
+        switch ( content[1] )
+        {
+        case '=':  return INFIXOP;
+        default:   return PREFIXOP;
+        }
+        break;
+
+    case '@':   return SYMBOL;
+    case '#':   return SYMBOL;
+    case '$':   return SYMBOL;
+    case '%':
+        switch ( content[1] )
+        {
+        case '=':  return ASSIGNMENTOP;
+        default:   return INFIXOP;
+        }
+        break;
+
+    case '^':
+        switch ( content[1] )
+        {
+        case '=':  return ASSIGNMENTOP;
+        default:   return INFIXOP;
+        }
+        break;
+
+    case '&':
+        switch ( content[1] )
+        {
+        case '&':  return INFIXOP;
+        case '=':  return ASSIGNMENTOP;
+        default:   return INFIXOP;
+        }
+        break;
+
+    case '*':
+        switch ( content[1] )
+        {
+        case '=':  return ASSIGNMENTOP;
+        default:   return INFIXOP;
+        }
+        break;
+
+    case '-':
+        switch ( content[1] )
+        {
+        case '-':  return PREPOSTFIXOP;
+        case '=':  return ASSIGNMENTOP;
+        default:   return INFIXOP;
+        }
+        break;
+
+    case '+':
+        switch ( content[1] )
+        {
+        case '+':  return PREPOSTFIXOP;
+        case '=':  return ASSIGNMENTOP;
+        default:   return INFIXOP;
+        }
+        break;
+
+    case '=':
+        switch ( content[1] )
+        {
+        case '=':  return INFIXOP;
+        default:   return ASSIGNMENTOP;
+        }
+        break;
+
+    case '/':
+        switch ( content[1] )
+        {
+        case '/':  return LINECOMMENT;
+        case '*':  return COMMENT;
+        case '=':  return ASSIGNMENTOP;
+        default:   return INFIXOP;
+        }
+        break;
+
+    case ':':   return OPERATOR;
+    case ';':   return STOP;
+    case '<':   return INFIXOP;
+    case '>':   return INFIXOP;
+    default:    return SYMBOL;
+    }
+}
+~
+
+~c/ixcompiler.Token.c~
+EnumTokenType Token_DetermineAlphanumericType( const char* content )
+{
+         if ( String_Equals( content, "class"      ) ) return CLASS;
+    else if ( String_Equals( content, "import"     ) ) return IMPORT;
+    else if ( String_Equals( content, "include"    ) ) return INCLUDE;
+    else if ( String_Equals( content, "interface"  ) ) return INTERFACE;
+    else if ( String_Equals( content, "package"    ) ) return PACKAGE;
+
+    else if ( String_Equals( content, "public"     ) ) return MODIFIER;
+    else if ( String_Equals( content, "protected"  ) ) return MODIFIER;
+    else if ( String_Equals( content, "private"    ) ) return MODIFIER;
+
+    else if ( String_Equals( content, "bool"       ) ) return PRIMITIVE;
+    else if ( String_Equals( content, "boolean"    ) ) return PRIMITIVE;
+    else if ( String_Equals( content, "byte"       ) ) return PRIMITIVE;
+    else if ( String_Equals( content, "char"       ) ) return PRIMITIVE;
+    else if ( String_Equals( content, "const"      ) ) return PRIMITIVE;
+    else if ( String_Equals( content, "double"     ) ) return PRIMITIVE;
+    else if ( String_Equals( content, "float"      ) ) return PRIMITIVE;
+    else if ( String_Equals( content, "int"        ) ) return PRIMITIVE;
+    else if ( String_Equals( content, "integer"    ) ) return PRIMITIVE;
+    else if ( String_Equals( content, "long"       ) ) return PRIMITIVE;
+    else if ( String_Equals( content, "short"      ) ) return PRIMITIVE;
+    else if ( String_Equals( content, "signed"     ) ) return PRIMITIVE;
+    else if ( String_Equals( content, "string"     ) ) return PRIMITIVE;
+    else if ( String_Equals( content, "unsigned"   ) ) return PRIMITIVE;
+    else if ( String_Equals( content, "void"       ) ) return PRIMITIVE;
+
+    else if ( String_Equals( content, "break"      ) ) return KEYWORD;
+    else if ( String_Equals( content, "case"       ) ) return KEYWORD;
+    else if ( String_Equals( content, "catch"      ) ) return KEYWORD;
+    else if ( String_Equals( content, "default"    ) ) return KEYWORD;
+    else if ( String_Equals( content, "extends"    ) ) return KEYWORD;
+    else if ( String_Equals( content, "implements" ) ) return KEYWORD;
+    else if ( String_Equals( content, "for"        ) ) return KEYWORD;
+    else if ( String_Equals( content, "foreach"    ) ) return KEYWORD;
+    else if ( String_Equals( content, "let"        ) ) return KEYWORD;
+    else if ( String_Equals( content, "namespace"  ) ) return KEYWORD;
+    else if ( String_Equals( content, "return"     ) ) return KEYWORD;
+    else if ( String_Equals( content, "switch"     ) ) return KEYWORD;
+    else if ( String_Equals( content, "try"        ) ) return KEYWORD;
+    else if ( String_Equals( content, "var"        ) ) return KEYWORD;
+    else                                              return WORD;
+}
+~
+
+~c/ixcompiler.Token.c~
+EnumTokenType Token_DetermineOpenType( const char* content )
+{
+    switch ( content[0] )
+    {
+    case '{':
+        return STARTBLOCK;
+    case '(':
+        return STARTEXPRESSION;
+    case '[':
+        return STARTSUBSCRIPT;
+    case '<':
+        return STARTTAG;
+    default:
+        return UNKNOWN_OPEN;
+    }
+}
+~
+
+~c/ixcompiler.Token.c~
+EnumTokenType Token_DetermineCloseType( const char* content )
+{
+    switch ( content[0] )
+    {
+    case '}':
+        return ENDBLOCK;
+    case ')':
+        return ENDEXPRESSION;
+    case ']':
+        return ENDSUBSCRIPT;
+    case '>':
+        return ENDTAG;
+    default:
+        return UNKNOWN_OPEN;
+    }
+}
+~

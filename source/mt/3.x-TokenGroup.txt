@@ -1,0 +1,272 @@
+
+.. Token Group
+
+~!include/ixcompiler.TokenGroup.h~
+#ifndef IXCOMPILER_TOKENGROUP_H
+#define IXCOMPILER_TOKENGROUP_H
+
+TokenGroup*    TokenGroup_new          ( char ch );
+TokenGroup*    TokenGroup_free         ( TokenGroup** self );
+EnumTokenGroup TokenGroup_getGroupType ( TokenGroup*  self );
+EnumTokenGroup TokenGroup_DetermineType( char ch );
+bool           TokenGroup_matches      ( TokenGroup* self, char ch );
+TokenGroup*    TokenGroup_copy         ( const TokenGroup* self );
+
+#endif
+~
+
+~!c/ixcompiler.TokenGroup.c~
+#include "ixcompiler.h"
+#include "ixcompiler.EnumTokenGroup.h"
+#include "ixcompiler.Platform.h"
+#include "ixcompiler.TokenGroup.h"
+
+struct _TokenGroup
+{
+    int            character;
+    EnumTokenGroup groupType;
+};
+~
+
+~c/ixcompiler.TokenGroup.c~
+TokenGroup* TokenGroup_new( char character )
+{
+    TokenGroup* self = Platform_Alloc( sizeof( TokenGroup ) );
+
+    if ( self )
+    {
+        self->character = character;
+        self->groupType = TokenGroup_DetermineType( character );
+    }
+
+    return self;
+}
+~
+
+~c/ixcompiler.TokenGroup.c~
+TokenGroup* TokenGroup_free( TokenGroup** self )
+{
+    if ( *self )
+    {
+        (*self)->character = 0;
+        (*self)->groupType = 0;
+    }
+    Platform_Free( self );
+
+    return *self;
+}
+~
+
+~c/ixcompiler.TokenGroup.c~
+EnumTokenGroup TokenGroup_getGroupType ( TokenGroup*  self )
+{
+    return self->groupType;
+}
+~
+
+~c/ixcompiler.TokenGroup.c~
+EnumTokenGroup TokenGroup_DetermineType( char ch )
+{
+    switch ( ch )
+    {
+    case '~':
+    case '!':
+    case '@':
+    case '#':
+    case '$':
+    case '%':
+    case '^':
+    case '&':
+    case '*':
+    case '-':
+    case '+':
+    case '=':
+    case '|':
+    case ':':
+    case ';':
+    case ',':
+    case '.':
+    case '?':
+    case '/':
+        return SYMBOLIC;
+
+    case '\\':
+        return ESCAPE;
+
+    case '(':
+    case '{':
+    case '[':
+    case '<':
+        return OPEN;
+
+    case ')':
+    case '}':
+    case ']':
+    case '>':
+        return CLOSE;
+
+    case '"':
+        return STRING;
+
+    case '\'':
+        return CHAR;
+
+    case '_':
+        return ALPHANUMERIC;
+
+    default:
+        switch ( ch )
+        {
+        case  9: // TAB
+        case 10: // LF
+        case 11: // VT
+        case 12: // FF
+        case 13: // CR
+        case 14: // SO
+        case 15: // SI
+        case 32: // SPACE
+            return WHITESPACE;
+
+        default:
+            if ( (48 <= ch) && (ch <= 57) )
+            {
+                return VALUE;
+            }
+            else
+            if ( (65 <= ch) && (ch <= 90) ) // uppercase
+            {
+                return ALPHANUMERIC;
+            }
+            else
+            if ( (97 <= ch) && (ch <= 122) ) // lowercase
+            {
+                return ALPHANUMERIC;
+            }
+            return UNKNOWN_GROUP;
+        }
+    }
+}
+~
+
+~c/ixcompiler.TokenGroup.c~
+bool TokenGroup_matches( TokenGroup* self, char ch )
+{
+    if ( '\0' == ch )
+    {
+        return FALSE;
+    }
+    else
+    {
+        EnumTokenGroup secondType = TokenGroup_DetermineType( ch );
+
+        switch( self->groupType )
+        {
+        case SYMBOLIC:
+            switch( secondType )
+            {
+            case SYMBOLIC:
+                return TRUE;
+
+            default:
+                return FALSE;
+            }
+            break;
+
+        case STRING:
+            switch ( secondType )
+            {
+            case STRING:
+                return FALSE;
+
+            default:
+                return TRUE;
+            }
+            break;
+
+        case CHAR:
+            switch ( secondType )
+            {
+            case CHAR:
+                return FALSE;
+
+            default:
+                return TRUE;
+            }
+            break;
+
+        case ALPHANUMERIC:
+            switch ( secondType )
+            {
+            case ALPHANUMERIC:
+            case VALUE:
+                return TRUE;
+
+            default:
+                return FALSE;
+            }
+            break;
+
+        case WHITESPACE:
+            switch ( secondType )
+            {
+            case WHITESPACE:
+                return TRUE;
+
+            default:
+                return FALSE;
+            }
+            break;
+
+        case VALUE:
+            switch ( secondType )
+            {
+            case VALUE:
+                return TRUE;
+
+            case ALPHANUMERIC:
+                if ( (65 <= ch) && (ch <= 70) )
+                {
+                    return TRUE;
+                }
+                else
+                if ( (97 <= ch) && (ch <= 102) )
+                {
+                    return TRUE;
+                }
+                else
+                return ('x' == ch);
+
+            default:
+                return FALSE;
+            }
+            break;
+
+        case UNKNOWN_GROUP:
+            switch ( secondType )
+            {
+            case UNKNOWN_GROUP:
+                return TRUE;
+
+            default:
+                return FALSE;
+            }
+            break;
+
+        default:
+            return FALSE;
+        }
+    }
+}
+~
+
+~c/ixcompiler.TokenGroup.c~
+TokenGroup* TokenGroup_copy( const TokenGroup* self )
+{
+    TokenGroup* copy = Platform_Alloc( sizeof( TokenGroup ) );
+
+    copy->character = self->character;
+    copy->groupType = self->groupType;
+
+    return copy;
+}
+~

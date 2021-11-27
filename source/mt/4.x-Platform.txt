@@ -15,12 +15,14 @@ bool  Platform_Location_IsDirectory  ( const char* location );
 bool  Platform_Location_IsReadable   ( const char* location );
 bool  Platform_Location_IsRegularFile( const char* location );
 bool  Platform_Location_IsWritable   ( const char* location );
+char* Platform_GetFileContents       ( const char* location );
 
 #endif
 ~
 
 ~!c/posix/ixcompiler.Platform.c~
 #include <stdlib.h>
+#include <stdio.h>
 #include <string.h>
 #include <sys/types.h>
 #include <sys/stat.h>
@@ -147,4 +149,25 @@ bool Platform_Location_IsWritable( const char* location )
 }
 ~
 
+~c/posix/ixcompiler.Platform.c~
+char* Platform_GetFileContents( const char* location )
+{
+    char* content = null;
+    FILE* fp      = fopen( location, "r" );
 
+    if ( fp )
+    {
+        struct stat buf;
+
+        if( 0 == lstat( location, &buf ) )
+        {
+            int size = buf.st_size;
+
+            content = Platform_Array( size + 1, sizeof( char ) );
+
+            int red = fread( content, size, 1, fp );
+        }
+    }
+    return content;
+}
+~

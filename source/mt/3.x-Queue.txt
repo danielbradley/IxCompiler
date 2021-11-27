@@ -1,0 +1,83 @@
+.. Queue
+
+~!include/ixcompiler.Queue.h~
+#ifndef IXCOMPILER_QUEUE_H
+#define IXCOMPILER_QUEUE_H
+
+Queue* Queue_new       ();
+Queue* Queue_free      ( Queue** self );
+Queue* Queue_addHead   ( Queue* self, void** object );
+Queue* Queue_addTail   ( Queue* self, void** object );
+void*  Queue_removeHead( Queue* self );
+int    Queue_getLength ( Queue* self );
+
+#endif
+~
+
+~!c/ixcompiler.Queue.c~
+#include "ixcompiler.h"
+#include "ixcompiler.Array.h"
+#include "ixcompiler.Platform.h"
+#include "ixcompiler.Queue.h"
+
+struct _Queue
+{
+    Array* inner;
+
+};
+~
+
+~c/ixcompiler.Queue.c~
+Queue* Queue_new()
+{
+    Queue* self = Platform_Alloc( sizeof( Queue ) );
+
+    if ( self )
+    {
+        self->inner = Array_new();
+    }
+    return self;
+}
+~
+
+~c/ixcompiler.Queue.c~
+Queue* Queue_free( Queue** self )
+{
+    Array_free( &(*self)->inner );
+    Platform_Free( self );
+
+    return *self;
+}
+~
+
+~c/ixcompiler.Queue.c~
+Queue* Queue_addHead( Queue* self, void** object )
+{
+    Array_unshift( self->inner, object );
+
+    return self;
+}
+~
+
+~c/ixcompiler.Queue.c~
+Queue* Queue_addTail( Queue* self, void** object )
+{
+    Array_push( self->inner, object );
+
+    return self;
+}
+~
+
+~c/ixcompiler.Queue.c~
+void* Queue_removeHead( Queue* self )
+{
+    return Array_shift( self->inner );
+}
+~
+
+~c/ixcompiler.Queue.c~
+int Queue_getLength( Queue* self )
+{
+    return Array_length( self->inner );
+}
+~

@@ -1,5 +1,5 @@
 
-VERSION=006
+VERSION=007
 
 PLATFORM=posix
 CC=cc
@@ -14,7 +14,7 @@ quasi: $(QUASI)
 
 ixc:
 	mkdir -p _bin
-	$(CC) -o _bin/ixc -I_gen/include _gen/c/*.c _gen/c/$(PLATFORM)/*.c
+	$(CC) -o _bin/ixc -g -I_gen/include _gen/c/*.c _gen/c/$(PLATFORM)/*.c
 
 doco: $(MAX2MARKDOWN)
 	mkdir -p documentation/$(VERSION)
@@ -24,6 +24,10 @@ doco: $(MAX2MARKDOWN)
 test:
 	mkdir -p _output
 	_bin/ixc --output-dir _output --target-language C testdata/ix.base/String.ix
+
+debug:
+	mkdir -p _output
+	gdb --args _bin/ixc --output-dir _output --target-language C testdata/ix.base/String.ix
 
 clean:
 	make -C libexec/quasi clean

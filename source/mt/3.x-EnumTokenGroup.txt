@@ -1,0 +1,25 @@
+
+.. TokenGroup
+
+~!include/ixcompiler.EnumTokenGroup.h~
+#ifndef IXCOMPILER_ENUMTOKENGROUP_H
+#define IXCOMPILER_ENUMTOKENGROUP_H
+
+enum _EnumTokenGroup
+{
+    UNKNOWN_GROUP,
+    WHITESPACE,
+    OPEN,
+    CLOSE,
+    SYMBOLIC,
+    ESCAPE,
+    ALPHANUMERIC,
+    STRING,
+    CHAR,
+    VALUE,
+    HEX_VALUE
+
+};
+
+#endif
+~

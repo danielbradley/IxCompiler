@@ -1,0 +1,92 @@
+.. StringBuffer
+
+~!include/ixcompiler.StringBuffer.h~
+#ifndef IXCOMPILER_STRINGBUFFER_H
+#define IXCOMPILER_STRINGBUFFER_H
+
+StringBuffer* StringBuffer_new        ();
+StringBuffer* StringBuffer_free       ( StringBuffer** self                     );
+StringBuffer* StringBuffer_append     ( StringBuffer*  self, const char* suffix );
+StringBuffer* StringBuffer_append_char( StringBuffer*  self, char        ch     );
+const char*   StringBuffer_content    ( StringBuffer*  self                     );
+bool          StringBuffer_isEmpty    ( StringBuffer*  self                     );
+
+#endif
+~
+
+~!c/ixcompiler.StringBuffer.c~
+#include "ixcompiler.h"
+#include "ixcompiler.Platform.h"
+#include "ixcompiler.String.h"
+#include "ixcompiler.StringBuffer.h"
+
+struct _StringBuffer
+{
+    char* content;
+    int   length;
+
+};
+~
+
+~c/ixcompiler.StringBuffer.c~
+StringBuffer* StringBuffer_new()
+{
+    StringBuffer* self = Platform_Alloc( sizeof( StringBuffer ) );
+
+    if ( self )
+    {
+        self->content = String_Copy( "" );
+        self->length  = 0;
+    }
+    return self;
+}
+~
+
+~c/ixcompiler.StringBuffer.c~
+StringBuffer* StringBuffer_free( StringBuffer** self )
+{
+    if ( *self )
+    {
+        Platform_Free( &(*self)->content );
+        Platform_Free(    self           );
+    }
+
+    return *self;
+}
+~
+
+~c/ixcompiler.StringBuffer.c~
+StringBuffer* StringBuffer_append( StringBuffer* self, const char* suffix )
+{
+    self->length += String_Length( suffix );
+    char* tmp = self->content;
+    self->content = String_Cat( tmp, suffix );
+
+    Platform_Free( &tmp );
+
+    return self;
+}
+~
+
+~c/ixcompiler.StringBuffer.c~
+StringBuffer* StringBuffer_append_char( StringBuffer* self, char ch )
+{
+    char suffix[2] = { ch , '\0' };
+
+    return StringBuffer_append( self, suffix );
+}
+~
+
+~c/ixcompiler.StringBuffer.c~
+const char* StringBuffer_content( StringBuffer* self )
+{
+    return self->content;
+}
+~
+
+~c/ixcompiler.StringBuffer.c~
+bool StringBuffer_isEmpty( StringBuffer* self )
+{
+    return (0 == String_Length( self->content ));
+}
+~

@@ -1,0 +1,82 @@
+
+.. PushbackReader
+
+~!include/ixcompiler.PushbackReader.h~
+#ifndef IXCOMPILER_PUSHBACKREADER_H
+#define IXCOMPILER_PUSHBACKREADER_H
+
+PushbackReader* PushbackReader_new     ( const char*      filepath );
+PushbackReader* PushbackReader_free    ( PushbackReader** self     );
+int             PushbackReader_read    ( PushbackReader*  self     );
+PushbackReader* PushbackReader_pushback( PushbackReader*  self     );
+
+#endif
+~
+
+~!c/ixcompiler.PushbackReader.c~
+#include "ixcompiler.h"
+#include "ixcompiler.File.h"
+#include "ixcompiler.Platform.h"
+#include "ixcompiler.PushbackReader.h"
+#include "ixcompiler.String.h"
+
+struct _PushbackReader
+{
+    char* content;
+    int   head;
+    int   length;
+};
+~
+
+~c/ixcompiler.PushbackReader.c~
+PushbackReader* PushbackReader_new( const char* filepath )
+{
+    PushbackReader* self = Platform_Alloc( sizeof( PushbackReader ) );
+    File*           file = File_new( filepath );
+
+    if ( self )
+    {
+        self->head = 0;
+
+        if ( File_exists( file ) )
+        {
+            self->content = Platform_GetFileContents( filepath );
+            self->length  = String_Length( self->content );
+        }
+        else
+        {
+            self->content = String_Copy( "" );
+            self->length  = 0;
+        }
+    }
+
+    File_free( &file );
+
+    return self;
+}
+~
+
+~c/ixcompiler.PushbackReader.c~
+PushbackReader* PushbackReader_free( PushbackReader** self )
+{
+    Platform_Free( &(*self)->content );
+    Platform_Free( self );
+
+    return *self;
+}
+~
+
+~c/ixcompiler.PushbackReader.c~
+int PushbackReader_read( PushbackReader* self )
+{
+    return (self && (self->head < self->length)) ? self->content[self->head++] : 0;
+}
+~
+
+~c/ixcompiler.PushbackReader.c~
+PushbackReader* PushbackReader_pushback( PushbackReader* self )
+{
+    self->head--;
+    return self;
+}
+~

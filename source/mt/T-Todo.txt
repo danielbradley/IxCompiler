@@ -6,11 +6,6 @@
 
 void Todo( const char* fn );
 
-AST*           AST_free               ( AST** self)                           ;
-IxParser*      IxParser_new           ( Tokenizer* tokenizer )                ;
-AST*           IxParser_parse         ( IxParser* self )                      ;
-IxParser*      IxParser_free          ( IxParser** self )                     ;
-
 #endif
 ~
 
@@ -24,9 +19,4 @@ void Todo( const char* fn )
     fprintf( stderr, "Todo: %s\n", fn );
     fflush( stderr );
 }
-
-AST*           AST_free               ( AST** self)                           {  Todo( "AST_free"              ); return null; }
-IxParser*      IxParser_new           ( Tokenizer* tokenizer )                {  Todo( "IxParser_new"          ); return null; }
-AST*           IxParser_parse         ( IxParser* self )                      {  Todo( "IxParser_parse"        ); return null; }
-IxParser*      IxParser_free          ( IxParser** self )                     {  Todo( "IxParser_free"         ); return null; }
 ~

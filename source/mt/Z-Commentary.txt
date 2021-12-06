@@ -8,3 +8,15 @@ This section provides a chronological commentary for significant issues and desi
 Have moved the testing of complete arguments from the Arguments class to the main method.
 The philosophy behind this is that only the main method should be allowed to call 'exit'
 so that crashes from witin methods can be better identified.
+
+.. 2021-12-06 (Monday)
+
+Today I had a commit session of parsing related code that I wrote recently.
+The IxParser class will take a tokenizer, which can now be parsed into a simple parse tree.
+The start of each statement is the node of the tree, with tokens contained with a statement being the children of that node.
+I have also implemented a simple printed tree output that shows this structure.
+I feel that now is a good time to renumber/reorder the source files so that the quasi-source output is in a more readable order.
+
+I realise that I will need to restructure the code in the main method to allow for the generation of a common C header files,
+however, I plan to leave that for a bit later.
+I plan to restructure the main method so that the argument checking code is in a sub-procedure in order to allow main to better focus on parsing and code generation.

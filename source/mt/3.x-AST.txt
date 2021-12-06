@@ -1,0 +1,69 @@
+
+.. AST
+
+~!include/ixcompiler.AST.h~
+#ifndef IXCOMPILER_AST_H
+#define IXCOMPILER_AST_H
+
+#include "ixcompiler.h"
+
+AST*        AST_new();
+AST*        AST_free   ( AST** self );
+void        AST_setTree( AST*  self, Tree** tree );
+const Tree* AST_getTree( AST*  self );
+
+#endif
+~
+
+~!c/ixcompiler.AST.c~
+#include "ixcompiler.h"
+#include "ixcompiler.Platform.h"
+#include "ixcompiler.Tree.h"
+
+struct _AST
+{
+    Tree* tree;
+};
+~
+
+~c/ixcompiler.AST.c~
+AST* AST_new()
+{
+    AST* self = Platform_Alloc( sizeof( AST ) );
+    if ( self )
+    {
+        self->tree = Tree_new();
+    }
+
+    return self;
+}
+~
+
+~c/ixcompiler.AST.c~
+AST* AST_free( AST** self )
+{
+    if ( *self )
+    {
+        Tree_free( &(*self)->tree );
+    }
+    Platform_Free( self );
+
+    return *self;
+}
+~
+
+~c/ixcompiler.AST.c~
+void AST_setTree( AST* self, Tree** tree )
+{
+    Tree_free( &self->tree );
+
+    self->tree = *tree; *tree = null; 
+}
+~
+
+~c/ixcompiler.AST.c~
+const Tree* AST_getTree( AST* self )
+{
+    return self->tree;
+}
+~

@@ -13,25 +13,35 @@ int        Generator_writeAST( Generator* self, AST* ast, Path* output_path, Fil
 ~
 
 ~!c/ixcompiler.Generator.c~
-#include <stdlib.h>
+#include <stdio.h>
 #include "ixcompiler.h"
+#include "ixcompiler.AST.h"
+#include "ixcompiler.EnumTokenGroup.h"
 #include "ixcompiler.Generator.h"
+#include "ixcompiler.Node.h"
+#include "ixcompiler.NodeIterator.h"
+#include "ixcompiler.Platform.h"
 #include "ixcompiler.String.h"
-#include "todo.h"
+#include "ixcompiler.Tree.h"
+#include "ixcompiler.Token.h"
+#include "ixcompiler.TokenGroup.h"
 
 struct _Generator
 {
-    int placeholder;
+    char* targetLanguage;
 };
+
+static void PrintNode( const Node* node );
+static void PrintTree( const Node* node, int indent );
 ~
 
 ~c/ixcompiler.Generator.c~
 Generator* Generator_new( const char* target_language )
 {
-    Generator* self = calloc( 1, sizeof( Generator ) );
+    Generator* self = Platform_Alloc( sizeof( Generator ) );
     if ( self )
     {
-        Todo( "Generator_new" );
+        self->targetLanguage = String_Copy( target_language );
     }    
 
     if ( String_Equals( target_language, LANG_C ) )
@@ -48,7 +58,11 @@ Generator* Generator_new( const char* target_language )
 ~c/ixcompiler.Generator.c~
 Generator* Generator_free( Generator** self )
 {
-    free( *self ); *self = 0;
+    if ( *self )
+    {
+        Platform_Free( &(*self)->targetLanguage );
+        Platform_Free( self );
+    }
 
     return *self;
 }
@@ -57,6 +71,72 @@ Generator* Generator_free( Generator** self )
 ~c/ixcompiler.Generator.c~
 int Generator_writeAST( Generator* self, AST* ast, Path* output_path, File* source_file )
 {
-    return 0;
+    const Tree* tree = AST_getTree( ast );
+    const Node* root = Tree_getRoot( tree );
+
+    //PrintNode( root );
+    PrintTree( root, -1 );
+
+    return SUCCESS;
+}
+~
+
+~c/ixcompiler.Generator.c~
+static void PrintNode( const Node* node )
+{
+    const Token* token = Node_getToken( node );
+
+    if ( token )
+    {
+        Token_print( token, stdout );
+    }
+
+    if ( Node_hasChildren( node ) )
+    {
+        NodeIterator* it = Node_iterator( node );
+        while ( NodeIterator_hasNext( it ) )
+        {
+            const Node*  child = NodeIterator_next( it );
+
+            PrintNode( child );
+        }
+        NodeIterator_free( &it );
+    }
+}
+~
+
+~c/ixcompiler.Generator.c~
+static void PrintTree( const Node* node, int indent )
+{
+    const Token* token = Node_getToken( node );
+
+    if ( token )
+    {
+        EnumTokenGroup token_group = TokenGroup_getGroupType( Token_getTokenGroup( token ) );
+        switch( token_group )
+        {
+        case WHITESPACE:
+            break;
+        default:
+            for ( int i=0; i < indent; i++ )
+            {
+                fprintf( stdout, "\t" );
+            }
+            Token_print( token, stdout );
+            fprintf( stdout, "\n" );
+        }
+    }
+
+    if ( Node_hasChildren( node ) )
+    {
+        NodeIterator* it = Node_iterator( node );
+        while ( NodeIterator_hasNext( it ) )
+        {
+            const Node*  child = NodeIterator_next( it );
+
+            PrintTree( child, indent + 1 );
+        }
+        NodeIterator_free( &it );
+    }
 }
 ~

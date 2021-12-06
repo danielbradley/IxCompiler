@@ -340,8 +340,13 @@ EnumTokenType Token_DetermineSymbolicType( const char* content )
 ~c/ixcompiler.Token.c~
 EnumTokenType Token_DetermineAlphanumericType( const char* content )
 {
-         if ( String_Equals( content, "class"      ) ) return CLASS;
-    else if ( String_Equals( content, "import"     ) ) return IMPORT;
+         if ( String_Equals( content, "copyright"  ) ) return COPYRIGHT;
+    else if ( String_Equals( content, "Copyright"  ) ) return COPYRIGHT;
+    else if ( String_Equals( content, "license"    ) ) return LICENSE;
+    else if ( String_Equals( content, "License"    ) ) return LICENSE;
+    else if ( String_Equals( content, "licence"    ) ) return LICENSE;
+    else if ( String_Equals( content, "Licence"    ) ) return LICENSE;
+    else if ( String_Equals( content, "class"      ) ) return CLASS;
     else if ( String_Equals( content, "include"    ) ) return INCLUDE;
     else if ( String_Equals( content, "interface"  ) ) return INTERFACE;
     else if ( String_Equals( content, "package"    ) ) return PACKAGE;

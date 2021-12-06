@@ -1,0 +1,314 @@
+
+~!include/ixcompiler.IxParser.h~
+#ifndef IXCOMPILER_IXPARSER_H
+#define IXCOMPILER_IXPARSER_H
+
+#include "ixcompiler.h"
+
+IxParser*      IxParser_new           ( Tokenizer* tokenizer )                ;
+IxParser*      IxParser_free          ( IxParser** self )                     ;
+AST*           IxParser_parse         ( IxParser* self )                      ;
+
+#endif
+~
+
+~!c/ixcompiler.IxParser.c~
+#include "ixcompiler.h"
+#include "ixcompiler.AST.h"
+#include "ixcompiler.EnumTokenGroup.h"
+#include "ixcompiler.EnumTokenType.h"
+#include "ixcompiler.IxParser.h"
+#include "ixcompiler.Node.h"
+#include "ixcompiler.Platform.h"
+#include "ixcompiler.Token.h"
+#include "ixcompiler.TokenGroup.h"
+#include "ixcompiler.Tokenizer.h"
+#include "ixcompiler.Tree.h"
+
+struct _IxParser
+{
+    Tokenizer* tokenizer;
+};
+
+static void ParseRoot      ( Node* parent, Tokenizer* tokenizer );
+static void ParseComplex   ( Node* parent, Tokenizer* tokenizer );
+static void ParseClass     ( Node* parent, Tokenizer* tokenizer );
+static void ParseMethod    ( Node* parent, Tokenizer* tokenizer );
+static void ParseStatement ( Node* parent, Tokenizer* tokenizer, bool one_liner );
+static void ParseBlock     ( Node* parent, Tokenizer* tokenizer );
+static void ParseExpression( Node* parent, Tokenizer* tokenizer );
+~
+
+~c/ixcompiler.IxParser.c~
+IxParser* IxParser_new( Tokenizer* tokenizer )
+{
+    IxParser* self = Platform_Alloc( sizeof(IxParser) );
+    if ( self )
+    {
+        self->tokenizer = tokenizer;
+    }
+    return self;
+}
+~
+
+~c/ixcompiler.IxParser.c~
+IxParser* IxParser_free( IxParser** self )
+{
+    if ( *self )
+    {
+        (*self)->tokenizer = null;
+
+        Platform_Free( self );
+    }
+    return *self;
+}
+~
+
+~c/ixcompiler.IxParser.c~
+AST* IxParser_parse( IxParser* self )
+{
+    AST*  ast  = AST_new();
+    Tree* tree = Tree_new();
+    {
+        Token* t    = null;
+        Node*  root = Node_new( &t );
+        ParseRoot( root, self->tokenizer );
+        Tree_setRoot( tree, &root );
+    }
+    AST_setTree( ast, &tree );
+
+    return ast;
+}
+~
+
+~c/ixcompiler.IxParser.c~
+static void ParseRoot( Node* parent, Tokenizer* tokenizer )
+{
+    while ( Tokenizer_hasMoreTokens( tokenizer ) )
+    {
+        Token*         token       = Tokenizer_nextToken( tokenizer );
+        EnumTokenGroup token_group = TokenGroup_getGroupType( Token_getTokenGroup( token ) );
+        EnumTokenType  token_type  = Token_getTokenType( token );
+
+        Node_addChild( parent, &token );
+
+        if ( token_group == ALPHANUMERIC )
+        {
+            switch ( token_type )
+            {
+            case COPYRIGHT:
+            case LICENSE:
+                ParseStatement( Node_getLastChild( parent ), tokenizer, TRUE );
+                break;
+            case MODIFIER:
+                ParseComplex( Node_getLastChild( parent ), tokenizer );
+                break;
+            default:
+                continue;
+            }
+        }
+    }
+}
+~
+
+~c/ixcompiler.IxParser.c~
+static void ParseComplex( Node* parent, Tokenizer* tokenizer )
+{
+    while ( Tokenizer_hasMoreTokens( tokenizer ) )
+    {
+        Token*         token       = Tokenizer_nextToken( tokenizer );
+        EnumTokenGroup token_group = TokenGroup_getGroupType( Token_getTokenGroup( token ) );
+        EnumTokenType  token_type  = Token_getTokenType( token );
+        const char*    content     = Token_getContent( token );
+        int            ch          = content[0];
+
+        Node_addChild( parent, &token );
+
+        if ( (token_group == CLOSE)        && (token_type == ENDBLOCK) ) break;
+        else
+        if ( (token_group == ALPHANUMERIC) && (token_type == CLASS) )
+        {
+            ParseClass( Node_getLastChild( parent ), tokenizer );
+            break;
+        }
+        else
+        if ( (token_group == ALPHANUMERIC) && (token_type == WORD) )
+        {
+            ParseMethod( Node_getLastChild( parent ), tokenizer );
+            break;
+        }
+        else
+        if ( (token_group == OPEN)         && (token_type == STARTBLOCK) )
+        {
+            ParseBlock( Node_getLastChild( parent ), tokenizer );
+            break;
+        }
+        else
+        {
+            continue;
+        }
+    }
+}
+~
+
+~c/ixcompiler.IxParser.c~
+static void ParseClass( Node* parent, Tokenizer* tokenizer )
+{
+    while ( Tokenizer_hasMoreTokens( tokenizer ) )
+    {
+        Token*         token       = Tokenizer_nextToken( tokenizer );
+        EnumTokenGroup token_group = TokenGroup_getGroupType( Token_getTokenGroup( token ) );
+        EnumTokenType  token_type  = Token_getTokenType( token );
+        const char*    content     = Token_getContent( token );
+        int            ch          = content[0];
+
+        Node_addChild( parent, &token );
+
+        if ( (token_group == CLOSE)        && (token_type == ENDBLOCK) ) break;
+        else
+        if ( (token_group == OPEN) && (token_type == STARTBLOCK) )
+        {
+            ParseBlock( Node_getLastChild( parent ), tokenizer );
+            break;
+        }
+        else
+        {
+            continue;
+        }
+    }
+}
+~
+
+~c/ixcompiler.IxParser.c~
+static void ParseMethod( Node* parent, Tokenizer* tokenizer )
+{
+    while ( Tokenizer_hasMoreTokens( tokenizer ) )
+    {
+        Token*         token       = Tokenizer_nextToken( tokenizer );
+        EnumTokenGroup token_group = TokenGroup_getGroupType( Token_getTokenGroup( token ) );
+        EnumTokenType  token_type  = Token_getTokenType( token );
+        const char*    content     = Token_getContent( token );
+        int            ch          = content[0];
+
+        Node_addChild( parent, &token );
+
+        if ( (token_group == CLOSE)        && (token_type == ENDBLOCK) ) break;
+        else
+        if ( (token_group == OPEN) && (token_type == STARTEXPRESSION) )
+        {
+            ParseExpression( Node_getLastChild( parent ), tokenizer );
+        }
+        else
+        if ( (token_group == OPEN) && (token_type == STARTBLOCK) )
+        {
+            ParseBlock( Node_getLastChild( parent ), tokenizer );
+            break;
+        }
+        else
+        {
+            continue;
+        }
+    }
+}
+~
+
+~c/ixcompiler.IxParser.c~
+static void ParseStatement( Node* parent, Tokenizer* tokenizer, bool one_liner )
+{
+    while ( Tokenizer_hasMoreTokens( tokenizer ) )
+    {
+        Token*         token       = Tokenizer_nextToken( tokenizer );
+        EnumTokenGroup token_group = TokenGroup_getGroupType( Token_getTokenGroup( token ) );
+        EnumTokenType  token_type  = Token_getTokenType( token );
+
+        Node_addChild( parent, &token );
+
+        if ( token_type == STOP )
+        {
+            break;
+        }
+        else
+        if ( one_liner && (token_type == NEWLINE) )
+        {
+            break;
+        }
+        else
+        if ( (token_group == OPEN) && (token_type == STARTEXPRESSION) )
+        {
+            ParseExpression( Node_getLastChild( parent ), tokenizer );
+        }
+        else
+        if ( (token_group == OPEN) && (token_type == STARTBLOCK) )
+        {
+            ParseBlock( Node_getLastChild( parent ), tokenizer );
+            break;
+        }
+    }
+}
+~
+
+~c/ixcompiler.IxParser.c~
+static void ParseBlock( Node* parent, Tokenizer* tokenizer )
+{
+    while ( Tokenizer_hasMoreTokens( tokenizer ) )
+    {
+        Token*         token       = Tokenizer_nextToken( tokenizer );
+        EnumTokenGroup token_group = TokenGroup_getGroupType( Token_getTokenGroup( token ) );
+        EnumTokenType  token_type  = Token_getTokenType( token );
+        const char*    content     = Token_getContent( token );
+        int            ch          = content[0];
+
+        Node_addChild( parent, &token );
+
+        if ( (token_group == CLOSE)    && (token_type == ENDBLOCK) ) break;
+        else
+        if ( (token_group == SYMBOLIC) && (token_type == SYMBOL) )
+        {
+            switch ( ch )
+            {
+            case '@':
+            case '%':
+                ParseStatement( Node_getLastChild( parent ), tokenizer, TRUE );
+                break;
+            }
+        }
+        else
+        if ( (token_group == ALPHANUMERIC) && (token_type == KEYWORD) )
+        {
+            ParseStatement( Node_getLastChild( parent ), tokenizer, FALSE );
+        }
+        else
+        if ( (token_group == ALPHANUMERIC) )
+        {
+            ParseStatement( Node_getLastChild( parent ), tokenizer, FALSE );
+        }
+    }
+}
+~
+
+~c/ixcompiler.IxParser.c~
+static void ParseExpression( Node* parent, Tokenizer* tokenizer )
+{
+    while ( Tokenizer_hasMoreTokens( tokenizer ) )
+    {
+        Token*         token       = Tokenizer_nextToken( tokenizer );
+        EnumTokenGroup token_group = TokenGroup_getGroupType( Token_getTokenGroup( token ) );
+        EnumTokenType  token_type  = Token_getTokenType( token );
+        const char*    content     = Token_getContent( token );
+        int            ch          = content[0];
+
+        Node_addChild( parent, &token );
+
+        if ( (token_group == CLOSE)    && (token_type == ENDEXPRESSION) ) break;
+        else
+        if ( (token_group == OPEN) && (token_type == STARTEXPRESSION) )
+        {
+            ParseExpression( Node_getLastChild( parent ), tokenizer );
+        }
+        else
+        {
+            continue;
+        }
+    }
+}
+~

@@ -10,7 +10,9 @@ Array* Array_free   ( Array** self );
 Array* Array_push   ( Array*  self, void** object );
 void*  Array_shift  ( Array*  self );
 Array* Array_unshift( Array*  self, void** object );
-int    Array_length ( Array*  self );
+
+int         Array_length   ( const Array* self );
+const void* Array_getObject( const Array* self, int index );
 
 #endif
 ~
@@ -25,7 +27,6 @@ struct _Array
     void** objects;
     int    length;
     int    size;
-
 };
 ~
 
@@ -140,8 +141,22 @@ Array* Array_unshift( Array* self, void** object )
 ~
 
 ~c/ixcompiler.Array.c~
-int Array_length( Array* self )
+int Array_length( const Array* self )
 {
     return self->length;
+}
+~
+
+~c/ixcompiler.Array.c~
+const void* Array_getObject( const Array* self, int index )
+{
+    if ( index < self->length )
+    {
+        return self->objects[index];
+    }
+    else
+    {
+        return null;
+    }
 }
 ~

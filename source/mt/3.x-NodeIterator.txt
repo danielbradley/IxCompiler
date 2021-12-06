@@ -1,0 +1,68 @@
+
+.. NodeIterator
+
+~!include/ixcompiler.NodeIterator.h~
+#ifndef IXCOMPILER_NODEITERATOR_H
+#define IXCOMPILER_NODEITERATOR_H
+
+NodeIterator* NodeIterator_new    ( const Array*  nodes );
+NodeIterator* NodeIterator_free   ( NodeIterator** self );
+bool          NodeIterator_hasNext( NodeIterator*  self );
+const Node*   NodeIterator_next   ( NodeIterator*  self );
+
+#endif
+~
+
+~!c/ixcompiler.NodeIterator.c~
+#include "ixcompiler.h"
+#include "ixcompiler.Array.h"
+#include "ixcompiler.NodeIterator.h"
+#include "ixcompiler.Platform.h"
+
+struct _NodeIterator
+{
+    const Array* nodes;
+    int          next;
+};
+~
+
+~c/ixcompiler.NodeIterator.c~
+NodeIterator* NodeIterator_new( const Array* nodes )
+{
+    NodeIterator* self = Platform_Alloc( sizeof( NodeIterator ) );
+    if ( self )
+    {
+        self->nodes = nodes;
+        self->next  = 0;
+    }
+    return self;
+}
+~
+
+~c/ixcompiler.NodeIterator.c~
+NodeIterator* NodeIterator_free( NodeIterator** self )
+{
+    if ( *self )
+    {
+        (*self)->nodes = null;
+        (*self)->next  = 0;
+
+        Platform_Free( self );
+    }
+    return *self;
+}
+~
+
+~c/ixcompiler.NodeIterator.c~
+bool NodeIterator_hasNext( NodeIterator* self )
+{
+    return (self->next < Array_length( self->nodes ));
+}
+~
+
+~c/ixcompiler.NodeIterator.c~
+const Node* NodeIterator_next( NodeIterator* self )
+{
+    return (const void*) Array_getObject( self->nodes, self->next++ );
+}
+~

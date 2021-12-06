@@ -15,10 +15,12 @@ ixc --output-dir _gen/c --target-language C [--dry-run]
 
 #include "ixcompiler.h"
 #include "ixcompiler.Arguments.h"
+#include "ixcompiler.AST.h"
 #include "ixcompiler.Console.h"
 #include "ixcompiler.File.h"
 #include "ixcompiler.FilesIterator.h"
 #include "ixcompiler.Generator.h"
+#include "ixcompiler.IxParser.h"
 #include "ixcompiler.Path.h"
 #include "ixcompiler.Token.h"
 #include "ixcompiler.Tokenizer.h"
@@ -90,18 +92,9 @@ int main( int argc, char** argv )
             else
             if ( TRUE )
             {
-                Tokenizer* tokenizer = Tokenizer_new ( file );
+                Tokenizer* tokenizer = Tokenizer_new( file );
 
-                while ( Tokenizer_hasMoreTokens( tokenizer ) )
-                {
-                    Token* t = Tokenizer_nextToken( tokenizer );
-
-                    Token_print( t, stdout );
-
-                    Token_free( &t );
-                }
-
-                if ( FALSE )
+                if ( TRUE )
                 {
                     IxParser*  parser    = IxParser_new  ( tokenizer );
                     AST*       ast       = IxParser_parse( parser );

@@ -42,7 +42,8 @@ enum _EnumTokenType
     COMMENT,
 
     //  Words
-
+	COPYRIGHT,
+	LICENSE,
 
     //  Composite
 	WORD,

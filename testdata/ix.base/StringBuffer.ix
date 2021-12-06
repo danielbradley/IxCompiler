@@ -1,0 +1,66 @@
+Copyright 2021, Daniel Bradley. All rights reserved.
+
+License: LGPLv2.
+
+public class // StringBuffer
+{
+	@data : char[];
+}
+
+public new()
+{
+	@data = new char[];
+}
+
+public append( ch : char )
+{
+	@data[] = ch;
+}
+
+public append( aString : string& )
+{
+	foreach( character in aString )
+	{
+		@data[] = character;
+	}
+}
+
+public append( aString : string* )
+{
+	foreach( character in aString )
+	{
+		@data[] = character;
+	}
+	delete aString;
+}
+
+public append( aValue : float )
+{
+	this.append( Number.convertToString( aValue ) );
+}
+
+public const charAt( i : integer ) : char
+{
+	return @data[i];
+}
+
+public const getLength() : integer
+{
+	return @data.length;
+}
+
+public const getLength() : integer
+{
+    while( true )
+    {
+        for ( var i=0; i < n; i++ )
+        {
+            foreach( et in @content )
+            {
+                var j = (x + (y + z));
+            }
+        }
+    }
+
+	return @data.length;
+}

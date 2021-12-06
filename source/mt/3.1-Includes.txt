@@ -39,6 +39,14 @@
 #define FALSE 0
 #endif
 
+#ifndef SUCCESS
+#define SUCCESS 1
+#endif
+
+#ifndef FAILED
+#define FAILED 0
+#endif
+
 typedef struct _Arguments      Arguments;
 typedef struct _Array          Array;
 typedef struct _AST            AST;
@@ -48,6 +56,8 @@ typedef struct _File           File;
 typedef struct _FilesIterator  FilesIterator;
 typedef struct _Generator      Generator;
 typedef struct _IxParser       IxParser;
+typedef struct _Node           Node;
+typedef struct _NodeIterator   NodeIterator;
 typedef struct _Path           Path;
 typedef struct _PushbackReader PushbackReader;
 typedef struct _Queue          Queue;
@@ -56,6 +66,7 @@ typedef struct _StringBuffer   StringBuffer;
 typedef struct _Token          Token;
 typedef struct _TokenGroup     TokenGroup;
 typedef struct _Tokenizer      Tokenizer;
+typedef struct _Tree           Tree;
 
 #endif
 ~

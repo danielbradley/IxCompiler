@@ -99,7 +99,7 @@ const Token* Node_getToken( const Node* self )
 ~c/ixcompiler.Node.c~
 bool Node_hasChildren( const Node* self )
 {
-    return (0 < Array_length( self->children ));
+    return (0 < Array_getLength( self->children ));
 }
 ~
 
@@ -113,7 +113,7 @@ NodeIterator* Node_iterator( const Node* self )
 ~c/ixcompiler.Node.c~
 Node* Node_getLastChild( Node* self )
 {
-    int last = Array_length( self->children ) - 1;
+    int last = Array_getLength( self->children ) - 1;
 
     return (Node*) Array_getObject( self->children, last );
 }

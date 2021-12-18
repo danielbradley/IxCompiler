@@ -20,3 +20,10 @@ I feel that now is a good time to renumber/reorder the source files so that the 
 I realise that I will need to restructure the code in the main method to allow for the generation of a common C header files,
 however, I plan to leave that for a bit later.
 I plan to restructure the main method so that the argument checking code is in a sub-procedure in order to allow main to better focus on parsing and code generation.
+
+.. 2021-12-17 (Saturday)
+
+I have made the following decisions regarding the parsing/code generation process.
+The AST will be extracted from the IxParser and will operate independantly on each source file.
+The IxParser will then process each AST to create a collection of IxSourceUnit objects that similarly contain lower level concrete objects.
+A generator may then process this collection of IxSourceUnits in order to produce its language dependent output.

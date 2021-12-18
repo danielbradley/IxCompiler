@@ -5,7 +5,7 @@
 #ifndef IXCOMPILER_TOKENIZER_H
 #define IXCOMPILER_TOKENIZER_H
 
-Tokenizer* Tokenizer_new          ( File*       file );
+Tokenizer* Tokenizer_new          ( File**      file );
 Tokenizer* Tokenizer_free         ( Tokenizer** self );
 Token*     Tokenizer_nextToken    ( Tokenizer*  self );
 bool       Tokenizer_hasMoreTokens( Tokenizer*  self ); 
@@ -39,13 +39,13 @@ static Token*     next( Tokenizer* self );
 ~
 
 ~c/ixcompiler.Tokenizer.c~
-Tokenizer* Tokenizer_new( File* file )
+Tokenizer* Tokenizer_new( File** file )
 {
     Tokenizer* self = Platform_Alloc( sizeof( Tokenizer ) );
 
     if ( self )
     {
-        self->file   = file;
+        self->file   = *file; *file = null;
         self->reader = PushbackReader_new( File_getFilepath( self->file ) );
         self->queue  = Queue_new();
 
@@ -70,9 +70,9 @@ Tokenizer* Tokenizer_free( Tokenizer** self )
             }
         }
 
+        File_free          ( &(*self)->file   );
         PushbackReader_free( &(*self)->reader );
-
-        Queue_free( &(*self)->queue );
+        Queue_free         ( &(*self)->queue  );
 
         Platform_Free( self );
     }

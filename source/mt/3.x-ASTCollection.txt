@@ -1,0 +1,74 @@
+
+.. AST Collection
+
+~!include/ixcompiler.ASTCollection.h~
+#ifndef IXCOMPILER_ASTCOLLECTION_H
+#define IXCOMPILER_ASTCOLLECTION_H
+
+ASTCollection* ASTCollection_new();
+ASTCollection* ASTCollection_free( ASTCollection** self            );
+void           ASTCollection_add ( ASTCollection*  self, AST** ast );
+
+int            ASTCollection_getLength( const ASTCollection* self );
+
+#endif
+~
+
+~!c/ixcompiler.ASTCollection.c~
+#include "ixcompiler.h"
+#include "ixcompiler.AST.h"
+#include "ixcompiler.Array.h"
+#include "ixcompiler.Platform.h"
+
+struct _ASTCollection
+{
+    Array* ast_collection;
+};
+~
+
+~c/ixcompiler.ASTCollection.c~
+ASTCollection* ASTCollection_new()
+{
+    ASTCollection* self = Platform_Alloc( sizeof( ASTCollection ) );
+    if ( self )
+    {
+        self->ast_collection = Array_new();
+    }
+    return self;
+}
+~
+
+~c/ixcompiler.ASTCollection.c~
+ASTCollection* ASTCollection_free( ASTCollection** self )
+{
+    if ( *self )
+    {
+        if ( (*self)->ast_collection )
+        {
+            AST* ast;
+
+            while ( (ast = Array_pop( (*self)->ast_collection )) )
+            {
+                AST_free( &ast );
+            }
+            Array_free( &(*self)->ast_collection );
+            Platform_Free( self );
+        }
+    }
+    return *self;
+}
+~
+
+~c/ixcompiler.ASTCollection.c~
+void ASTCollection_add( ASTCollection* self, AST** ast )
+{
+    Array_push( self->ast_collection, (void**) ast );
+}
+~
+
+~c/ixcompiler.ASTCollection.c~
+int ASTCollection_getLength( const ASTCollection* self )
+{
+    return Array_getLength( self->ast_collection );
+}
+~

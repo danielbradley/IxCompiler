@@ -1,0 +1,44 @@
+
+.. IxSourceFile
+
+~!include/ixcompiler.IxSourceFile.h~
+#ifndef IXCOMPILER_IXSOURCEFILE_H
+#define IXCOMPILER_IXSOURCEFILE_H
+
+IxSourceFile* IxSourceFile_new();
+IxSourceFile* IxSourceFile_free( IxSourceFile** self );
+
+#endif
+~
+
+~!c/ixcompiler.IxSourceFile.c~
+#include "ixcompiler.h"
+#include "ixcompiler.IxSourceFile.h"
+#include "ixcompiler.Platform.h"
+
+struct _IxSourceFile
+{
+};
+~
+
+~c/ixcompiler.IxSourceFile.c~
+IxSourceFile* IxSourceFile_new()
+{
+    IxSourceFile* self = Platform_Alloc( sizeof( IxSourceFile ) );
+    if ( self )
+    {
+    }
+    return self;
+}
+~
+
+~c/ixcompiler.IxSourceFile.c~
+IxSourceFile* IxSourceFile_free( IxSourceFile** self )
+{
+    if ( *self )
+    {
+        Platform_Free( self );
+    }
+    return *self;
+}
+~

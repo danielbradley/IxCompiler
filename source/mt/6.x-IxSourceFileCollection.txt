@@ -1,0 +1,75 @@
+
+.. IxSourceFile Collection
+
+~!include/ixcompiler.IxSourceFileCollection.h~
+#ifndef IXCOMPILER_IXSOURCEFILECOLLECTION_H
+#define IXCOMPILER_IXSOURCEFILECOLLECTION_H
+
+IxSourceFileCollection* IxSourceFileCollection_new();
+IxSourceFileCollection* IxSourceFileCollection_free( IxSourceFileCollection** self                              );
+void                    IxSourceFileCollection_add ( IxSourceFileCollection*  self, IxSourceFile** IxSourceFile );
+
+int                     IxSourceFileCollection_getLength( const IxSourceFileCollection* self );
+
+#endif
+~
+
+~!c/ixcompiler.IxSourceFileCollection.c~
+#include "ixcompiler.h"
+#include "ixcompiler.IxSourceFile.h"
+#include "ixcompiler.IxSourceFileCollection.h"
+#include "ixcompiler.Array.h"
+#include "ixcompiler.Platform.h"
+
+struct _IxSourceFileCollection
+{
+    Array* collection;
+};
+~
+
+~c/ixcompiler.IxSourceFileCollection.c~
+IxSourceFileCollection* IxSourceFileCollection_new()
+{
+    IxSourceFileCollection* self = Platform_Alloc( sizeof( IxSourceFileCollection ) );
+    if ( self )
+    {
+        self->collection = Array_new();
+    }
+    return self;
+}
+~
+
+~c/ixcompiler.IxSourceFileCollection.c~
+IxSourceFileCollection* IxSourceFileCollection_free( IxSourceFileCollection** self )
+{
+    if ( *self )
+    {
+        if ( (*self)->collection )
+        {
+            IxSourceFile* sourceFile;
+
+            while ( (sourceFile = Array_pop( (*self)->collection )) )
+            {
+                IxSourceFile_free( &sourceFile );
+            }
+            Array_free( &(*self)->collection );
+            Platform_Free( self );
+        }
+    }
+    return *self;
+}
+~
+
+~c/ixcompiler.IxSourceFileCollection.c~
+void IxSourceFileCollection_add( IxSourceFileCollection* self, IxSourceFile** sourceFile )
+{
+    Array_push( self->collection, (void**) sourceFile );
+}
+~
+
+~c/ixcompiler.IxSourceFileCollection.c~
+int IxSourceFileCollection_getLength( const IxSourceFileCollection* self )
+{
+    return Array_getLength( self->collection );
+}
+~

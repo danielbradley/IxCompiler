@@ -56,7 +56,7 @@ NodeIterator* NodeIterator_free( NodeIterator** self )
 ~c/ixcompiler.NodeIterator.c~
 bool NodeIterator_hasNext( NodeIterator* self )
 {
-    return (self->next < Array_length( self->nodes ));
+    return (self->next < Array_getLength( self->nodes ));
 }
 ~
 

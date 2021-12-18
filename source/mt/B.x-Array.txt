@@ -8,10 +8,11 @@
 Array* Array_new    ();
 Array* Array_free   ( Array** self );
 Array* Array_push   ( Array*  self, void** object );
+void*  Array_pop    ( Array*  self );
 void*  Array_shift  ( Array*  self );
 Array* Array_unshift( Array*  self, void** object );
 
-int         Array_length   ( const Array* self );
+int         Array_getLength( const Array* self            );
 const void* Array_getObject( const Array* self, int index );
 
 #endif
@@ -98,6 +99,20 @@ Array* Array_push( Array* self, void** object )
 ~
 
 ~c/ixcompiler.Array.c~
+void* Array_pop( Array* self )
+{
+    void* ret = null;
+
+    if ( 0 < self->length )
+    {
+        --self->length;
+        ret = self->objects[self->length]; self->objects[self->length] = null;
+    }
+    return ret;
+}
+~
+
+~c/ixcompiler.Array.c~
 void* Array_shift( Array* self )
 {
     if ( self->length )
@@ -141,7 +156,7 @@ Array* Array_unshift( Array* self, void** object )
 ~
 
 ~c/ixcompiler.Array.c~
-int Array_length( const Array* self )
+int Array_getLength( const Array* self )
 {
     return self->length;
 }

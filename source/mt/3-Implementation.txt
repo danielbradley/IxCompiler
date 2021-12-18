@@ -16,6 +16,7 @@ ixc --output-dir _gen/c --target-language C [--dry-run]
 #include "ixcompiler.h"
 #include "ixcompiler.Arguments.h"
 #include "ixcompiler.AST.h"
+#include "ixcompiler.ASTCollection.h"
 #include "ixcompiler.ASTPrinter.h"
 #include "ixcompiler.Console.h"
 #include "ixcompiler.File.h"
@@ -75,6 +76,8 @@ int main( int argc, char** argv )
     }
     else
     {
+        ASTCollection* ast_collection = ASTCollection_new();
+
         while ( FilesIterator_hasNext( files ) )
         {
             File* file = FilesIterator_next( files );
@@ -93,10 +96,20 @@ int main( int argc, char** argv )
             else
             if ( TRUE )
             {
-                Tokenizer* t = Tokenizer_new( file );
-                AST* ast = AST_new( &t );
+                Tokenizer* t   = Tokenizer_new( &file );
+                AST*       ast = AST_new( &t );
 
                 ASTPrinter_Print( ast );
+                ASTCollection_add( ast_collection, &ast );
+            }
+        }
+
+        int n = ASTCollection_getLength( ast_collection );
+
+        
+
+
+
 
                 if ( FALSE )
                 {
@@ -111,11 +124,10 @@ int main( int argc, char** argv )
                     //AST_free( &ast );
                     //IxParser_free( &parser );
                 }
-                AST_free( &ast );
-            }
 
-            File_free( &file );
-        }
+
+
+        ASTCollection_free( &ast_collection );
     }
 
     Arguments_free    ( &args );

@@ -78,6 +78,6 @@ void* Queue_removeHead( Queue* self )
 ~c/ixcompiler.Queue.c~
 int Queue_getLength( Queue* self )
 {
-    return Array_length( self->inner );
+    return Array_getLength( self->inner );
 }
 ~

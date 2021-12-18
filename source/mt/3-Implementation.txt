@@ -16,6 +16,7 @@ ixc --output-dir _gen/c --target-language C [--dry-run]
 #include "ixcompiler.h"
 #include "ixcompiler.Arguments.h"
 #include "ixcompiler.AST.h"
+#include "ixcompiler.ASTPrinter.h"
 #include "ixcompiler.Console.h"
 #include "ixcompiler.File.h"
 #include "ixcompiler.FilesIterator.h"
@@ -92,22 +93,25 @@ int main( int argc, char** argv )
             else
             if ( TRUE )
             {
-                Tokenizer* tokenizer = Tokenizer_new( file );
+                Tokenizer* t = Tokenizer_new( file );
+                AST* ast = AST_new( &t );
 
-                if ( TRUE )
+                ASTPrinter_Print( ast );
+
+                if ( FALSE )
                 {
-                    IxParser*  parser    = IxParser_new  ( tokenizer );
-                    AST*       ast       = IxParser_parse( parser );
+                    //IxParser*  parser    = IxParser_new  ( tokenizer );
+                    //AST*       ast       = IxParser_parse( parser );
 
-                    if ( !dry_run )
-                    {
-                        status &= Generator_writeAST( generator, ast, output_path, file );
-                    }
+                    //if ( !dry_run )
+                    //{
+                    //    status &= Generator_writeAST( generator, ast, output_path, file );
+                    //}
 
-                    AST_free( &ast );
-                    IxParser_free( &parser );
+                    //AST_free( &ast );
+                    //IxParser_free( &parser );
                 }
-                Tokenizer_free( &tokenizer );
+                AST_free( &ast );
             }
 
             File_free( &file );

@@ -1,0 +1,99 @@
+
+.. AST Printer
+
+~!include/ixcompiler.ASTPrinter.h~
+#ifndef IXCOMPILER_ASTPRINTER_H
+#define IXCOMPILER_ASTPRINTER_H
+
+void ASTPrinter_Print( const AST* ast );
+
+#endif
+~
+
+~!c/ixcompiler.ASTPrinter.c~
+#include <stdio.h>
+#include "ixcompiler.h"
+#include "ixcompiler.AST.h"
+#include "ixcompiler.EnumTokenGroup.h"
+#include "ixcompiler.Generator.h"
+#include "ixcompiler.Node.h"
+#include "ixcompiler.NodeIterator.h"
+#include "ixcompiler.Platform.h"
+#include "ixcompiler.String.h"
+#include "ixcompiler.Tree.h"
+#include "ixcompiler.Token.h"
+#include "ixcompiler.TokenGroup.h"
+
+static void PrintNode( const Node* node );
+static void PrintTree( const Node* node, int indent );
+~
+
+~c/ixcompiler.ASTPrinter.c~
+void ASTPrinter_Print( const AST* ast )
+{
+    const Tree* tree = AST_getTree( ast );
+    const Node* root = Tree_getRoot( tree );
+
+    PrintTree( root, -1 );
+}
+~
+
+~c/ixcompiler.ASTPrinter.c~
+static void PrintNode( const Node* node )
+{
+    const Token* token = Node_getToken( node );
+
+    if ( token )
+    {
+        Token_print( token, stdout );
+    }
+
+    if ( Node_hasChildren( node ) )
+    {
+        NodeIterator* it = Node_iterator( node );
+        while ( NodeIterator_hasNext( it ) )
+        {
+            const Node*  child = NodeIterator_next( it );
+
+            PrintNode( child );
+        }
+        NodeIterator_free( &it );
+    }
+}
+~
+
+~c/ixcompiler.ASTPrinter.c~
+static void PrintTree( const Node* node, int indent )
+{
+    const Token* token = Node_getToken( node );
+
+    if ( token )
+    {
+        EnumTokenGroup token_group = TokenGroup_getGroupType( Token_getTokenGroup( token ) );
+        switch( token_group )
+        {
+        case WHITESPACE:
+            break;
+        default:
+            for ( int i=0; i < indent; i++ )
+            {
+                fprintf( stdout, "\t" );
+            }
+            Token_print( token, stdout );
+            fprintf( stdout, "\n" );
+        }
+    }
+
+    if ( Node_hasChildren( node ) )
+    {
+        NodeIterator* it = Node_iterator( node );
+        while ( NodeIterator_hasNext( it ) )
+        {
+            const Node*  child = NodeIterator_next( it );
+
+            PrintTree( child, indent + 1 );
+        }
+        NodeIterator_free( &it );
+    }
+}
+~

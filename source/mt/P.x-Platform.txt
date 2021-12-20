@@ -9,13 +9,17 @@ void* Platform_Free                  ( void* mem );
 
 void  Platform_Exit                  ( int status );
 
+bool  Platform_File_WriteContents    ( const char* location, const char* content, bool force );
+char* Platform_File_GetContents      ( const char* location );
+
 bool  Platform_Location_Exists       ( const char* location );
 char* Platform_Location_FullPath     ( const char* location );
 bool  Platform_Location_IsDirectory  ( const char* location );
 bool  Platform_Location_IsReadable   ( const char* location );
 bool  Platform_Location_IsRegularFile( const char* location );
 bool  Platform_Location_IsWritable   ( const char* location );
-char* Platform_GetFileContents       ( const char* location );
+
+bool  Platform_Path_Create           ( const Path* path     );
 
 #endif
 ~
@@ -32,6 +36,8 @@ char* Platform_GetFileContents       ( const char* location );
 
 #include "ixcompiler.h"
 #include "ixcompiler.Platform.h"
+#include "ixcompiler.Path.h"
+#include "ixcompiler.String.h"
 ~
 
 ~c/posix/ixcompiler.Platform.c~
@@ -63,6 +69,47 @@ void* Platform_Free( void* mem )
 void Platform_Exit( int status )
 {
     exit( status );
+}
+~
+
+~c/posix/ixcompiler.Platform.c~
+bool Platform_File_WriteContents( const char* location, const char* content, bool force )
+{
+    bool success = FALSE;
+
+    FILE* fp = force ? fopen( location, "w+" ) : fopen( location, "w" );
+
+    if ( fp )
+    {
+        int   n       = String_Length( content );
+        int   written = fwrite( content, sizeof(char), n, fp );
+
+        success = (n == written);
+    }
+    return success;
+}
+~
+
+~c/posix/ixcompiler.Platform.c~
+char* Platform_File_GetContents( const char* location )
+{
+    char* content = null;
+    FILE* fp      = fopen( location, "r" );
+
+    if ( fp )
+    {
+        struct stat buf;
+
+        if( 0 == lstat( location, &buf ) )
+        {
+            int size = buf.st_size;
+
+            content = Platform_Array( size + 1, sizeof( char ) );
+
+            int red = fread( content, size, 1, fp );
+        }
+    }
+    return content;
 }
 ~
 
@@ -150,24 +197,26 @@ bool Platform_Location_IsWritable( const char* location )
 ~
 
 ~c/posix/ixcompiler.Platform.c~
-char* Platform_GetFileContents( const char* location )
+bool Platform_Path_Create( const Path* path )
 {
-    char* content = null;
-    FILE* fp      = fopen( location, "r" );
+    bool success = FALSE;
 
-    if ( fp )
+    if ( Platform_Location_Exists( Path_getFullPath( path ) ) )
     {
-        struct stat buf;
-
-        if( 0 == lstat( location, &buf ) )
-        {
-            int size = buf.st_size;
-
-            content = Platform_Array( size + 1, sizeof( char ) );
-
-            int red = fread( content, size, 1, fp );
-        }
+        success = TRUE;
     }
-    return content;
+    else
+    {
+        Path* parent = Path_getParent( path );
+        if ( Platform_Path_Create( parent ) )
+        {
+            if ( 0 == mkdir( Path_getFullPath( path ), 0750 ) )
+            {
+                success = TRUE;
+            }
+        }
+        Path_free( &parent );
+    }
+    return success;
 }
 ~

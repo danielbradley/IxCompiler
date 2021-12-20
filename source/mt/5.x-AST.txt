@@ -7,9 +7,10 @@
 
 #include "ixcompiler.h"
 
-AST*        AST_new    ( Tokenizer** tokenizer );
-AST*        AST_free   ( AST**       self );
-const Tree* AST_getTree( const AST*  self );
+AST*        AST_new             ( Tokenizer** tokenizer );
+AST*        AST_free            ( AST**       self );
+const Tree* AST_getTree         ( const AST*  self );
+const File* AST_getTokenizerFile( const AST*  self );
 
 #endif
 ~
@@ -81,6 +82,13 @@ const Tree* AST_getTree( const AST* self )
 ~
 
 ~c/ixcompiler.AST.c~
+const File* AST_getTokenizerFile( const AST* self )
+{
+    return Tokenizer_getFile( self->tokenizer );
+}
+~
+
+~c/ixcompiler.AST.c~
 static void Parse( AST* self )
 {
     Token* t    = null;
@@ -103,15 +111,26 @@ static void ParseRoot( Node* parent, Tokenizer* tokenizer )
 
         if ( token_group == ALPHANUMERIC )
         {
+            Node* last = null;
+
             switch ( token_type )
             {
             case COPYRIGHT:
-            case LICENSE:
-                ParseStatement( Node_getLastChild( parent ), tokenizer, TRUE );
+                last = Node_getLastChild( parent );
+                Node_setTag( last, "copyright" );
+                ParseStatement( last, tokenizer, TRUE );
                 break;
+
+            case LICENSE:
+                last = Node_getLastChild( parent );
+                Node_setTag( last, "license" );
+                ParseStatement( last, tokenizer, TRUE );
+                break;
+
             case MODIFIER:
                 ParseComplex( Node_getLastChild( parent ), tokenizer );
                 break;
+
             default:
                 continue;
             }
@@ -137,12 +156,14 @@ static void ParseComplex( Node* parent, Tokenizer* tokenizer )
         else
         if ( (token_group == ALPHANUMERIC) && (token_type == CLASS) )
         {
+            Node_setTag( parent, "class" );
             ParseClass( Node_getLastChild( parent ), tokenizer );
             break;
         }
         else
         if ( (token_group == ALPHANUMERIC) && (token_type == WORD) )
         {
+            Node_setTag( parent, "method" );
             ParseMethod( Node_getLastChild( parent ), tokenizer );
             break;
         }

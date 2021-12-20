@@ -1,58 +1,72 @@
 
-.. IxSourceFile Collection
+.. IxSourceUnit Collection
 
-~!include/ixcompiler.IxSourceFileCollection.h~
-#ifndef IXCOMPILER_IXSOURCEFILECOLLECTION_H
-#define IXCOMPILER_IXSOURCEFILECOLLECTION_H
+~!include/ixcompiler.IxSourceUnitCollection.h~
+#ifndef IXCOMPILER_IXSOURCEUNITCOLLECTION_H
+#define IXCOMPILER_IXSOURCEUNITCOLLECTION_H
 
-IxSourceFileCollection* IxSourceFileCollection_new();
-IxSourceFileCollection* IxSourceFileCollection_free( IxSourceFileCollection** self                              );
-void                    IxSourceFileCollection_add ( IxSourceFileCollection*  self, IxSourceFile** IxSourceFile );
+IxSourceUnitCollection* IxSourceUnitCollection_new();
+IxSourceUnitCollection* IxSourceUnitCollection_free( IxSourceUnitCollection** self                              );
+void                    IxSourceUnitCollection_add ( IxSourceUnitCollection*  self, IxSourceUnit** IxSourceUnit );
 
-int                     IxSourceFileCollection_getLength( const IxSourceFileCollection* self );
+int                     IxSourceUnitCollection_getLength        ( const IxSourceUnitCollection* self );
+const IxSourceUnit*     IxSourceUnitCollection_get              ( const IxSourceUnitCollection* self, int index );
+ArrayOfString*          IxSourceUnitCollection_retrieveTypes    ( const IxSourceUnitCollection* self );
+ArrayOfString*          IxSourceUnitCollection_retrieveFunctions( const IxSourceUnitCollection* self );
+
+const ArrayOfString*    IxSourceUnitCollection_getCopyrightLines( const IxSourceUnitCollection* self );
+const ArrayOfString*    IxSourceUnitCollection_getLicenseLines  ( const IxSourceUnitCollection* self );
 
 #endif
 ~
 
-~!c/ixcompiler.IxSourceFileCollection.c~
+~!c/ixcompiler.IxSourceUnitCollection.c~
 #include "ixcompiler.h"
-#include "ixcompiler.IxSourceFile.h"
-#include "ixcompiler.IxSourceFileCollection.h"
+#include "ixcompiler.IxSourceUnit.h"
+#include "ixcompiler.IxSourceUnitCollection.h"
 #include "ixcompiler.Array.h"
+#include "ixcompiler.ArrayOfString.h"
 #include "ixcompiler.Platform.h"
+#include "ixcompiler.String.h"
 
-struct _IxSourceFileCollection
+struct _IxSourceUnitCollection
 {
-    Array* collection;
+    Array*         collection;
+    ArrayOfString* copyrightLines;
+    ArrayOfString* licenseLines;
 };
 ~
 
-~c/ixcompiler.IxSourceFileCollection.c~
-IxSourceFileCollection* IxSourceFileCollection_new()
+~c/ixcompiler.IxSourceUnitCollection.c~
+IxSourceUnitCollection* IxSourceUnitCollection_new()
 {
-    IxSourceFileCollection* self = Platform_Alloc( sizeof( IxSourceFileCollection ) );
+    IxSourceUnitCollection* self = Platform_Alloc( sizeof( IxSourceUnitCollection ) );
     if ( self )
     {
-        self->collection = Array_new();
+        self->collection     = Array_new();
+        self->copyrightLines = ArrayOfString_new();
+        self->licenseLines   = ArrayOfString_new();
     }
     return self;
 }
 ~
 
-~c/ixcompiler.IxSourceFileCollection.c~
-IxSourceFileCollection* IxSourceFileCollection_free( IxSourceFileCollection** self )
+~c/ixcompiler.IxSourceUnitCollection.c~
+IxSourceUnitCollection* IxSourceUnitCollection_free( IxSourceUnitCollection** self )
 {
     if ( *self )
     {
         if ( (*self)->collection )
         {
-            IxSourceFile* sourceFile;
+            IxSourceUnit* sourceFile;
 
             while ( (sourceFile = Array_pop( (*self)->collection )) )
             {
-                IxSourceFile_free( &sourceFile );
+                IxSourceUnit_free( &sourceFile );
             }
-            Array_free( &(*self)->collection );
+            Array_free        ( &(*self)->collection     );
+            ArrayOfString_free( &(*self)->copyrightLines );
+            ArrayOfString_free( &(*self)->licenseLines   );
             Platform_Free( self );
         }
     }
@@ -60,16 +74,77 @@ IxSourceFileCollection* IxSourceFileCollection_free( IxSourceFileCollection** se
 }
 ~
 
-~c/ixcompiler.IxSourceFileCollection.c~
-void IxSourceFileCollection_add( IxSourceFileCollection* self, IxSourceFile** sourceFile )
+~c/ixcompiler.IxSourceUnitCollection.c~
+void IxSourceUnitCollection_add( IxSourceUnitCollection* self, IxSourceUnit** sourceFile )
 {
+    ArrayOfString_union( self->copyrightLines, IxSourceUnit_getCopyrightLines( *sourceFile ) );
+    ArrayOfString_union( self->licenseLines,   IxSourceUnit_getLicenseLines  ( *sourceFile ) );
+
     Array_push( self->collection, (void**) sourceFile );
 }
 ~
 
-~c/ixcompiler.IxSourceFileCollection.c~
-int IxSourceFileCollection_getLength( const IxSourceFileCollection* self )
+~c/ixcompiler.IxSourceUnitCollection.c~
+int IxSourceUnitCollection_getLength( const IxSourceUnitCollection* self )
 {
     return Array_getLength( self->collection );
+}
+~
+
+~c/ixcompiler.IxSourceUnitCollection.c~
+const IxSourceUnit*     IxSourceUnitCollection_get      ( const IxSourceUnitCollection* self, int index )
+{
+    return Array_getObject( self->collection, index );
+}
+~
+
+~c/ixcompiler.IxSourceUnitCollection.c~
+ArrayOfString* IxSourceUnitCollection_retrieveTypes( const IxSourceUnitCollection* self )
+{
+    ArrayOfString* types = ArrayOfString_new();
+    {
+        int n = IxSourceUnitCollection_getLength( self );
+
+        String* tmp;
+
+        for ( int i=0; i < n; i++ )
+        {
+            const IxSourceUnit* unit = IxSourceUnitCollection_get( self, i );
+            const String*       name = IxSourceUnit_getName( unit );
+
+            tmp = String_copy( name );
+            ArrayOfString_push( types, &tmp );
+        }
+    }
+    return types;
+}
+~
+
+~c/ixcompiler.IxSourceUnitCollection.c~
+ArrayOfString* IxSourceUnitCollection_retrieveFunctions( const IxSourceUnitCollection* self )
+{
+    ArrayOfString* functions = ArrayOfString_new();
+    {
+        int n = IxSourceUnitCollection_getLength( self );
+        for ( int i=0; i < n; i++ )
+        {
+            ArrayOfString_append( functions, IxSourceUnit_getSignatures( IxSourceUnitCollection_get( self, i ) ) );
+        }
+    }
+    return functions;
+}
+~
+
+~c/ixcompiler.IxSourceUnitCollection.c~
+const ArrayOfString* IxSourceUnitCollection_getCopyrightLines( const IxSourceUnitCollection* self )
+{
+    return self->copyrightLines;
+}
+~
+
+~c/ixcompiler.IxSourceUnitCollection.c~
+const ArrayOfString* IxSourceUnitCollection_getLicenseLines( const IxSourceUnitCollection* self )
+{
+    return self->licenseLines;
 }
 ~

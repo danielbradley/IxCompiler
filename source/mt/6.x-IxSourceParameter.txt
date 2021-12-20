@@ -1,0 +1,81 @@
+
+.. Ix Source Parameter
+
+~!include/ixcompiler.IxSourceParameter.h~
+#ifndef IXCOMPILER_IXSOURCEPARAMETER_H
+#define IXCOMPILER_IXSOURCEPARAMETER_H
+
+#include "ixcompiler.h"
+
+IxSourceParameter* IxSourceParameter_new( String** name, String** type, String** defaultValue );
+IxSourceParameter* IxSourceParameter_free( IxSourceParameter** self );
+
+const String* IxSourceParameter_getName        ( const IxSourceParameter* self );
+const String* IxSourceParameter_getType        ( const IxSourceParameter* self );
+const String* IxSourceParameter_getDefaultValue( const IxSourceParameter* self );
+
+#endif
+~
+
+~!c/ixcompiler.IxSourceParameter.c~
+#include "ixcompiler.IxSourceParameter.h"
+#include "ixcompiler.Platform.h"
+#include "ixcompiler.String.h"
+#include "ixcompiler.Take.h"
+
+struct _IxSourceParameter
+{
+    String* name;
+    String* type;
+    String* defaultValue;
+};
+~
+
+~c/ixcompiler.IxSourceParameter.c~
+IxSourceParameter* IxSourceParameter_new( String** name, String** type, String** default_value )
+{
+    IxSourceParameter* self = Platform_Alloc( sizeof( IxSourceParameter ) );
+    if ( self )
+    {
+        self->name         = Take( name          );
+        self->type         = Take( type          );
+        self->defaultValue = Take( default_value );
+    }
+    return self;
+}
+~
+
+~c/ixcompiler.IxSourceParameter.c~
+IxSourceParameter* IxSourceParameter_free( IxSourceParameter** self )
+{
+    if ( *self )
+    {
+        String_free  ( &(*self)->name         );
+        String_free  ( &(*self)->type         );
+        String_free  ( &(*self)->defaultValue );
+        Platform_Free(    self                );
+    }
+    return *self;
+}
+~
+
+~c/ixcompiler.IxSourceParameter.c~
+const String* IxSourceParameter_getName( const IxSourceParameter* self )
+{
+    return self->name;
+}
+~
+
+~c/ixcompiler.IxSourceParameter.c~
+const String* IxSourceParameter_getType( const IxSourceParameter* self )
+{
+    return self->type;
+}
+~
+
+~c/ixcompiler.IxSourceParameter.c~
+const String* IxSourceParameter_getDefaultValue( const IxSourceParameter* self )
+{
+    return self->defaultValue;
+}
+~

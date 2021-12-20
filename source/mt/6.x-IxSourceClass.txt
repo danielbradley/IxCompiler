@@ -1,0 +1,68 @@
+
+.. Ix Source Class
+
+~!include/ixcompiler.IxSourceClass.h~
+#ifndef IXCOMPILER_IXSOURCECLASS_H
+#define IXCOMPILER_IXSOURCECLASS_H
+
+#include "ixcompiler.h"
+
+IxSourceClass* IxSourceClass_new( const Node* node );
+
+IxSourceClass* IxSourceClass_free( IxSourceClass** self );
+
+#endif
+~
+
+~!c/ixcompiler.IxSourceClass.c~
+#include <stdio.h>
+#include "ixcompiler.EnumTokenType.h"
+#include "ixcompiler.IxSourceClass.h"
+#include "ixcompiler.Node.h"
+#include "ixcompiler.NodeIterator.h"
+#include "ixcompiler.Platform.h"
+#include "ixcompiler.String.h"
+#include "ixcompiler.Token.h"
+
+struct _IxSourceClass
+{
+    String*                   accessModifier;
+    String*                   className;
+    ArrayOfString*            interfaces;
+    ArrayOfIxSourceParameter* members;
+};
+
+static void init( IxSourceClass* self, const Node* node );
+~
+
+~c/ixcompiler.IxSourceClass.c~
+IxSourceClass* IxSourceClass_new( const Node* classNode )
+{
+    IxSourceClass* self = Platform_Alloc( sizeof( IxSourceClass ) );
+    if ( self )
+    {
+        init( self, classNode );
+    }
+    return self;
+}
+~
+
+~c/ixcompiler.IxSourceClass.c~
+static void init( IxSourceClass* self, const Node* classNode )
+{
+    NodeIterator* it = Node_iterator( classNode );
+    while ( NodeIterator_hasNext( it ) )
+    {
+        const Node*  next  = NodeIterator_next( it );
+        const Token* token = Node_getToken( next );
+
+        if ( Token_getTokenType( token ) == MODIFIER )
+        {
+            self->accessModifier = String_new( Token_getContent( token ) );
+            fprintf( stdout, "Here: %s\n", Token_getContent( token ) );
+        }
+    }
+}
+~
+
+

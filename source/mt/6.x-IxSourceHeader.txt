@@ -1,0 +1,55 @@
+
+
+.. Ix Source Comment
+
+~!include/ixcompiler.IxSourceHeader.h~
+#ifndef IXCOMPILER_IXSOURCEHEADER_H
+#define IXCOMPILER_IXSOURCEHEADER_H
+
+IxSourceHeader* IxSourceHeader_new ( const char* keyword, const char* freeform_text );
+
+IxSourceHeader* IxSourceHeader_free      (       IxSourceHeader** self );
+const char*     IxSourceHeader_getKeyword( const IxSourceHeader*  self );
+const char*     IxSourceHeader_getText   ( const IxSourceHeader*  self );
+
+#endif
+~
+
+~!c/ixcompiler.IxSourceHeader.c~
+#include "ixcompiler.h"
+#include "ixcompiler.IxSourceHeader.h"
+#include "ixcompiler.Platform.h"
+#include "ixcompiler.String.h"
+
+struct _IxSourceHeader
+{
+    String* keyword;
+    String* text;
+};
+~
+
+~c/ixcompiler.IxSourceHeader.c~
+IxSourceHeader* IxSourceHeader_new( const char* keyword, const char* freeform_text )
+{
+    IxSourceHeader* self = Platform_Alloc( sizeof( IxSourceHeader ) );
+    if ( self )
+    {
+        self->keyword = String_new( keyword       );
+        self->text    = String_new( freeform_text );
+    }
+    return self;
+}
+~
+
+~c/ixcompiler.IxSourceHeader.c~
+IxSourceHeader* IxSourceHeader_free( IxSourceHeader** self )
+{
+    if ( *self )
+    {
+        String_free  ( &(*self)->keyword );
+        String_free  ( &(*self)->text    );
+        Platform_Free(    self           );
+    }
+    return *self;
+}
+~

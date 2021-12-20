@@ -1,0 +1,68 @@
+
+.. Ix Source Signature
+
+~!include/ixcompiler.IxSourceSignature.h~
+#ifndef IXCOMPILER_IXSOURCESIGNATURE_H
+#define IXCOMPILER_IXSOURCESIGNATURE_H
+
+#include "ixcompiler.h"
+
+IxSourceSignature* IxSourceSignature_new( String** access_modifier, bool const, String** method_name, ArrayOfIxSourceParameter** parameters, String** return_type );
+IxSourceSignature* IxSourceSignature_free( IxSourceSignature** self );
+
+const String*                   IxSourceSignature_getAccessModifier( const IxSourceSignature* self );
+bool                            IxSourceSignature_isConst          ( const IxSourceSignature* self );
+const String*                   IxSourceSignature_getMethodName    ( const IxSourceSignature* self );
+const ArrayOfIxSourceParameter* IxSourceSignature_getParameters    ( const IxSourceSignature* self );
+const String*                   IxSourceSignature_getReturnType    ( const IxSourceSignature* self );
+
+#endif
+~
+
+~!c/ixcompiler.IxSourceSignature.c~
+#include "ixcompiler.ArrayOfIxSourceParameter.h"
+#include "ixcompiler.IxSourceSignature.h"
+#include "ixcompiler.Platform.h"
+#include "ixcompiler.String.h"
+#include "ixcompiler.Take.h"
+
+struct _IxSourceSignature
+{
+    String*                   accessModifier;
+    bool                      isConst;
+    String*                   methodName;
+    ArrayOfIxSourceParameter* parameters;
+    String*                   returnType;
+};
+~
+
+~c/ixcompiler.IxSourceSignature.c~
+IxSourceSignature* IxSourceSignature_new( String** access_modifier, bool is_const, String** method_name, ArrayOfIxSourceParameter** parameters, String** return_type )
+{
+    IxSourceSignature* self = Platform_Alloc( sizeof( IxSourceSignature ) );
+    if ( self )
+    {
+        self->accessModifier = Take( access_modifier );
+        self->isConst        = is_const;
+        self->methodName     = Take( method_name );
+        self->parameters     = Take( parameters  );
+        self->returnType     = Take( return_type );
+    }
+    return self;
+}
+~
+
+~c/ixcompiler.IxSourceSignature.c~
+IxSourceSignature* IxSourceSignature_free( IxSourceSignature** self )
+{
+    if ( *self )
+    {
+        String_free                   ( &(*self)->accessModifier );
+        String_free                   ( &(*self)->methodName     );
+        ArrayOfIxSourceParameter_free ( &(*self)->parameters     );
+        String_free                   ( &(*self)->returnType     );
+        Platform_Free                 (    self                  );
+    }
+    return *self;
+}
+~

@@ -1,44 +1,208 @@
 
-.. IxSourceFile
+.. IxSourceUnit
 
-~!include/ixcompiler.IxSourceFile.h~
-#ifndef IXCOMPILER_IXSOURCEFILE_H
-#define IXCOMPILER_IXSOURCEFILE_H
+~!include/ixcompiler.IxSourceUnit.h~
+#ifndef IXCOMPILER_IXSOURCEUNIT_H
+#define IXCOMPILER_IXSOURCEUNIT_H
 
-IxSourceFile* IxSourceFile_new();
-IxSourceFile* IxSourceFile_free( IxSourceFile** self );
+IxSourceUnit* IxSourceUnit_new( const AST* ast );
+
+IxSourceUnit*        IxSourceUnit_free             (       IxSourceUnit** self );
+const String*        IxSourceUnit_getName          ( const IxSourceUnit*  self );
+const String*        IxSourceUnit_getPackage       ( const IxSourceUnit*  self );
+const ArrayOfString* IxSourceUnit_getSignatures    ( const IxSourceUnit*  self );
+const ArrayOfString* IxSourceUnit_getCopyrightLines( const IxSourceUnit*  self );
+const ArrayOfString* IxSourceUnit_getLicenseLines  ( const IxSourceUnit*  self );
 
 #endif
 ~
 
-~!c/ixcompiler.IxSourceFile.c~
+~!c/ixcompiler.IxSourceUnit.c~
 #include "ixcompiler.h"
-#include "ixcompiler.IxSourceFile.h"
+#include "ixcompiler.ArrayOfIxSourceFunction.h"
+#include "ixcompiler.ArrayOfIxSourceMethod.h"
+#include "ixcompiler.ArrayOfString.h"
+#include "ixcompiler.AST.h"
+#include "ixcompiler.Console.h"
+#include "ixcompiler.EnumTokenGroup.h"
+#include "ixcompiler.EnumTokenType.h"
+#include "ixcompiler.File.h"
+#include "ixcompiler.IxSourceClass.h"
+#include "ixcompiler.IxSourceUnit.h"
+#include "ixcompiler.Node.h"
+#include "ixcompiler.NodeIterator.h"
 #include "ixcompiler.Platform.h"
+#include "ixcompiler.String.h"
+#include "ixcompiler.StringBuffer.h"
+#include "ixcompiler.Tree.h"
+#include "ixcompiler.Token.h"
+#include "ixcompiler.TokenGroup.h"
 
-struct _IxSourceFile
+struct _IxSourceUnit
 {
+    String*                    package;
+    String*                    filename;
+    String*                    name;
+    String*                    extension;
+    ArrayOfString*             copyrightLines;
+    ArrayOfString*             licenseLines;
+    IxSourceClass*             class;
+    IxSourceInterface*         interface;
+    ArrayOfIxSourceMethod*     methods;
+    ArrayOfIxSourceFunction*   functions;
 };
+
+static void    init        ( IxSourceUnit* self, const AST* ast );
+static void    initChildren( IxSourceUnit* self, const AST* ast );
+static String* CreateLine  ( const char* prefix, const Node* node );
+
 ~
 
-~c/ixcompiler.IxSourceFile.c~
-IxSourceFile* IxSourceFile_new()
+~c/ixcompiler.IxSourceUnit.c~
+IxSourceUnit* IxSourceUnit_new( const AST* ast )
 {
-    IxSourceFile* self = Platform_Alloc( sizeof( IxSourceFile ) );
+    IxSourceUnit* self = Platform_Alloc( sizeof( IxSourceUnit ) );
     if ( self )
     {
+        init        ( self, ast );
+        initChildren( self, ast );
     }
     return self;
 }
 ~
 
-~c/ixcompiler.IxSourceFile.c~
-IxSourceFile* IxSourceFile_free( IxSourceFile** self )
+~c/ixcompiler.IxSourceUnit.c~
+IxSourceUnit* IxSourceUnit_free( IxSourceUnit** self )
 {
     if ( *self )
     {
         Platform_Free( self );
     }
     return *self;
+}
+~
+
+~c/ixcompiler.IxSourceUnit.c~
+const String* IxSourceUnit_getName( const IxSourceUnit* self )
+{
+    return self->name;
+}
+~
+
+~c/ixcompiler.IxSourceUnit.c~
+const String* IxSourceUnit_getPackage( const IxSourceUnit* self )
+{
+    return self->package;
+}
+~
+
+~c/ixcompiler.IxSourceUnit.c~
+const ArrayOfString* IxSourceUnit_getSignatures( const IxSourceUnit* self )
+{
+    return ArrayOfString_new();
+}
+~
+
+~c/ixcompiler.IxSourceUnit.c~
+const ArrayOfString* IxSourceUnit_getCopyrightLines( const IxSourceUnit* self )
+{
+    return self->copyrightLines;
+}
+~
+
+~c/ixcompiler.IxSourceUnit.c~
+const ArrayOfString* IxSourceUnit_getLicenseLines( const IxSourceUnit* self )
+{
+    return self->licenseLines;
+}
+~
+
+~c/ixcompiler.IxSourceUnit.c~
+static void init( IxSourceUnit* self, const AST* ast )
+{
+    String*        source_file_path = String_new( File_getFilePath( AST_getTokenizerFile( ast ) ) );
+    ArrayOfString* parts            = String_split( source_file_path, '/' );
+    int            len              = ArrayOfString_getLength( parts );
+
+    self->package  = String_copy( ArrayOfString_getObject( parts, len - 2 ) );
+    self->filename = String_copy( ArrayOfString_getObject( parts, len - 1 ) );
+
+    ArrayOfString* bits = String_split( self->filename, '.' );
+    self->name          = String_copy( ArrayOfString_getObject( bits, 0 ) );
+    self->extension     = String_copy( ArrayOfString_getObject( bits, 1 ) );
+
+    Console_Write( "SourceUnit Package:   %s\n", String_content( self->package   ) );
+    Console_Write( "SourceUnit Full Name: %s\n", String_content( self->filename  ) );
+    Console_Write( "SourceUnit Name:      %s\n", String_content( self->name      ) );
+    Console_Write( "SourceUnit Extension: %s\n", String_content( self->extension ) );
+
+    String_free       ( &source_file_path );
+    ArrayOfString_free( &parts            );
+    ArrayOfString_free( &bits             );
+}
+~
+
+~c/ixcompiler.IxSourceUnit.c~
+static void initChildren( IxSourceUnit* self, const AST* ast )
+{
+    self->copyrightLines = ArrayOfString_new();
+    self->licenseLines   = ArrayOfString_new();
+    self->methods        = ArrayOfIxSourceMethod_new();
+    self->functions      = ArrayOfIxSourceFunction_new();
+
+    const Tree* tree = AST_getTree ( ast  );
+    const Node* root = Tree_getRoot( tree );    
+
+    String* copyright = String_new( "copyright" );
+    String* license   = String_new( "license"   );
+    String* class     = String_new( "class"     );
+
+    NodeIterator* it = Node_iterator( root );
+    while ( NodeIterator_hasNext( it ) )
+    {
+        const Node*   node = NodeIterator_next( it );
+        const String* tag  = Node_getTag( node );
+
+        if ( tag && String_equals( tag, copyright ) )
+        {
+            String* t = CreateLine( "", node );
+            ArrayOfString_push( self->copyrightLines, &t );
+        }
+        else
+        if ( tag &&String_equals( tag, license ) )
+        {
+            String* t = CreateLine( "", node );
+            ArrayOfString_push( self->licenseLines, &t );
+        }
+        else
+        if ( tag && String_equals( tag, class ) )
+        {
+            self->class = IxSourceClass_new( node );
+        }
+    }
+
+    String_free( &copyright );
+    String_free( &license   );
+    String_free( &class     );
+}
+~
+
+~c/ixcompiler.IxSourceUnit.c~
+String* CreateLine( const char* prefix, const Node* node )
+{
+    String* line = null;
+    {
+        StringBuffer* sb     = StringBuffer_new();
+        String*       export = Node_export( node );
+        {
+            StringBuffer_append( sb, prefix );
+            StringBuffer_append( sb, String_content( export ) );
+
+            line = String_new( StringBuffer_content( sb ) );
+        }
+        StringBuffer_free( &sb     );
+        String_free      ( &export );
+    }
+    return line;
 }
 ~

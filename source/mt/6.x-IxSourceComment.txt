@@ -1,0 +1,47 @@
+
+
+.. Ix Source Comment
+
+~!include/ixcompiler.IxSourceComment.h~
+#ifndef IXCOMPILER_IXSOURCECOMMENT_H
+#define IXCOMPILER_IXSOURCECOMMENT_H
+
+IxSourceComment* IxSourceComment_new();
+IxSourceComment* IxSourceComment_free( IxSourceComment** self );
+
+#endif
+~
+
+~!c/ixcompiler.IxSourceComment.c~
+#include "ixcompiler.h"
+#include "ixcompiler.IxSourceComment.h"
+#include "ixcompiler.Platform.h"
+
+struct _IxSourceComment
+{
+    String* keyword;
+    String* text;
+};
+~
+
+~c/ixcompiler.IxSourceComment.c~
+IxSourceComment* IxSourceComment_new()
+{
+    IxSourceComment* self = Platform_Alloc( sizeof( IxSourceComment ) );
+    if ( self )
+    {
+    }
+    return self;
+}
+~
+
+~c/ixcompiler.IxSourceComment.c~
+IxSourceComment* IxSourceComment_free( IxSourceComment** self )
+{
+    if ( *self )
+    {
+        Platform_Free( self );
+    }
+    return *self;
+}
+~

@@ -1,0 +1,54 @@
+
+.. Ix Source Method
+
+~!include/ixcompiler.IxSourceMethod.h~
+#ifndef IXCOMPILER_IXSOURCEMETHOD_H
+#define IXCOMPILER_IXSOURCEMETHOD_H
+
+#include "ixcompiler.h"
+
+IxSourceMethod* IxSourceMethod_new();
+IxSourceMethod* IxSourceMethod_free( IxSourceMethod** self );
+
+#endif
+~
+
+~!c/ixcompiler.IxSourceMethod.c~
+#include "ixcompiler.IxSourceMethod.h"
+#include "ixcompiler.Platform.h"
+
+struct _IxSourceMethod
+{
+    String*                   modifier;     //  public
+    String*                   methodName;   //  getSomething
+    ArrayOfIxSourceParameter* parameters;   //  ( name: Type*, size: int )
+    String*                   returnType;   //  String*
+    ArrayOfIxSourceStatement* statements;   //  ...
+};
+~
+
+~c/ixcompiler.IxSourceMethod.c~
+IxSourceMethod* IxSourceMethod_new()
+{
+    IxSourceMethod* self = Platform_Alloc( sizeof( IxSourceMethod ) );
+    if ( self )
+    {
+
+
+
+    }
+    return self;
+}
+~
+
+~c/ixcompiler.IxSourceMethod.c~
+IxSourceMethod* IxSourceMethod_free( IxSourceMethod** self )
+{
+    if ( *self )
+    {
+        Platform_Free( self );
+    }
+    return *self;
+}
+~
+

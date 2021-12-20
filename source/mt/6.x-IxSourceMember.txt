@@ -1,0 +1,91 @@
+
+.. Ix Source Member
+
+~!include/ixcompiler.IxSourceMember.h~
+#ifndef IXCOMPILER_IXSOURCEMEMBER_H
+#define IXCOMPILER_IXSOURCEMEMBER_H
+
+#include "ixcompiler.h"
+
+IxSourceMember* IxSourceMember_new( bool isInstance, String** name, String** type, String** defaultValue );
+IxSourceMember* IxSourceMember_free( IxSourceMember** self );
+
+bool          IxSourceMember_isInstance     ( const IxSourceMember* self );
+const String* IxSourceMember_getName        ( const IxSourceMember* self );
+const String* IxSourceMember_getType        ( const IxSourceMember* self );
+const String* IxSourceMember_getDefaultValue( const IxSourceMember* self );
+
+#endif
+~
+
+~!c/ixcompiler.IxSourceMember.c~
+#include "ixcompiler.IxSourceMember.h"
+#include "ixcompiler.Platform.h"
+#include "ixcompiler.String.h"
+#include "ixcompiler.Take.h"
+
+struct _IxSourceMember
+{
+    bool    isInstance;
+    String* name;
+    String* type;
+    String* defaultValue;
+};
+~
+
+~c/ixcompiler.IxSourceMember.c~
+IxSourceMember* IxSourceMember_new( bool isInstance, String** name, String** type, String** default_value )
+{
+    IxSourceMember* self = Platform_Alloc( sizeof( IxSourceMember ) );
+    if ( self )
+    {
+        self->isInstance   = isInstance;
+        self->name         = Take( name          );
+        self->type         = Take( type          );
+        self->defaultValue = Take( default_value );
+    }
+    return self;
+}
+~
+
+~c/ixcompiler.IxSourceMember.c~
+IxSourceMember* IxSourceMember_free( IxSourceMember** self )
+{
+    if ( *self )
+    {
+        String_free  ( &(*self)->name         );
+        String_free  ( &(*self)->type         );
+        String_free  ( &(*self)->defaultValue );
+        Platform_Free(    self                );
+    }
+    return *self;
+}
+~
+
+~c/ixcompiler.IxSourceMember.c~
+bool IxSourceMember_isInstance( const IxSourceMember* self )
+{
+    return self->isInstance;
+}
+~
+
+~c/ixcompiler.IxSourceMember.c~
+const String* IxSourceMember_getName( const IxSourceMember* self )
+{
+    return self->name;
+}
+~
+
+~c/ixcompiler.IxSourceMember.c~
+const String* IxSourceMember_getType( const IxSourceMember* self )
+{
+    return self->type;
+}
+~
+
+~c/ixcompiler.IxSourceMember.c~
+const String* IxSourceMember_getDefaultValue( const IxSourceMember* self )
+{
+    return self->defaultValue;
+}
+~

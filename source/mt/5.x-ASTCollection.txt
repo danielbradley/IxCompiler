@@ -10,6 +10,7 @@ ASTCollection* ASTCollection_free( ASTCollection** self            );
 void           ASTCollection_add ( ASTCollection*  self, AST** ast );
 
 int            ASTCollection_getLength( const ASTCollection* self );
+const AST*     ASTCollection_get      ( const ASTCollection* self, int index );
 
 #endif
 ~
@@ -70,5 +71,12 @@ void ASTCollection_add( ASTCollection* self, AST** ast )
 int ASTCollection_getLength( const ASTCollection* self )
 {
     return Array_getLength( self->ast_collection );
+}
+~
+
+~c/ixcompiler.ASTCollection.c~
+const AST* ASTCollection_get( const ASTCollection* self, int index )
+{
+    return Array_getObject( self->ast_collection, index );
 }
 ~

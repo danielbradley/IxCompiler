@@ -1,0 +1,25 @@
+
+.. Take
+
+~!include/ixcompiler.Take.h~
+#ifndef IXCOMPILER_TAKE_H
+#define IXCOMPILER_TAKE_H
+
+void* Take( void* giver );
+
+#endif
+~
+
+~!c/ixcompiler.Take.c~
+#include "ixcompiler.h"
+#include "ixcompiler.Take.h"
+
+void* Take( void* giver )
+{
+    void** _giver = (void**) giver;
+
+    void* keeper = *_giver; *_giver = null;
+
+    return keeper;
+}
+~

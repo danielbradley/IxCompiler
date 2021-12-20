@@ -1,0 +1,108 @@
+
+.. ArrayOfIxSourceMethod
+
+~!include/ixcompiler.ArrayOfIxSourceMethod.h~
+#ifndef IXCOMPILER_ARRAYOFIXSOURCEMETHOD_H
+#define IXCOMPILER_ARRAYOFIXSOURCEMETHOD_H
+
+#include "ixcompiler.h"
+
+ArrayOfIxSourceMethod* ArrayOfIxSourceMethod_new();
+
+ArrayOfIxSourceMethod* ArrayOfIxSourceMethod_free      (       ArrayOfIxSourceMethod** self );
+void                   ArrayOfIxSourceMethod_push      (       ArrayOfIxSourceMethod*  self, IxSourceMethod** object );
+IxSourceMethod*        ArrayOfIxSourceMethod_pop       (       ArrayOfIxSourceMethod*  self );
+IxSourceMethod*        ArrayOfIxSourceMethod_shift     (       ArrayOfIxSourceMethod*  self );
+void                   ArrayOfIxSourceMethod_unshift   (       ArrayOfIxSourceMethod*  self, IxSourceMethod** object );
+
+int                    ArrayOfIxSourceMethod_getLength ( const ArrayOfIxSourceMethod*  self            );
+const IxSourceMethod*  ArrayOfIxSourceMethod_getObject ( const ArrayOfIxSourceMethod*  self, int index );
+
+#endif
+~
+
+~!c/ixcompiler.ArrayOfIxSourceMethod.c~
+#include "ixcompiler.h"
+#include "ixcompiler.Array.h"
+#include "ixcompiler.ArrayOfIxSourceMethod.h"
+#include "ixcompiler.Platform.h"
+#include "ixcompiler.IxSourceMethod.h"
+
+struct _ArrayOfIxSourceMethod
+{
+    Array* array;
+};
+~
+
+~c/ixcompiler.ArrayOfIxSourceMethod.c~
+ArrayOfIxSourceMethod* ArrayOfIxSourceMethod_new()
+{
+    ArrayOfIxSourceMethod* self = Platform_Alloc( sizeof( ArrayOfIxSourceMethod ) );
+    if ( self )
+    {
+        self->array   = Array_new();
+    }
+
+    return self;
+}
+~
+
+~c/ixcompiler.ArrayOfIxSourceMethod.c~
+ArrayOfIxSourceMethod* ArrayOfIxSourceMethod_free( ArrayOfIxSourceMethod** self )
+{
+    if ( *self )
+    {
+        IxSourceMethod* tmp;
+        while ( (tmp = Array_pop( (*self)->array ) ) )
+        {
+            IxSourceMethod_free( &tmp );
+        }
+        Array_free   ( &(*self)->array );
+        Platform_Free(    self         );
+    }
+
+    return *self;
+}
+~
+
+~c/ixcompiler.ArrayOfIxSourceMethod.c~
+void ArrayOfIxSourceMethod_push( ArrayOfIxSourceMethod* self, IxSourceMethod** object )
+{
+    Array_push( self->array, (void**) object );
+}
+~
+
+~c/ixcompiler.ArrayOfIxSourceMethod.c~
+IxSourceMethod* ArrayOfIxSourceMethod_pop( ArrayOfIxSourceMethod* self )
+{
+    return (IxSourceMethod*) Array_pop( self->array );
+}
+~
+
+~c/ixcompiler.ArrayOfIxSourceMethod.c~
+IxSourceMethod* ArrayOfIxSourceMethod_shift( ArrayOfIxSourceMethod* self )
+{
+    return (IxSourceMethod*) Array_shift( self->array );
+}
+~
+
+~c/ixcompiler.ArrayOfIxSourceMethod.c~
+void ArrayOfIxSourceMethod_unshift( ArrayOfIxSourceMethod* self, IxSourceMethod** object )
+{
+    Array_unshift( self->array, (void**) object );
+}
+~
+
+~c/ixcompiler.ArrayOfIxSourceMethod.c~
+int ArrayOfIxSourceMethod_getLength( const ArrayOfIxSourceMethod* self )
+{
+    return Array_getLength( self->array );
+}
+~
+
+~c/ixcompiler.ArrayOfIxSourceMethod.c~
+const IxSourceMethod* ArrayOfIxSourceMethod_getObject( const ArrayOfIxSourceMethod* self, int index )
+{
+    return (const IxSourceMethod*) Array_getObject( self->array, index );
+}
+~

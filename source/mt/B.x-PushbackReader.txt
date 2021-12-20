@@ -40,7 +40,7 @@ PushbackReader* PushbackReader_new( const char* filepath )
 
         if ( File_exists( file ) )
         {
-            self->content = Platform_GetFileContents( filepath );
+            self->content = Platform_File_GetContents( filepath );
             self->length  = String_Length( self->content );
         }
         else

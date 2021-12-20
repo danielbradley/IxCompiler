@@ -5,11 +5,14 @@
 #ifndef IXCOMPILER_FILE_H
 #define IXCOMPILER_FILE_H
 
+#include "ixcompiler.h"
+
 File*       File_new        ( const char* filepath );
-File*       File_free       ( File**      self     );
-bool        File_canRead    ( File*       self     );
-const char* File_getFilepath( File*       self     );
-bool        File_exists     ( File*       self     );
+
+File*       File_free       (       File** self );
+bool        File_canRead    ( const File*  self );
+const char* File_getFilePath( const File*  self );
+bool        File_exists     ( const File*  self );
 
 #endif
 ~
@@ -60,21 +63,21 @@ File* File_free( File** self )
 ~
 
 ~c/ixcompiler.File.c~
-bool File_canRead( File* self )
+bool File_canRead( const File* self )
 {
     return self->canRead;
 }
 ~
 
 ~c/ixcompiler.File.c~
-const char* File_getFilepath( File* self )
+const char* File_getFilePath( const File* self )
 {
     return self->filepath;
 }
 ~
 
 ~c/ixcompiler.File.c~
-bool File_exists( File* self )
+bool File_exists( const File* self )
 {
     return self->exists;
 }

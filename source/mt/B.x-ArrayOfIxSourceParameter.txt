@@ -1,0 +1,108 @@
+
+.. ArrayOfIxSourceParameter
+
+~!include/ixcompiler.ArrayOfIxSourceParameter.h~
+#ifndef IXCOMPILER_ARRAYOFIXSOURCEPARAMETER_H
+#define IXCOMPILER_ARRAYOFIXSOURCEPARAMETER_H
+
+#include "ixcompiler.h"
+
+ArrayOfIxSourceParameter* ArrayOfIxSourceParameter_new();
+
+ArrayOfIxSourceParameter* ArrayOfIxSourceParameter_free      (       ArrayOfIxSourceParameter** self );
+void                      ArrayOfIxSourceParameter_push      (       ArrayOfIxSourceParameter*  self, IxSourceParameter** object );
+IxSourceParameter*        ArrayOfIxSourceParameter_pop       (       ArrayOfIxSourceParameter*  self );
+IxSourceParameter*        ArrayOfIxSourceParameter_shift     (       ArrayOfIxSourceParameter*  self );
+void                      ArrayOfIxSourceParameter_unshift   (       ArrayOfIxSourceParameter*  self, IxSourceParameter** object );
+
+int                       ArrayOfIxSourceParameter_getLength ( const ArrayOfIxSourceParameter*  self            );
+const IxSourceParameter*  ArrayOfIxSourceParameter_getObject ( const ArrayOfIxSourceParameter*  self, int index );
+
+#endif
+~
+
+~!c/ixcompiler.ArrayOfIxSourceParameter.c~
+#include "ixcompiler.h"
+#include "ixcompiler.Array.h"
+#include "ixcompiler.ArrayOfIxSourceParameter.h"
+#include "ixcompiler.Platform.h"
+#include "ixcompiler.IxSourceParameter.h"
+
+struct _ArrayOfIxSourceParameter
+{
+    Array* array;
+};
+~
+
+~c/ixcompiler.ArrayOfIxSourceParameter.c~
+ArrayOfIxSourceParameter* ArrayOfIxSourceParameter_new()
+{
+    ArrayOfIxSourceParameter* self = Platform_Alloc( sizeof( ArrayOfIxSourceParameter ) );
+    if ( self )
+    {
+        self->array   = Array_new();
+    }
+
+    return self;
+}
+~
+
+~c/ixcompiler.ArrayOfIxSourceParameter.c~
+ArrayOfIxSourceParameter* ArrayOfIxSourceParameter_free( ArrayOfIxSourceParameter** self )
+{
+    if ( *self )
+    {
+        IxSourceParameter* tmp;
+        while ( (tmp = Array_pop( (*self)->array ) ) )
+        {
+            IxSourceParameter_free( &tmp );
+        }
+        Array_free   ( &(*self)->array );
+        Platform_Free(    self         );
+    }
+
+    return *self;
+}
+~
+
+~c/ixcompiler.ArrayOfIxSourceParameter.c~
+void ArrayOfIxSourceParameter_push( ArrayOfIxSourceParameter* self, IxSourceParameter** object )
+{
+    Array_push( self->array, (void**) object );
+}
+~
+
+~c/ixcompiler.ArrayOfIxSourceParameter.c~
+IxSourceParameter* ArrayOfIxSourceParameter_pop( ArrayOfIxSourceParameter* self )
+{
+    return (IxSourceParameter*) Array_pop( self->array );
+}
+~
+
+~c/ixcompiler.ArrayOfIxSourceParameter.c~
+IxSourceParameter* ArrayOfIxSourceParameter_shift( ArrayOfIxSourceParameter* self )
+{
+    return (IxSourceParameter*) Array_shift( self->array );
+}
+~
+
+~c/ixcompiler.ArrayOfIxSourceParameter.c~
+void ArrayOfIxSourceParameter_unshift( ArrayOfIxSourceParameter* self, IxSourceParameter** object )
+{
+    Array_unshift( self->array, (void**) object );
+}
+~
+
+~c/ixcompiler.ArrayOfIxSourceParameter.c~
+int ArrayOfIxSourceParameter_getLength( const ArrayOfIxSourceParameter* self )
+{
+    return Array_getLength( self->array );
+}
+~
+
+~c/ixcompiler.ArrayOfIxSourceParameter.c~
+const IxSourceParameter* ArrayOfIxSourceParameter_getObject( const ArrayOfIxSourceParameter* self, int index )
+{
+    return (const IxSourceParameter*) Array_getObject( self->array, index );
+}
+~

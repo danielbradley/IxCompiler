@@ -11,30 +11,37 @@ Node* Node_new ( Token** token );
 Node* Node_free( Node**  self  );
 
 void  Node_setParent   ( Node* self, const Node* parent );
+void  Node_setTag      ( Node* self, const char* tag );
 void  Node_addChild    ( Node* self, Token** token );
 Node* Node_getLastChild( Node* self );
 
-const Token*  Node_getToken   ( const Node* self );
-bool          Node_hasChildren( const Node* self );
-NodeIterator* Node_iterator   ( const Node* self );
+const Token*  Node_getToken    ( const Node* self );
+const String* Node_getTag      ( const Node* self );
+
+bool          Node_hasChildren ( const Node* self );
+NodeIterator* Node_iterator    ( const Node* self );
+String*       Node_export      ( const Node* self );
 
 #endif
 ~
 
-
 ~!c/ixcompiler.Node.c~
 #include "ixcompiler.h"
 #include "ixcompiler.Array.h"
+#include "ixcompiler.EnumTokenType.h"
 #include "ixcompiler.Node.h"
 #include "ixcompiler.NodeIterator.h"
 #include "ixcompiler.Token.h"
 #include "ixcompiler.Platform.h"
+#include "ixcompiler.String.h"
+#include "ixcompiler.StringBuffer.h"
 
 struct _Node
 {
     Token*      token;
     const Node* parent;
     Array*      children;
+    String*     tag;
 };
 ~
 
@@ -64,8 +71,9 @@ Node* Node_free( Node** self )
         {
             Node_free( &node );
         }
-        Array_free( &(*self)->children );
-        
+        Array_free ( &(*self)->children );
+        String_free( &(*self)->tag      );
+
         (*self)->parent = null;
 
         Platform_Free( self );
@@ -81,6 +89,13 @@ void Node_setParent( Node* self, const Node* parent )
 ~
 
 ~c/ixcompiler.Node.c~
+void Node_setTag( Node* self, const char* tag )
+{
+    self->tag = String_new( tag );
+}
+~
+
+~c/ixcompiler.Node.c~
 void Node_addChild( Node* self, Token** token )
 {
     Node* child = Node_new( token );
@@ -90,9 +105,25 @@ void Node_addChild( Node* self, Token** token )
 ~
 
 ~c/ixcompiler.Node.c~
+Node* Node_getLastChild( Node* self )
+{
+    int last = Array_getLength( self->children ) - 1;
+
+    return (Node*) Array_getObject( self->children, last );
+}
+~
+
+~c/ixcompiler.Node.c~
 const Token* Node_getToken( const Node* self )
 {
     return self->token;
+}
+~
+
+~c/ixcompiler.Node.c~
+const String* Node_getTag( const Node* self )
+{
+    return self->tag;
 }
 ~
 
@@ -111,10 +142,24 @@ NodeIterator* Node_iterator( const Node* self )
 ~
 
 ~c/ixcompiler.Node.c~
-Node* Node_getLastChild( Node* self )
+String* Node_export( const Node* self )
 {
-    int last = Array_getLength( self->children ) - 1;
+    String* ret = null;
+    {
+        StringBuffer* sb = StringBuffer_new();
+        NodeIterator* it = Node_iterator( self );
+        while ( NodeIterator_hasNext( it ) )
+        {
+            const Node*   node  = NodeIterator_next( it );
+            const Token*  token = Node_getToken( node );
 
-    return (Node*) Array_getObject( self->children, last );
+            if ( NEWLINE == Token_getTokenType( token ) ) break;
+
+            StringBuffer_append( sb, Token_getContent( token ) );
+        }
+        ret = String_new( StringBuffer_content( sb ) );
+        StringBuffer_free( &sb );
+    }
+    return ret;
 }
 ~

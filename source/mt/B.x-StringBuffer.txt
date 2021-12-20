@@ -8,6 +8,9 @@ StringBuffer* StringBuffer_new        ();
 StringBuffer* StringBuffer_free       ( StringBuffer** self                     );
 StringBuffer* StringBuffer_append     ( StringBuffer*  self, const char* suffix );
 StringBuffer* StringBuffer_append_char( StringBuffer*  self, char        ch     );
+StringBuffer* StringBuffer_appendLine ( StringBuffer*  self, char* prefix, String* string );
+
+
 const char*   StringBuffer_content    ( StringBuffer*  self                     );
 bool          StringBuffer_isEmpty    ( StringBuffer*  self                     );
 
@@ -74,6 +77,21 @@ StringBuffer* StringBuffer_append_char( StringBuffer* self, char ch )
     char suffix[2] = { ch , '\0' };
 
     return StringBuffer_append( self, suffix );
+}
+~
+
+~c/ixcompiler.StringBuffer.c~
+StringBuffer* StringBuffer_appendLine ( StringBuffer*  self, char* prefix, String* optional_string )
+{
+    StringBuffer_append( self, prefix );
+    StringBuffer_append( self, " "    );
+
+    if ( optional_string )
+    {
+        StringBuffer_append( self, String_content( optional_string ) );
+        String_free( &optional_string );
+    }
+    StringBuffer_append( self, "\n" );
 }
 ~
 

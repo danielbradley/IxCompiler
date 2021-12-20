@@ -5,10 +5,13 @@
 #ifndef IXCOMPILER_PATH_H
 #define IXCOMPILER_PATH_H
 
-Path* Path_new     ( const char* target );
-Path* Path_free    ( Path** self )       ;
-bool  Path_exists  ( Path* self )        ;
-bool  Path_canWrite( Path* self )        ;
+Path* Path_new( const char* target );
+
+Path*       Path_free       (       Path** self );
+bool        Path_exists     ( const Path*  self );
+bool        Path_canWrite   ( const Path*  self );
+const char* Path_getFullPath( const Path*  self );
+Path*       Path_getParent  ( const Path*  self );
 
 #endif
 ~
@@ -18,6 +21,7 @@ bool  Path_canWrite( Path* self )        ;
 #include "ixcompiler.h"
 #include "ixcompiler.Path.h"
 #include "ixcompiler.Platform.h"
+#include "ixcompiler.String.h"
 
 struct _Path
 {
@@ -53,15 +57,50 @@ Path* Path_free( Path** self )
 ~
 
 ~c/ixcompiler.Path.c~
-bool Path_exists( Path* self )
+bool Path_exists( const Path* self )
 {
     return self->exists;
 }
 ~
 
 ~c/ixcompiler.Path.c~
-bool Path_canWrite( Path* self )
+bool Path_canWrite( const Path* self )
 {
     return self->canWrite;
+}
+~
+
+~c/ixcompiler.Path.c~
+const char* Path_getFullPath( const Path* self )
+{
+    return self->path;
+}
+~
+
+~c/ixcompiler.Path.c~
+Path* Path_getParent( const Path* self )
+{
+    Path* ret  = null;
+    char* path = String_Copy( Path_getFullPath( self ) );
+    int   n    = String_Length( path ) - 1;
+
+    if ( '/' == path[n] )
+    {
+        path[n] = '\0';
+        n--;
+    }
+
+    while ( 0 <= n )
+    {
+        if ( '/' == path[n] ) break;
+        
+        path[n--] = '\0';
+    }
+
+    ret = Path_new( path );
+
+    Platform_Free( &path );
+
+    return ret;
 }
 ~

@@ -5,19 +5,22 @@
 #ifndef IXCOMPILER_STRING_H
 #define IXCOMPILER_STRING_H
 
-String*     String_new    ( const char* content );
-String*     String_free   ( String** self );
+String*        String_new    ( const char* content );
 
-const char* String_content( const String* self );
-int         String_length ( const String* self );
-String*     String_copy   ( const String* self );
-String*     String_cat    ( const String* self, const String* other );
-bool        String_equals ( const String* self, const String* other );
+String*        String_free       (       String** self );
+const char*    String_content    ( const String*  self );
+int            String_getLength  ( const String*  self );
+String*        String_copy       ( const String*  self );
+String*        String_cat        ( const String*  self, const String* other );
+bool           String_equals     ( const String*  self, const String* other );
+ArrayOfString* String_split      ( const String*  self, char separator      );
+String*        String_toUpperCase( const String*  self );
+String*        String_replace    ( const String*  self, char ch, char with );
 
-char* String_Cat   ( const char* string1, const char* string2 );
-bool  String_Equals( const char* string1, const char* string2 );
-int   String_Length( const char* s );
-char* String_Copy  ( const char* s );
+char*          String_Cat   ( const char* string1, const char* string2 );
+bool           String_Equals( const char* string1, const char* string2 );
+int            String_Length( const char* s );
+char*          String_Copy  ( const char* s );
 
 #endif
 ~
@@ -25,8 +28,10 @@ char* String_Copy  ( const char* s );
 ~!c/ixcompiler.String.c~
 #include <string.h>
 #include "ixcompiler.h"
+#include "ixcompiler.ArrayOfString.h"
 #include "ixcompiler.Platform.h"
 #include "ixcompiler.String.h"
+#include "ixcompiler.StringBuffer.h"
 
 struct _String
 {
@@ -68,7 +73,7 @@ const char* String_content( const String* self )
 ~
 
 ~c/ixcompiler.String.c~
-int String_length( const String* self )
+int String_getLength( const String* self )
 {
     return self->length;
 }
@@ -100,9 +105,85 @@ bool String_equals( const String* self, const String* other )
 ~
 
 ~c/ixcompiler.String.c~
+ArrayOfString* String_split( const String* self, char separator )
+{
+    ArrayOfString* strings = ArrayOfString_new();
+    {
+        StringBuffer* sb      = StringBuffer_new();
+        const char*   content = String_content( self );
+        int           n       = String_getLength( self );
+
+        for ( int i=0; i < n; i++ )
+        {
+            if ( content[i] == separator )
+            {
+                if ( !StringBuffer_isEmpty( sb ) )
+                {
+                    String* sbc = String_new( StringBuffer_content( sb ) );
+                    ArrayOfString_push( strings, &sbc );
+                    StringBuffer_free( &sb );
+                    sb = StringBuffer_new();
+                }
+            }
+            else
+            {
+                StringBuffer_append_char( sb, content[i] );
+            }
+        }
+
+        if ( !StringBuffer_isEmpty( sb ) )
+        {
+            String* sbc = String_new( StringBuffer_content( sb ) );
+            ArrayOfString_push( strings, &sbc );
+        }
+        StringBuffer_free( &sb );
+    }
+    return strings;
+}
 ~
 
 ~c/ixcompiler.String.c~
+String* String_toUpperCase( const String* self )
+{
+    String* ret = null;
+    {
+        char* buffer = String_Copy( self->content );
+        int   n      = self->length;
+
+        for ( int i=0; i < n; i++ )
+        {
+            int ch = buffer[i];
+
+            //    'a'                 'z'
+            if ( (97 <= ch) && (ch <= 122) )
+            {
+                buffer[i] = ch - 32;
+            }
+        }
+        ret = String_new( buffer );
+        Platform_Free( &buffer );
+    }
+    return ret;
+}
+~
+
+~c/ixcompiler.String.c~
+String* String_replace( const String* self, char ch, char with )
+{
+    String* ret = null;
+    {
+        char* buffer = String_Copy( self->content );
+        int   n      = self->length;
+
+        for ( int i=0; i < n; i++ )
+        {
+            if ( ch == buffer[i] ) buffer[i] = with;
+        }
+        ret = String_new( buffer );
+        Platform_Free( &buffer );
+    }
+    return ret;
+}
 ~
 
 ~c/ixcompiler.String.c~
@@ -162,4 +243,3 @@ int String_Length( const char* s )
     return strlen( s );
 }
 ~
-

@@ -5,6 +5,8 @@
 #ifndef IXCOMPILER_ENUMTOKENTYPE_H
 #define IXCOMPILER_ENUMTOKENTYPE_H
 
+#include "ixcompiler.h"
+
 enum _EnumTokenType
 {
 	UNKNOWN_TYPE,
@@ -94,8 +96,189 @@ enum _EnumTokenType
 	QUOTE,
 	ESCAPED,
 	OTHER
-
 };
 
+const char* EnumTokenType_asString( EnumTokenType type );
+
 #endif
+~
+
+~!c/ixcompiler.EnumTokenType.c~
+#include "ixcompiler.EnumTokenType.h"
+~
+
+~c/ixcompiler.EnumTokenType.c~
+const char* EnumTokenType_asString( EnumTokenType type )
+{
+    switch ( type )
+    {
+	case UNKNOWN_TYPE:
+        return "UNKNOWN_TYPE";
+
+    case UNKNOWN_WHITESPACE:
+        return "UNKNOWN_WHITESPACE";
+
+    case UNKNOWN_OPEN:
+        return "UNKNOWN_OPEN";
+
+    case UNKNOWN_CLOSE:
+        return "UNKNOWN_CLOSE";
+
+    //  Whitespace
+    case SPACE:
+        return "SPACE";
+    case TAB:
+        return "TAB";
+    case NEWLINE:
+        return "NEWLINE";
+
+    //  Open
+    case STARTBLOCK:
+        return "STARTBLOCK";
+    case STARTEXPRESSION:
+        return "STARTEXPRESSION";
+    case STARTSUBSCRIPT:
+        return "STARTSUBSCRIPT";
+    case STARTTAG:
+        return "STARTTAG";
+
+    //  Close
+    case ENDBLOCK:
+        return "ENDBLOCK";
+    case ENDEXPRESSION:
+        return "ENDEXPRESSION";
+    case ENDSUBSCRIPT:
+        return "ENDSUBSCRIPT";
+    case ENDTAG:
+        return "ENDTAG";
+
+    //  Symbolic
+    case OPERATOR:
+        return "OPERATOR";
+    case ASSIGNMENTOP:
+        return "ASSIGNMENTOP";
+    case PREFIXOP:
+        return "PREFIXOP";
+    case INFIXOP:
+        return "INFIXOP";
+    case POSTFIXOP:
+        return "POSTFIXOP";
+    case PREINFIXOP:
+        return "PREINFIXOP";
+    case PREPOSTFIXOP:
+        return "PREPOSTFIXOP";
+    case STOP:
+        return "STOP";
+    case LINECOMMENT:
+        return "LINECOMMENT";
+    case COMMENT:
+        return "COMMENT";
+
+    //  Words
+	case COPYRIGHT:
+        return "COPYRIGHT";
+	case LICENSE:
+        return "LICENSE";
+
+    //  Composite
+	case WORD:
+        return "WORD";
+	case FILEPATH:
+        return "FILEPATH";
+	case PACKAGE:
+        return "PACKAGE";
+	case IMPORT:
+        return "IMPORT";
+	case INCLUDE:
+        return "INCLUDE";
+	case CLASS:
+        return "CLASS";
+	case CLASSNAME:
+        return "CLASSNAME";
+	case INTERFACE:
+        return "INTERFACE";
+	case ENUM:
+        return "ENUM";
+	case ENUMNAME:
+        return "ENUMNAME";
+	case GENERIC:
+        return "GENERIC";
+	case ANNOTATION:
+        return "ANNOTATION";
+	case IMETHOD:
+        return "IMETHOD";
+	case METHOD:
+        return "METHOD";
+	case BLOCK:
+        return "BLOCK";
+	case MEMBER:
+        return "MEMBER";
+	case MEMBERNAME:
+        return "MEMBERNAME";
+	case EXPRESSION:
+        return "EXPRESSION";
+	case CLAUSE:
+        return "CLAUSE";
+    case PARAMETERS:
+        return "PARAMETERS";
+	case PARAMETER:
+        return "PARAMETER";
+	case ARGUMENTS:
+        return "ARGUMENTS";
+	case ARGUMENT:
+        return "ARGUMENT";
+	case STATEMENT:
+        return "STATEMENT";
+	case DECLARATION:
+        return "DECLARATION";
+	case JAVADOC:
+        return "JAVADOC";
+	case BLANKLINE:
+        return "BLANKLINE";
+	case TOKEN:
+        return "TOKEN";
+	case SYMBOL:
+        return "SYMBOL";
+	case KEYWORD:
+        return "KEYWORD";
+	case MODIFIER:
+        return "MODIFIER";
+	case PRIMITIVE:
+        return "PRIMITIVE";
+	case TYPE:
+        return "TYPE";
+	case METHODNAME:
+        return "METHODNAME";
+	case VARIABLE:
+        return "VARIABLE";
+	case NAME:
+        return "NAME";
+	case METHODCALL:
+        return "METHODCALL";
+	case CONSTRUCTOR:
+        return "CONSTRUCTOR";
+	case SELECTOR:
+        return "SELECTOR";
+	case FLOAT:
+        return "FLOAT";
+	case INTEGER:
+        return "INTEGER";
+	case NUMBER:
+        return "NUMBER";
+	case HEX:
+        return "HEX";
+	case OCTAL:
+        return "OCTAL";
+	case DOUBLEQUOTE:
+        return "DOUBLEQUOTE";
+	case QUOTE:
+        return "QUOTE";
+	case ESCAPED:
+        return "ESCAPED";
+	case OTHER:
+        return "OTHER";
+    default:
+        return "???";
+    }
+}
 ~

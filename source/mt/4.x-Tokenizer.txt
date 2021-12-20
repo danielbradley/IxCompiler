@@ -6,9 +6,11 @@
 #define IXCOMPILER_TOKENIZER_H
 
 Tokenizer* Tokenizer_new          ( File**      file );
-Tokenizer* Tokenizer_free         ( Tokenizer** self );
-Token*     Tokenizer_nextToken    ( Tokenizer*  self );
-bool       Tokenizer_hasMoreTokens( Tokenizer*  self ); 
+
+Tokenizer*  Tokenizer_free         (       Tokenizer** self );
+Token*      Tokenizer_nextToken    (       Tokenizer*  self );
+bool        Tokenizer_hasMoreTokens( const Tokenizer*  self );
+const File* Tokenizer_getFile      ( const Tokenizer*  self ); 
 
 #endif
 ~
@@ -46,7 +48,7 @@ Tokenizer* Tokenizer_new( File** file )
     if ( self )
     {
         self->file   = *file; *file = null;
-        self->reader = PushbackReader_new( File_getFilepath( self->file ) );
+        self->reader = PushbackReader_new( File_getFilePath( self->file ) );
         self->queue  = Queue_new();
 
         primeQueue( self );
@@ -97,9 +99,16 @@ Token* Tokenizer_nextToken( Tokenizer* self )
 ~
 
 ~c/ixcompiler.Tokenizer.c~
-bool Tokenizer_hasMoreTokens( Tokenizer* self )
+bool Tokenizer_hasMoreTokens( const Tokenizer* self )
 {
     return (Queue_getLength( self->queue ) > 0);
+}
+~
+
+~c/ixcompiler.Tokenizer.c~
+const File* Tokenizer_getFile( const Tokenizer* self )
+{
+    return self->file;
 }
 ~
 

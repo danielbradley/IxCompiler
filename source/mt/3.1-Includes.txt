@@ -47,29 +47,46 @@
 #define FAILED 0
 #endif
 
-typedef struct _Arguments              Arguments;
-typedef struct _Array                  Array;
-typedef struct _AST                    AST;
-typedef struct _ASTCollection          ASTCollection;
-typedef enum   _EnumTokenGroup         EnumTokenGroup;
-typedef enum   _EnumTokenType          EnumTokenType;
-typedef struct _File                   File;
-typedef struct _FilesIterator          FilesIterator;
-typedef struct _Generator              Generator;
-typedef struct _IxParser               IxParser;
-typedef struct _IxSourceFile           IxSourceFile;
-typedef struct _IxSourceFileCollection IxSourceFileCollection;
-typedef struct _Node                   Node;
-typedef struct _NodeIterator           NodeIterator;
-typedef struct _Path                   Path;
-typedef struct _PushbackReader         PushbackReader;
-typedef struct _Queue                  Queue;
-typedef struct _String                 String;
-typedef struct _StringBuffer           StringBuffer;
-typedef struct _Token                  Token;
-typedef struct _TokenGroup             TokenGroup;
-typedef struct _Tokenizer              Tokenizer;
-typedef struct _Tree                   Tree;
+typedef struct _Arguments                       Arguments;
+typedef struct _Array                           Array;
+typedef struct _ArrayOfIxSourceFunction         ArrayOfIxSourceFunction;
+typedef struct _ArrayOfIxSourceMethod           ArrayOfIxSourceMethod;
+typedef struct _ArrayOfIxSourceParameter        ArrayOfIxSourceParameter;
+typedef struct _ArrayOfIxSourceStatement        ArrayOfIxSourceStatement;
+typedef struct _ArrayOfString                   ArrayOfString;
+typedef struct _AST                             AST;
+typedef struct _ASTCollection                   ASTCollection;
+typedef enum   _EnumTokenGroup                  EnumTokenGroup;
+typedef enum   _EnumTokenType                   EnumTokenType;
+typedef struct _File                            File;
+typedef struct _FilesIterator                   FilesIterator;
+typedef struct _Generator                       Generator;
+typedef struct _IxParser                        IxParser;
+typedef struct _IxSourceClass                   IxSourceClass;
+typedef struct _IxSourceComment                 IxSourceComment;
+typedef struct _IxSourceFunction                IxSourceFunction;
+typedef struct _IxSourceHeader                  IxSourceHeader;
+typedef struct _IxSourceInterface               IxSourceInterface;
+typedef struct _IxSourceMember                  IxSourceMember;
+typedef struct _IxSourceMethod                  IxSourceMethod;
+typedef struct _IxSourceParameter               IxSourceParameter;
+typedef struct _IxSourceSignature               IxSourceSignature;
+typedef struct _IxSourceStatement               IxSourceStatement;
+typedef struct _IxSourceUnit                    IxSourceUnit;
+typedef struct _IxSourceUnitCollection          IxSourceUnitCollection;
+typedef struct _Node                            Node;
+typedef struct _NodeIterator                    NodeIterator;
+typedef struct _Path                            Path;
+typedef struct _PushbackReader                  PushbackReader;
+typedef struct _Queue                           Queue;
+typedef struct _String                          String;
+typedef struct _StringBuffer                    StringBuffer;
+typedef struct _Token                           Token;
+typedef struct _TokenGroup                      TokenGroup;
+typedef struct _Tokenizer                       Tokenizer;
+typedef struct _Tree                            Tree;
+
+typedef int(*GeneratorFn)( const IxSourceUnitCollection*, const Path* );
 
 #endif
 ~

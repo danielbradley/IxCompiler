@@ -69,6 +69,8 @@ static void PrintTree( const Node* node, int indent )
 
     if ( token )
     {
+        const String* tag = null;
+
         EnumTokenGroup token_group = TokenGroup_getGroupType( Token_getTokenGroup( token ) );
         switch( token_group )
         {
@@ -79,6 +81,8 @@ static void PrintTree( const Node* node, int indent )
             {
                 fprintf( stdout, "\t" );
             }
+            tag = Node_getTag( node );
+            if ( tag ) fprintf( stdout, "[%s] ", String_content( tag ) );
             Token_print( token, stdout );
             fprintf( stdout, "\n" );
         }

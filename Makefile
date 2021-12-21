@@ -1,5 +1,5 @@
 
-VERSION=010
+VERSION=011
 
 PLATFORM=posix
 CC=cc
@@ -23,11 +23,11 @@ doco: $(MAX2MARKDOWN)
 
 test:
 	mkdir -p _output
-	_bin/ixc --output-dir _output --target-language C testdata/ix.base/StringBuffer.ix
+	_bin/ixc --output-dir _output --target-language C testdata/ix.base/*.ix
 
 debug:
 	mkdir -p _output
-	gdb --args _bin/ixc --output-dir _output --target-language C testdata/ix.base/StringBuffer.ix
+	gdb --args _bin/ixc --output-dir _output --target-language C testdata/ix.base/*.ix
 
 clean:
 	make -C libexec/quasi clean

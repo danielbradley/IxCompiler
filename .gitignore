@@ -1,5 +1,6 @@
 _bin
 _gen
 _src
+_output
 libexec/Max2Markdown
 .vscode

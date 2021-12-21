@@ -1,0 +1,15 @@
+
+Copyright 2021, Daniel Bradley. All rights reserved.
+Copyright 2022, Daniel Bradley. All rights reserved.
+
+License: LGPLv2.
+
+public class
+{
+    %objectCount: int
+}
+
+public class GetObjectCount()
+{
+    return %objectCount;
+}

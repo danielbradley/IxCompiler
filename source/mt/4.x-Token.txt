@@ -35,7 +35,7 @@ struct _Token
     int           length;
     TokenGroup*   group;
     EnumTokenType type;
-
+    const char*   typeName;
 };
 
 EnumTokenType   Token_DetermineTokenType       ( TokenGroup* group, const char* content );
@@ -53,11 +53,12 @@ Token* Token_new( Tokenizer* t, const char* content, TokenGroup* aGroup )
 
     if ( self )
     {
-        self->t       = t;
-        self->content = String_Copy  ( content );
-        self->length  = String_Length( content );
-        self->group   = TokenGroup_copy( aGroup );
-        self->type    = Token_DetermineTokenType( aGroup, content );
+        self->t        = t;
+        self->content  = String_Copy  ( content );
+        self->length   = String_Length( content );
+        self->group    = TokenGroup_copy( aGroup );
+        self->type     = Token_DetermineTokenType( aGroup, content );
+        self->typeName = EnumTokenType_asString( self->type );
     }
     return self;
 }
@@ -164,7 +165,8 @@ void Token_print( const Token* self, void* stream )
     default:
         Term_Colour( stream, COLOR_NORMAL );
     }
-    fprintf( stream, "%s", self->content );
+    //fprintf( stream, "%s", self->content );
+    fprintf( stream, "%s (%s)", self->content, self->typeName );
     Term_Colour( stream, COLOR_NORMAL );
 }
 ~

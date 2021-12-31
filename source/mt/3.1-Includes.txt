@@ -47,9 +47,14 @@
 #define FAILED 0
 #endif
 
+#ifndef DISPOSABLE
+#define DISPOSABLE
+#endif
+
 typedef struct _Arguments                       Arguments;
 typedef struct _Array                           Array;
 typedef struct _ArrayOfIxSourceFunction         ArrayOfIxSourceFunction;
+typedef struct _ArrayOfIxSourceMember           ArrayOfIxSourceMember;
 typedef struct _ArrayOfIxSourceMethod           ArrayOfIxSourceMethod;
 typedef struct _ArrayOfIxSourceParameter        ArrayOfIxSourceParameter;
 typedef struct _ArrayOfIxSourceStatement        ArrayOfIxSourceStatement;

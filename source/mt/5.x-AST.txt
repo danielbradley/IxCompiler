@@ -292,7 +292,7 @@ static void ParseBlock( Node* parent, Tokenizer* tokenizer )
 
         if ( (token_group == CLOSE)    && (token_type == ENDBLOCK) ) break;
         else
-        if ( (token_group == SYMBOLIC) && (token_type == SYMBOL) )
+        if ( (token_group == SYMBOLIC) && ((token_type == SYMBOL) || (token_type == INFIXOP)) )
         {
             switch ( ch )
             {

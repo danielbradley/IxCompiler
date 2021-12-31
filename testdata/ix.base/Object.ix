@@ -6,10 +6,10 @@ License: LGPLv2.
 
 public class
 {
-    %objectCount: int
+    @objectCount: int
 }
 
-public class GetObjectCount()
+public GetObjectCount(): int
 {
     return %objectCount;
 }

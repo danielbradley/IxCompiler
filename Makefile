@@ -1,5 +1,5 @@
 
-VERSION=011
+VERSION=012
 
 PLATFORM=posix
 CC=cc

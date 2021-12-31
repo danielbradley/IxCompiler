@@ -7,10 +7,11 @@
 
 TokenGroup*    TokenGroup_new          ( char ch );
 TokenGroup*    TokenGroup_free         ( TokenGroup** self );
-EnumTokenGroup TokenGroup_getGroupType ( TokenGroup*  self );
-EnumTokenGroup TokenGroup_DetermineType( char ch );
-bool           TokenGroup_matches      ( TokenGroup* self, char ch );
+
+EnumTokenGroup TokenGroup_getGroupType ( const TokenGroup* self );
+bool           TokenGroup_matches      ( const TokenGroup* self, char ch );
 TokenGroup*    TokenGroup_copy         ( const TokenGroup* self );
+EnumTokenGroup TokenGroup_DetermineType( char ch );
 
 #endif
 ~
@@ -58,7 +59,7 @@ TokenGroup* TokenGroup_free( TokenGroup** self )
 ~
 
 ~c/ixcompiler.TokenGroup.c~
-EnumTokenGroup TokenGroup_getGroupType ( TokenGroup*  self )
+EnumTokenGroup TokenGroup_getGroupType ( const TokenGroup*  self )
 {
     return self->groupType;
 }
@@ -149,7 +150,7 @@ EnumTokenGroup TokenGroup_DetermineType( char ch )
 ~
 
 ~c/ixcompiler.TokenGroup.c~
-bool TokenGroup_matches( TokenGroup* self, char ch )
+bool TokenGroup_matches( const TokenGroup* self, char ch )
 {
     if ( '\0' == ch )
     {

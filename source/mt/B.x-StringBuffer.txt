@@ -4,15 +4,16 @@
 #ifndef IXCOMPILER_STRINGBUFFER_H
 #define IXCOMPILER_STRINGBUFFER_H
 
-StringBuffer* StringBuffer_new        ();
-StringBuffer* StringBuffer_free       ( StringBuffer** self                     );
-StringBuffer* StringBuffer_append     ( StringBuffer*  self, const char* suffix );
-StringBuffer* StringBuffer_append_char( StringBuffer*  self, char        ch     );
-StringBuffer* StringBuffer_appendLine ( StringBuffer*  self, char* prefix, String* string );
+StringBuffer* StringBuffer_new              ();
+StringBuffer* StringBuffer_free             ( StringBuffer** self                     );
+StringBuffer* StringBuffer_append           ( StringBuffer*  self, const char* suffix );
+StringBuffer* StringBuffer_append_char      ( StringBuffer*  self, char        ch     );
+StringBuffer* StringBuffer_appendLine       ( StringBuffer*  self, char* prefix, DISPOSABLE String* string );
 
 
-const char*   StringBuffer_content    ( StringBuffer*  self                     );
-bool          StringBuffer_isEmpty    ( StringBuffer*  self                     );
+const char*   StringBuffer_content    ( const StringBuffer*  self );
+bool          StringBuffer_isEmpty    ( const StringBuffer*  self );
+String*       StringBuffer_toString   ( const StringBuffer*  self );
 
 #endif
 ~
@@ -29,6 +30,8 @@ struct _StringBuffer
     int   length;
 
 };
+
+String* StringBuffer_nullString = null;
 ~
 
 ~c/ixcompiler.StringBuffer.c~
@@ -81,10 +84,13 @@ StringBuffer* StringBuffer_append_char( StringBuffer* self, char ch )
 ~
 
 ~c/ixcompiler.StringBuffer.c~
-StringBuffer* StringBuffer_appendLine ( StringBuffer*  self, char* prefix, String* optional_string )
+StringBuffer* StringBuffer_appendLine ( StringBuffer*  self, char* prefix, DISPOSABLE String* optional_string )
 {
-    StringBuffer_append( self, prefix );
-    StringBuffer_append( self, " "    );
+    if ( String_Length( prefix ) )
+    {
+        StringBuffer_append( self, prefix );
+        StringBuffer_append( self, " "    );
+    }
 
     if ( optional_string )
     {
@@ -96,15 +102,22 @@ StringBuffer* StringBuffer_appendLine ( StringBuffer*  self, char* prefix, Strin
 ~
 
 ~c/ixcompiler.StringBuffer.c~
-const char* StringBuffer_content( StringBuffer* self )
+const char* StringBuffer_content( const StringBuffer* self )
 {
     return self->content;
 }
 ~
 
 ~c/ixcompiler.StringBuffer.c~
-bool StringBuffer_isEmpty( StringBuffer* self )
+bool StringBuffer_isEmpty( const StringBuffer* self )
 {
     return (0 == String_Length( self->content ));
+}
+~
+
+~c/ixcompiler.StringBuffer.c~
+String* StringBuffer_toString( const StringBuffer* self )
+{
+    return String_new( StringBuffer_content( self ) );
 }
 ~

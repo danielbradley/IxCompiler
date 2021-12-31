@@ -5,10 +5,11 @@
 #ifndef IXCOMPILER_NODEITERATOR_H
 #define IXCOMPILER_NODEITERATOR_H
 
-NodeIterator* NodeIterator_new    ( const Array*  nodes );
-NodeIterator* NodeIterator_free   ( NodeIterator** self );
-bool          NodeIterator_hasNext( NodeIterator*  self );
-const Node*   NodeIterator_next   ( NodeIterator*  self );
+NodeIterator* NodeIterator_new             ( const Array*  nodes );
+NodeIterator* NodeIterator_free            ( NodeIterator** self );
+bool          NodeIterator_hasNext         ( NodeIterator*  self );
+bool          NodeIterator_hasNonWhitespace( NodeIterator*  self );
+const Node*   NodeIterator_next            ( NodeIterator*  self );
 
 #endif
 ~
@@ -16,8 +17,13 @@ const Node*   NodeIterator_next   ( NodeIterator*  self );
 ~!c/ixcompiler.NodeIterator.c~
 #include "ixcompiler.h"
 #include "ixcompiler.Array.h"
+#include "ixcompiler.EnumTokenType.h"
+#include "ixcompiler.EnumTokenGroup.h"
+#include "ixcompiler.Node.h"
 #include "ixcompiler.NodeIterator.h"
 #include "ixcompiler.Platform.h"
+#include "ixcompiler.Token.h"
+#include "ixcompiler.TokenGroup.h"
 
 struct _NodeIterator
 {
@@ -57,6 +63,45 @@ NodeIterator* NodeIterator_free( NodeIterator** self )
 bool NodeIterator_hasNext( NodeIterator* self )
 {
     return (self->next < Array_getLength( self->nodes ));
+}
+~
+
+~c/ixcompiler.NodeIterator.c~
+bool NodeIterator_hasNonWhitespace( NodeIterator* self )
+{
+    bool has_next_nws = FALSE;
+
+    while ( NodeIterator_hasNext( self ) )
+    {
+        const Node*   node  = Array_getObject( self->nodes, self->next );
+        const Token*  token = Node_getToken( node );
+        EnumTokenType type  = Token_getTokenType( token );
+
+        if ( LINECOMMENT == type )
+        {
+            while ( NodeIterator_hasNext( self ) )
+            {
+                const Token* token = Node_getToken( NodeIterator_next( self ) );
+
+                if ( Token_getTokenType( token ) == NEWLINE )
+                {
+                    break;
+                }
+            }
+        }
+        else
+        if ( WHITESPACE != TokenGroup_getGroupType( Token_getTokenGroup( token ) ) )
+        {
+            has_next_nws = TRUE;
+            break;
+        }
+        else
+        {
+            NodeIterator_next( self );
+        }
+    }
+
+    return has_next_nws;
 }
 ~
 

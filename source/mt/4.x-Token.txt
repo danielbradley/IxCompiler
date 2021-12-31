@@ -7,12 +7,12 @@
 
 #include "ixcompiler.h"
 
-Token*        Token_new                      ( Tokenizer* t, const char* content, TokenGroup* aGroup );
-Token*        Token_free                     ( Token**      self );
-const char*   Token_getContent               ( const Token* self );
-TokenGroup*   Token_getTokenGroup            ( const Token* self );
-EnumTokenType Token_getTokenType             ( const Token* self );
-void          Token_print                    ( const Token* self, void* stream );
+Token*            Token_new                      ( Tokenizer* t, const char* content, TokenGroup* aGroup );
+Token*            Token_free                     ( Token**      self );
+const char*       Token_getContent               ( const Token* self );
+const TokenGroup* Token_getTokenGroup            ( const Token* self );
+EnumTokenType     Token_getTokenType             ( const Token* self );
+void              Token_print                    ( const Token* self, void* stream );
 
 #endif
 ~
@@ -89,7 +89,7 @@ const char* Token_getContent( const Token* self )
 ~
 
 ~c/ixcompiler.Token.c~
-TokenGroup* Token_getTokenGroup( const Token* self )
+const TokenGroup* Token_getTokenGroup( const Token* self )
 {
     return self->group;
 }

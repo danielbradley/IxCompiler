@@ -14,10 +14,13 @@ int Generator_FunctionForC( const IxSourceUnitCollection* source_units, const Pa
 
 ~!c/ixcompiler.GeneratorForC.c~
 #include <stdio.h>
+#include "ixcompiler.ArrayOfIxSourceMember.h"
 #include "ixcompiler.ArrayOfString.h"
 #include "ixcompiler.Console.h"
 #include "ixcompiler.File.h"
 #include "ixcompiler.GeneratorForC.h"
+#include "ixcompiler.IxSourceClass.h"
+#include "ixcompiler.IxSourceMember.h"
 #include "ixcompiler.IxSourceUnit.h"
 #include "ixcompiler.IxSourceUnitCollection.h"
 #include "ixcompiler.Path.h"
@@ -32,6 +35,13 @@ static void    GenerateAndWriteHeaderFile( const IxSourceUnitCollection* sourceU
 static String* GenerateHeaderFile        ( const IxSourceUnitCollection* sourceUnits );
 static String* GenerateIfDef             ( const IxSourceUnit*           sourceUnit  );
 static String* GenerateTypeDef           ( const String*                 type,        int           longest  );
+
+static void    GenerateAndWriteSourceFile        ( const IxSourceUnitCollection* sourceUnits, const String* outputDir );
+static String* GenerateSourceFile                ( const IxSourceUnitCollection* sourceUnits );
+static String* GenerateIncludes                  ( const IxSourceUnitCollection* sourceUnits );
+static String* GenerateStructs                   ( const IxSourceUnitCollection* sourceUnits );
+static String* GenerateStructForSourceUnit       ( const IxSourceUnit*           sourceUnit  );
+static String* GenerateStructMembersForSourceUnit( const IxSourceUnit*           sourceUnit  );
 ~
 
 ~c/ixcompiler.GeneratorForC.c~
@@ -62,6 +72,7 @@ int Generator_FunctionForC( const IxSourceUnitCollection* sourceUnits, const Pat
     Console_Write( "Output source dir: %s\n", String_content( target_source_dir ) );
 
     GenerateAndWriteHeaderFile( sourceUnits, target_header_dir );
+    GenerateAndWriteSourceFile( sourceUnits, target_source_dir );
 
     for ( int i=0; i < n; i++ )
     {
@@ -77,133 +88,3 @@ int Generator_FunctionForC( const IxSourceUnitCollection* sourceUnits, const Pat
 }
 ~
 
-~c/ixcompiler.GeneratorForC.c~
-static void GenerateAndWriteHeaderFile( const IxSourceUnitCollection* sourceUnits, const String* outputDir )
-{
-    if ( 0 < IxSourceUnitCollection_getLength( sourceUnits ) )
-    {
-        String*             content     = GenerateHeaderFile( sourceUnits );
-        const IxSourceUnit* first       = IxSourceUnitCollection_get( sourceUnits, 0 );
-        const String*       package     = IxSourceUnit_getPackage( first );
-        String*             header      = String_cat( outputDir, package );
-        String*             extension   = String_new( ".h" );
-        String*             header_full = String_cat( header, extension );
-
-        if ( Platform_File_WriteContents( String_content( header_full ), String_content( content ), TRUE ) )
-        {
-            Console_Write( "Wrote Header: %s\n", String_content( header_full ) );
-        }
-        else
-        {
-            Console_Write( "Could not write header: %s\n", String_content( header_full ) );
-        }
-    }
-}
-~
-
-~c/ixcompiler.GeneratorForC.c~
-static String* GenerateHeaderFile( const IxSourceUnitCollection* sourceUnits )
-{
-    const IxSourceUnit* first   = IxSourceUnitCollection_get      ( sourceUnits, 0 );
-    int                 n       = IxSourceUnitCollection_getLength( sourceUnits    );
-
-    StringBuffer* sb      = StringBuffer_new();
-    String*       content = null;
-    {
-        StringBuffer_appendLine( sb, "#ifndef", GenerateIfDef( first ) );
-        StringBuffer_appendLine( sb, "#define", GenerateIfDef( first ) );
-        StringBuffer_appendLine( sb, "",        null                   );
-
-        // Copyright lines
-        {
-            const ArrayOfString* lines = IxSourceUnitCollection_getCopyrightLines( sourceUnits );
-            int                  num   = ArrayOfString_getLength ( lines );
-
-            for ( int i=0; i < num; i++ )
-            {
-                const String* line = ArrayOfString_getObject( lines, i );
-                StringBuffer_append( sb, "// Copyright" );
-                StringBuffer_append( sb, String_content( line ) );
-                StringBuffer_append( sb, "\n" );
-            }
-            StringBuffer_append( sb, "\n" );
-        }
-
-        // License lines
-        {
-            const ArrayOfString* lines = IxSourceUnitCollection_getLicenseLines( sourceUnits );
-            int                  num   = ArrayOfString_getLength ( lines );
-
-            for ( int i=0; i < num; i++ )
-            {
-                const String* line = ArrayOfString_getObject( lines, i );
-                StringBuffer_append( sb, "// License" );
-                StringBuffer_append( sb, String_content( line ) );
-                StringBuffer_append( sb, "\n" );
-            }
-            StringBuffer_append( sb, "\n" );
-        }
-
-        // Types
-        {
-            ArrayOfString* types   = IxSourceUnitCollection_retrieveTypes( sourceUnits );
-            int            num     = ArrayOfString_getLength ( types );
-            int            longest = ArrayOfString_getLongest( types );
-
-            for ( int i=0; i < num; i++ )
-            {
-                const String* type = ArrayOfString_getObject( types, i );
-                StringBuffer_appendLine( sb, "typedef struct", GenerateTypeDef( type, longest ) );
-            }
-        }
-
-        ArrayOfString* functions = IxSourceUnitCollection_retrieveFunctions( sourceUnits );
-
-        StringBuffer_appendLine( sb, "",        null                   );
-        StringBuffer_appendLine( sb, "#endif",  null                   );
-    }
-    content = String_new( StringBuffer_content( sb ) );
-    StringBuffer_free( &sb );
-
-    return content;
-}
-~
-
-~c/ixcompiler.GeneratorForC.c~
-static String* GenerateIfDef( const IxSourceUnit* sourceUnit )
-{
-    String* ifdef = null;
-    {
-        String* suffix      = String_new( ".h" );
-        String* header_name = String_cat( IxSourceUnit_getPackage( sourceUnit ), suffix );
-        String* uppercase   = String_toUpperCase( header_name );
-
-        ifdef = String_replace( uppercase, '.', '_' );
-
-        String_free( &suffix      );
-        String_free( &header_name );
-        String_free( &uppercase   );
-    }
-
-    return ifdef;
-}
-~
-
-~
-typedef struct _<name> <name>;
-~
-
-~c/ixcompiler.GeneratorForC.c~
-static String* GenerateTypeDef( const String* type, int longest )
-{
-    const char* _type = String_content( type );
-
-    char pattern[99];
-    char output[99];
-
-    sprintf( pattern, "_%%-%is %%-%is;", longest, longest );
-    sprintf( output, pattern, _type, _type );
-
-    return String_new( output );
-}
-~

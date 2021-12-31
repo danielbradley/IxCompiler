@@ -1,0 +1,164 @@
+
+~c/ixcompiler.GeneratorForC.c~
+static void GenerateAndWriteSourceFile( const IxSourceUnitCollection* sourceUnits, const String* outputDir )
+{
+    if ( 0 < IxSourceUnitCollection_getLength( sourceUnits ) )
+    {
+        String*             content     = GenerateSourceFile( sourceUnits );
+        const IxSourceUnit* first       = IxSourceUnitCollection_get( sourceUnits, 0 );
+        const String*       package     = IxSourceUnit_getPackage( first );
+        String*             source      = String_cat( outputDir, package );
+        String*             extension   = String_new( ".c" );
+        String*             source_full = String_cat( source, extension );
+
+        if ( Platform_File_WriteContents( String_content( source_full ), String_content( content ), TRUE ) )
+        {
+            Console_Write( "Wrote Source: %s\n", String_content( source_full ) );
+        }
+        else
+        {
+            Console_Write( "Could not write source: %s\n", String_content( source_full ) );
+        }
+
+        String_free( &content     );
+        String_free( &source      );
+        String_free( &extension   );
+        String_free( &source_full );
+    }
+}
+~
+
+~c/ixcompiler.GeneratorForC.c~
+static String* GenerateSourceFile( const IxSourceUnitCollection* sourceUnits )
+{
+    String* ret = null;
+    {
+        StringBuffer* sb = StringBuffer_new();
+
+        StringBuffer_appendLine( sb, "#include", GenerateIncludes( sourceUnits ) );
+        StringBuffer_appendLine( sb,         "", GenerateStructs ( sourceUnits ) );
+
+        ret = String_new( StringBuffer_content( sb ) );
+    }
+    return ret;
+}
+~
+
+~c/ixcompiler.GeneratorForC.c~
+static String* GenerateIncludes( const IxSourceUnitCollection* sourceUnits )
+{
+    String* includes = null;
+    {
+        const IxSourceUnit* first       = IxSourceUnitCollection_get( sourceUnits, 0 );
+        const String*       package     = IxSourceUnit_getPackage( first );
+
+        StringBuffer* sb = StringBuffer_new();
+        StringBuffer_append( sb, "\"" );
+        StringBuffer_append( sb, String_content( package ) );
+        StringBuffer_append( sb, ".h" );
+        StringBuffer_append( sb, "\"" );
+
+        includes = StringBuffer_toString( sb );
+
+        StringBuffer_free( &sb );
+    }
+    return includes;
+}
+~
+
+~c/ixcompiler.GeneratorForC.c~
+static String* GenerateStructs( const IxSourceUnitCollection* sourceUnits )
+{
+    String* structs = null;
+    {
+        StringBuffer* sb = StringBuffer_new();
+        {
+            int n = IxSourceUnitCollection_getLength( sourceUnits );
+
+            for ( int i=0; i < n; i++ )
+            {
+                const IxSourceUnit* sourceUnit = IxSourceUnitCollection_get( sourceUnits, i );
+
+                StringBuffer_appendLine( sb, "", GenerateStructForSourceUnit( sourceUnit ) );
+            }
+            structs = StringBuffer_toString( sb );
+        }
+        StringBuffer_free( &sb );
+    }
+    return structs;
+}
+~
+
+~c/ixcompiler.GeneratorForC.c~
+static String* GenerateStructForSourceUnit( const IxSourceUnit* sourceUnit )
+{
+    String* _struct = null;
+    {
+        StringBuffer* sb = StringBuffer_new();
+        {
+            const String* package = IxSourceUnit_getPackage( sourceUnit );
+            const String* name    = IxSourceUnit_getName   ( sourceUnit );
+            {
+                String* pkg = String_replace( package, '.', '_' );
+
+                StringBuffer_append( sb, "\n" );
+                StringBuffer_append( sb, "struct" );
+                StringBuffer_append( sb, " " );
+                StringBuffer_append( sb, "_" );
+                StringBuffer_append( sb, String_content( pkg  ) );
+                StringBuffer_append( sb, "_" );
+                StringBuffer_append( sb, String_content( name ) );
+                StringBuffer_append( sb, "\n" );
+                StringBuffer_append( sb, "{" );
+                StringBuffer_appendLine( sb, "", GenerateStructMembersForSourceUnit( sourceUnit ) );
+                StringBuffer_append( sb, "};" );
+
+                String_free( &pkg );
+            }
+            _struct = StringBuffer_toString( sb );
+        }
+        StringBuffer_free( &sb );
+    }
+    return _struct;
+}
+~
+
+~c/ixcompiler.GeneratorForC.c~
+static String* GenerateStructMembersForSourceUnit( const IxSourceUnit* sourceUnit )
+{
+    String* members = null;
+    {
+        StringBuffer* sb = StringBuffer_new();
+        {
+            const IxSourceClass*         class = IxSourceUnit_getClass( sourceUnit );
+            const ArrayOfIxSourceMember* array = IxSourceClass_getMembers( class );
+            {
+                int n = ArrayOfIxSourceMember_getLength( array );
+                for ( int i=0; i < n; i++ )
+                {
+                    const IxSourceMember* member = ArrayOfIxSourceMember_getObject( array, i );
+
+                    if ( IxSourceMember_isInstance( member ) )
+                    {
+                        StringBuffer_append( sb, "\n" );
+                        StringBuffer_append( sb, "\t" );
+
+                        if ( IxSourceMember_isInvalid( member ) )
+                        {
+                            StringBuffer_append( sb, "!!" );
+                        }
+
+                        StringBuffer_append( sb, String_content( IxSourceMember_getType( member ) ) );
+                        StringBuffer_append( sb, " "  );
+                        StringBuffer_append( sb, String_content( IxSourceMember_getName( member ) ) );
+                        StringBuffer_append( sb, ";"  );
+                    }
+                }
+            }
+            members = StringBuffer_toString( sb );
+        }
+        StringBuffer_free( &sb );
+    }
+    return members;
+}
+~

@@ -7,42 +7,51 @@
 
 #include "ixcompiler.h"
 
-IxSourceMember* IxSourceMember_new( bool isInstance, String** name, String** type, String** defaultValue );
-IxSourceMember* IxSourceMember_free( IxSourceMember** self );
+IxSourceMember* IxSourceMember_new( const Node* prefixNode );
 
-bool          IxSourceMember_isInstance     ( const IxSourceMember* self );
-const String* IxSourceMember_getName        ( const IxSourceMember* self );
-const String* IxSourceMember_getType        ( const IxSourceMember* self );
-const String* IxSourceMember_getDefaultValue( const IxSourceMember* self );
+IxSourceMember* IxSourceMember_free(                  IxSourceMember** self );
+bool            IxSourceMember_isInvalid      ( const IxSourceMember*  self );
+bool            IxSourceMember_isInstance     ( const IxSourceMember*  self );
+const String*   IxSourceMember_getName        ( const IxSourceMember*  self );
+const String*   IxSourceMember_getType        ( const IxSourceMember*  self );
+const String*   IxSourceMember_getDefaultValue( const IxSourceMember*  self );
 
 #endif
 ~
 
 ~!c/ixcompiler.IxSourceMember.c~
+#include "ixcompiler.EnumTokenType.h"
 #include "ixcompiler.IxSourceMember.h"
+#include "ixcompiler.Node.h"
+#include "ixcompiler.NodeIterator.h"
 #include "ixcompiler.Platform.h"
 #include "ixcompiler.String.h"
+#include "ixcompiler.StringBuffer.h"
 #include "ixcompiler.Take.h"
+#include "ixcompiler.Token.h"
 
 struct _IxSourceMember
 {
+    bool    invalid;
     bool    isInstance;
+    String* prefix;
     String* name;
+    String* operator;
     String* type;
+    String* equals;
     String* defaultValue;
 };
+
+static void IxSource_Unit_parseMember( IxSourceMember* self, const Node* prefixNode );
 ~
 
 ~c/ixcompiler.IxSourceMember.c~
-IxSourceMember* IxSourceMember_new( bool isInstance, String** name, String** type, String** default_value )
+IxSourceMember* IxSourceMember_new( const Node* prefixNode )
 {
     IxSourceMember* self = Platform_Alloc( sizeof( IxSourceMember ) );
     if ( self )
     {
-        self->isInstance   = isInstance;
-        self->name         = Take( name          );
-        self->type         = Take( type          );
-        self->defaultValue = Take( default_value );
+        IxSource_Unit_parseMember( self, prefixNode );
     }
     return self;
 }
@@ -59,6 +68,13 @@ IxSourceMember* IxSourceMember_free( IxSourceMember** self )
         Platform_Free(    self                );
     }
     return *self;
+}
+~
+
+~c/ixcompiler.IxSourceMember.c~
+bool IxSourceMember_isInvalid( const IxSourceMember* self )
+{
+    return self->invalid;
 }
 ~
 
@@ -87,5 +103,132 @@ const String* IxSourceMember_getType( const IxSourceMember* self )
 const String* IxSourceMember_getDefaultValue( const IxSourceMember* self )
 {
     return self->defaultValue;
+}
+~
+
+~c/ixcompiler.IxSourceMember.c~
+static void IxSource_Unit_parseMember( IxSourceMember* self, const Node* prefixNode )
+{
+    //  SYMBOL(prefix)
+    {
+        const Token*  token = Node_getToken     ( prefixNode );
+        EnumTokenType type  = Token_getTokenType( token      );
+        const char*   value = Token_getContent  ( token      );
+
+        switch ( type )
+        {
+        case SYMBOL:
+        case INFIXOP:
+            self->prefix = String_new( value );
+            switch ( value[0] )
+            {
+            case '@':
+                self->isInstance = TRUE;
+                break;
+            case '%':
+                self->isInstance = FALSE;
+                break;
+            default:
+                self->invalid = TRUE;
+            }
+            break;
+        
+        default:
+            self->invalid = TRUE;
+        }
+    }
+
+    NodeIterator* it = Node_iterator( prefixNode );
+    
+    //  name
+    if ( NodeIterator_hasNonWhitespace( it ) )
+    {
+        const Node*  node  = NodeIterator_next( it );
+        const Token* token = Node_getToken( node ); 
+
+        if ( Token_getTokenType( token ) == WORD )
+        {
+            self->name = String_new( Token_getContent( token ) );
+        }
+        else
+        {
+            self->invalid = TRUE;
+        }
+    }
+
+    //  operator
+    if ( NodeIterator_hasNonWhitespace( it ) )
+    {
+        const Node*  node  = NodeIterator_next( it );
+        const Token* token = Node_getToken( node ); 
+
+        if ( Token_getTokenType( token ) == OPERATOR )
+        {
+            self->operator = String_new( Token_getContent( token ) );
+        }
+        else
+        {
+            self->invalid = TRUE;
+        }
+    }
+
+    //  type
+    if ( NodeIterator_hasNonWhitespace( it ) )
+    {
+        const Node*  node  = NodeIterator_next( it );
+        const Token* token = Node_getToken( node ); 
+
+        {
+            StringBuffer* sb = StringBuffer_new();
+
+            switch ( Token_getTokenType( token ) )
+            {
+            case PRIMITIVE:
+            case WORD:
+                StringBuffer_append( sb, Token_getContent( token ) );
+                break;
+
+            default:
+                self->invalid = TRUE;
+            }
+
+            if ( NodeIterator_hasNonWhitespace( it ) )
+            {
+                const Node*  node  = NodeIterator_next( it );
+                const Token* token = Node_getToken( node );
+
+                switch ( Token_getTokenType( token ) )
+                {
+                case STARTSUBSCRIPT:
+                    StringBuffer_append( sb, "[" );
+                    if ( NodeIterator_hasNonWhitespace( it ) )
+                    {
+                        const Node*  node  = NodeIterator_next( it );
+                        const Token* token = Node_getToken( node );
+
+                        switch ( Token_getTokenType( token ) )
+                        {
+                        case ENDSUBSCRIPT:
+                            StringBuffer_append( sb, "]" );
+                            break;
+                        default:
+                            self->invalid = TRUE;
+                        }
+                    }
+                    break;
+
+                case ASSIGNMENTOP:
+                    self->equals = String_new( Token_getContent( token ) );
+                    break;
+                
+                default:
+                    self->invalid = TRUE;
+                }
+            }
+            self->type = StringBuffer_toString( sb );
+
+            StringBuffer_free( &sb );
+        }
+    }
 }
 ~

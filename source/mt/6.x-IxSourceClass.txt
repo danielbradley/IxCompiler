@@ -7,17 +7,23 @@
 
 #include "ixcompiler.h"
 
-IxSourceClass* IxSourceClass_new( const Node* node );
+IxSourceClass* IxSourceClass_new( const Node* classNode );
 
 IxSourceClass* IxSourceClass_free( IxSourceClass** self );
+
+const ArrayOfIxSourceMember* IxSourceClass_getMembers( const IxSourceClass* self );
 
 #endif
 ~
 
 ~!c/ixcompiler.IxSourceClass.c~
 #include <stdio.h>
+#include "ixcompiler.ArrayOfString.h"
+#include "ixcompiler.ArrayOfIxSourceMember.h"
+#include "ixcompiler.Console.h"
 #include "ixcompiler.EnumTokenType.h"
 #include "ixcompiler.IxSourceClass.h"
+#include "ixcompiler.IxSourceMember.h"
 #include "ixcompiler.Node.h"
 #include "ixcompiler.NodeIterator.h"
 #include "ixcompiler.Platform.h"
@@ -26,43 +32,138 @@ IxSourceClass* IxSourceClass_free( IxSourceClass** self );
 
 struct _IxSourceClass
 {
-    String*                   accessModifier;
-    String*                   className;
-    ArrayOfString*            interfaces;
-    ArrayOfIxSourceParameter* members;
+    bool                   invalid;
+    String*                accessModifier;
+    String*                className;
+    ArrayOfString*         interfaces;
+    ArrayOfIxSourceMember* members;
 };
 
-static void init( IxSourceClass* self, const Node* node );
+static void parseModifier( IxSourceClass* self, const Node* node );
+static void parseClass   ( IxSourceClass* self, const Node* node );
+static void parseBlock   ( IxSourceClass* self, const Node* node );
+static void parseMember  ( IxSourceClass* self, const Node* node );
 ~
 
 ~c/ixcompiler.IxSourceClass.c~
-IxSourceClass* IxSourceClass_new( const Node* classNode )
+IxSourceClass* IxSourceClass_new( const Node* classModifierNode )
 {
+    Console_Write( "IxSourceClass_new", null );
+
     IxSourceClass* self = Platform_Alloc( sizeof( IxSourceClass ) );
     if ( self )
     {
-        init( self, classNode );
+        self->interfaces = ArrayOfString_new();
+        self->members    = ArrayOfIxSourceMember_new();
+
+        parseModifier( self, classModifierNode );
     }
     return self;
 }
 ~
 
 ~c/ixcompiler.IxSourceClass.c~
-static void init( IxSourceClass* self, const Node* classNode )
+const ArrayOfIxSourceMember* IxSourceClass_getMembers( const IxSourceClass* self )
 {
-    NodeIterator* it = Node_iterator( classNode );
-    while ( NodeIterator_hasNext( it ) )
-    {
-        const Node*  next  = NodeIterator_next( it );
-        const Token* token = Node_getToken( next );
+    return self->members;
+}
+~
 
-        if ( Token_getTokenType( token ) == MODIFIER )
+~c/ixcompiler.IxSourceClass.c~
+static void parseModifier( IxSourceClass* self, const Node* classModifierNode )
+{
+    self->accessModifier = String_new( Token_getContent( Node_getToken( classModifierNode ) ) );
+
+    NodeIterator* it = Node_iterator( classModifierNode );
+
+    // CLASS
+    if ( NodeIterator_hasNonWhitespace( it ) )
+    {
+        const Node*   next  = NodeIterator_next( it );
+        const Token*  token = Node_getToken( next );
+        EnumTokenType type  = Token_getTokenType( token );
+
+        if ( type = CLASS )
         {
-            self->accessModifier = String_new( Token_getContent( token ) );
-            fprintf( stdout, "Here: %s\n", Token_getContent( token ) );
+            parseClass( self, next );
+        }
+        else
+        {
+            self->invalid = TRUE;
         }
     }
 }
 ~
 
 
+~c/ixcompiler.IxSourceClass.c~
+static void parseClass ( IxSourceClass* self, const Node* classNode )
+{
+    NodeIterator* it = Node_iterator( classNode );
+
+    // STARTBLOCK
+    if ( NodeIterator_hasNonWhitespace( it ) )
+    {
+        const Node*   next  = NodeIterator_next( it );
+        const Token*  token = Node_getToken( next );
+        EnumTokenType type  = Token_getTokenType( token );
+
+        if ( type == STARTBLOCK )
+        {
+            parseBlock( self, next );
+        }
+        else
+        {
+            self->invalid = TRUE;
+        }
+    }
+}
+~
+
+~c/ixcompiler.IxSourceClass.c~
+static void parseBlock ( IxSourceClass* self, const Node* startBlockNode )
+{
+    NodeIterator* it = Node_iterator( startBlockNode );
+    while ( NodeIterator_hasNonWhitespace( it ) )
+    {
+        const Node*  next  = NodeIterator_next ( it    );
+        const Token* token = Node_getToken     ( next  );
+        const char*  value = Token_getContent  ( token );
+        EnumTokenType type = Token_getTokenType( token );
+
+        switch ( type )
+        {
+        case SYMBOL:
+            switch( value[0] )
+            {
+            case '@':
+                parseMember( self, next );
+            }
+            break;
+
+        case INFIXOP:
+            switch( value[0] )
+            {
+            case '%':
+                parseMember( self, next );
+            }
+            break;
+
+        case ENDBLOCK:
+            break;
+
+        default:
+            self->invalid = TRUE;
+        }
+    }
+}
+~
+
+~c/ixcompiler.IxSourceClass.c~
+static void parseMember( IxSourceClass* self, const Node* node )
+{
+    IxSourceMember* member = IxSourceMember_new( node );
+
+    ArrayOfIxSourceMember_push( self->members, &member );
+}
+~

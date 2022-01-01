@@ -7,13 +7,17 @@
 
 IxSourceUnit* IxSourceUnit_new( const AST* ast );
 
-IxSourceUnit*        IxSourceUnit_free             (       IxSourceUnit** self );
-const String*        IxSourceUnit_getName          ( const IxSourceUnit*  self );
-const String*        IxSourceUnit_getPackage       ( const IxSourceUnit*  self );
-const IxSourceClass* IxSourceUnit_getClass         ( const IxSourceUnit*  self );
-const ArrayOfString* IxSourceUnit_getSignatures    ( const IxSourceUnit*  self );
-const ArrayOfString* IxSourceUnit_getCopyrightLines( const IxSourceUnit*  self );
-const ArrayOfString* IxSourceUnit_getLicenseLines  ( const IxSourceUnit*  self );
+IxSourceUnit*                IxSourceUnit_free             (       IxSourceUnit** self );
+const String*                IxSourceUnit_getName          ( const IxSourceUnit*  self );
+const String*                IxSourceUnit_getPackage       ( const IxSourceUnit*  self );
+const String*                IxSourceUnit_getFullName      ( const IxSourceUnit*  self );
+const char*                  IxSourceUnit_getPrefix        ( const IxSourceUnit*  self );
+
+const IxSourceClass*         IxSourceUnit_getClass         ( const IxSourceUnit*  self );
+const ArrayOfString*         IxSourceUnit_getSignatures    ( const IxSourceUnit*  self );
+const ArrayOfString*         IxSourceUnit_getCopyrightLines( const IxSourceUnit*  self );
+const ArrayOfString*         IxSourceUnit_getLicenseLines  ( const IxSourceUnit*  self );
+const ArrayOfIxSourceMethod* IxSourceUnit_getMethods       ( const IxSourceUnit*  self );
 
 #endif
 ~
@@ -29,6 +33,7 @@ const ArrayOfString* IxSourceUnit_getLicenseLines  ( const IxSourceUnit*  self )
 #include "ixcompiler.EnumTokenType.h"
 #include "ixcompiler.File.h"
 #include "ixcompiler.IxSourceClass.h"
+#include "ixcompiler.IxSourceMethod.h"
 #include "ixcompiler.IxSourceUnit.h"
 #include "ixcompiler.Node.h"
 #include "ixcompiler.NodeIterator.h"
@@ -45,6 +50,8 @@ struct _IxSourceUnit
     String*                    filename;
     String*                    name;
     String*                    extension;
+    String*                    prefix;
+    String*                    fullName;
     ArrayOfString*             copyrightLines;
     ArrayOfString*             licenseLines;
     IxSourceClass*             class;
@@ -55,6 +62,8 @@ struct _IxSourceUnit
 
 static void    init        ( IxSourceUnit* self, const AST* ast );
 static void    initChildren( IxSourceUnit* self, const AST* ast );
+static void    initPrefix  ( IxSourceUnit* self                 );
+static void    initFullName( IxSourceUnit* self                 );
 static String* CreateLine  ( const char* prefix, const Node* node );
 
 ~
@@ -67,6 +76,8 @@ IxSourceUnit* IxSourceUnit_new( const AST* ast )
     {
         init        ( self, ast );
         initChildren( self, ast );
+        initPrefix  ( self      );
+        initFullName( self      );
     }
     return self;
 }
@@ -98,6 +109,20 @@ const String* IxSourceUnit_getPackage( const IxSourceUnit* self )
 ~
 
 ~c/ixcompiler.IxSourceUnit.c~
+const char* IxSourceUnit_getPrefix( const IxSourceUnit* self )
+{
+    return String_content( self->prefix );
+}
+~
+
+~c/ixcompiler.IxSourceUnit.c~
+const String* IxSourceUnit_getFullName( const IxSourceUnit* self )
+{
+    return self->fullName;
+}
+~
+
+~c/ixcompiler.IxSourceUnit.c~
 const IxSourceClass* IxSourceUnit_getClass( const IxSourceUnit* self )
 {
     return self->class;
@@ -122,6 +147,13 @@ const ArrayOfString* IxSourceUnit_getCopyrightLines( const IxSourceUnit* self )
 const ArrayOfString* IxSourceUnit_getLicenseLines( const IxSourceUnit* self )
 {
     return self->licenseLines;
+}
+~
+
+~c/ixcompiler.IxSourceUnit.c~
+const ArrayOfIxSourceMethod* IxSourceUnit_getMethods( const IxSourceUnit* self )
+{
+    return self->methods;
 }
 ~
 
@@ -159,6 +191,7 @@ static void initChildren( IxSourceUnit* self, const AST* ast )
     String* copyright = String_new( "copyright" );
     String* license   = String_new( "license"   );
     String* class     = String_new( "class"     );
+    String* method    = String_new( "method"    );
 
     NodeIterator* it = Node_iterator( root );
     while ( NodeIterator_hasNonWhitespace( it ) )
@@ -176,19 +209,55 @@ static void initChildren( IxSourceUnit* self, const AST* ast )
         else
         if ( tag && String_equals( tag, license ) )
         {
-            String* t = CreateLine( "", node );
-            ArrayOfString_push( self->licenseLines, &t );
+            ArrayOfString_push( self->licenseLines, (String**) Give( CreateLine( "", node ) ) );
         }
         else
         if ( tag && String_equals( tag, class ) )
         {
             self->class = IxSourceClass_new( node );
         }
+        else
+        if ( tag && String_equals( tag, method ) )
+        {
+            ArrayOfIxSourceMethod_push( self->methods, (IxSourceMethod**) Give( IxSourceMethod_new( node ) ) );
+        }
     }
 
     String_free( &copyright );
     String_free( &license   );
     String_free( &class     );
+}
+~
+
+~c/ixcompiler.IxSourceUnit.c~
+static void initPrefix( IxSourceUnit* self )
+{
+    StringBuffer* sb  = StringBuffer_new();
+    String*       pkg = String_replace( self->package, '.', '_' );
+    {
+        StringBuffer_append( sb, String_content( pkg ) );
+        StringBuffer_append( sb, "_"                             );
+        StringBuffer_append( sb, String_content( self->name    ) );
+
+        self->prefix = String_new( StringBuffer_content( sb ) );
+    }
+    String_free      ( &pkg );
+    StringBuffer_free( &sb  );
+}
+~
+
+~c/ixcompiler.IxSourceUnit.c~
+static void initFullName( IxSourceUnit* self )
+{
+    StringBuffer* sb  = StringBuffer_new();
+    {
+        StringBuffer_append( sb, String_content( self->package ) );
+        StringBuffer_append( sb, "."                             );
+        StringBuffer_append( sb, String_content( self->name    ) );
+
+        self->fullName = String_new( StringBuffer_content( sb ) );
+    }
+    StringBuffer_free( &sb  );
 }
 ~
 

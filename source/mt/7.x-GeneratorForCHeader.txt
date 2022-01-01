@@ -125,14 +125,22 @@ typedef struct _<name> <name>;
 ~c/ixcompiler.GeneratorForC.c~
 static String* GenerateTypeDef( const String* type, int longest )
 {
-    const char* _type = String_content( type );
+    String* ret   = null;
+    {
+        String* ctype = String_replace( type, '.', '_' );
+        {
+            const char* _ctype = String_content( ctype );
 
-    char pattern[99];
-    char output[99];
+            char pattern[99];
+            char output[99];
 
-    sprintf( pattern, "_%%-%is %%-%is;", longest, longest );
-    sprintf( output, pattern, _type, _type );
+            sprintf( pattern, "_%%-%is %%-%is;", longest, longest );
+            sprintf( output, pattern, _ctype, _ctype );
 
-    return String_new( output );
+            ret = String_new( output );
+        }
+        String_free( &ctype );
+    }
+    return ret;
 }
 ~

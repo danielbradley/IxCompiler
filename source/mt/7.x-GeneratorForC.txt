@@ -15,12 +15,15 @@ int Generator_FunctionForC( const IxSourceUnitCollection* source_units, const Pa
 ~!c/ixcompiler.GeneratorForC.c~
 #include <stdio.h>
 #include "ixcompiler.ArrayOfIxSourceMember.h"
+#include "ixcompiler.ArrayOfIxSourceMethod.h"
 #include "ixcompiler.ArrayOfString.h"
 #include "ixcompiler.Console.h"
+#include "ixcompiler.Dictionary.h"
 #include "ixcompiler.File.h"
 #include "ixcompiler.GeneratorForC.h"
 #include "ixcompiler.IxSourceClass.h"
 #include "ixcompiler.IxSourceMember.h"
+#include "ixcompiler.IxSourceMethod.h"
 #include "ixcompiler.IxSourceUnit.h"
 #include "ixcompiler.IxSourceUnitCollection.h"
 #include "ixcompiler.Path.h"
@@ -40,8 +43,10 @@ static void    GenerateAndWriteSourceFile        ( const IxSourceUnitCollection*
 static String* GenerateSourceFile                ( const IxSourceUnitCollection* sourceUnits );
 static String* GenerateIncludes                  ( const IxSourceUnitCollection* sourceUnits );
 static String* GenerateStructs                   ( const IxSourceUnitCollection* sourceUnits );
-static String* GenerateStructForSourceUnit       ( const IxSourceUnit*           sourceUnit  );
-static String* GenerateStructMembersForSourceUnit( const IxSourceUnit*           sourceUnit  );
+static String* GenerateStructForSourceUnit       ( const IxSourceUnit*           sourceUnit, const Dictionary* resolvedTypes );
+static String* GenerateStructMembersForSourceUnit( const IxSourceUnit*           sourceUnit, const Dictionary* resolvedTypes );
+static String* GenerateMethods                   ( const IxSourceUnitCollection* sourceUnits );
+static String* GenerateMethodsForSourceUnit      ( const IxSourceUnit*           sourceUnit  );
 ~
 
 ~c/ixcompiler.GeneratorForC.c~

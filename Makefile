@@ -1,5 +1,5 @@
 
-VERSION=012
+VERSION=013
 
 PLATFORM=posix
 CC=cc
@@ -24,6 +24,10 @@ doco: $(MAX2MARKDOWN)
 test:
 	mkdir -p _output
 	_bin/ixc --output-dir _output --target-language C testdata/ix.base/*.ix
+
+testcompile:
+	mkdir -p _output/bin
+	gcc -c -o _output/bin/ix.base.o -I _output/include _output/c/ix.base.c
 
 debug:
 	mkdir -p _output

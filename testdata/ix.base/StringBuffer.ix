@@ -5,8 +5,8 @@ License: LGPLv2.
 
 public class // StringBuffer
 {
-	@data : char[];
-	@name : String = "XXX";
+	@data : Array
+	@name : String = "XXX"
 }
 
 public new()
@@ -14,12 +14,12 @@ public new()
 	@data = new char[];
 }
 
-public append( ch : char )
+public append_char( ch : char )
 {
 	@data[] = ch;
 }
 
-public append( aString : string& )
+public append_stringref( aString : string& )
 {
 	foreach( character in aString )
 	{
@@ -27,7 +27,7 @@ public append( aString : string& )
 	}
 }
 
-public append( aString : string* )
+public append_string( aString : string* )
 {
 	foreach( character in aString )
 	{
@@ -36,33 +36,17 @@ public append( aString : string* )
 	delete aString;
 }
 
-public append( aValue : float )
+public append_float( aValue : float )
 {
 	this.append( Number.convertToString( aValue ) );
 }
 
-public const charAt( i : integer ) : char
+public const charAt( i : int ) : char
 {
 	return @data[i];
 }
 
-public const getLength() : integer
+public const getLength() : int
 {
-	return @data.length;
-}
-
-public const getLength() : integer
-{
-    while( true )
-    {
-        for ( var i=0; i < n; i++ )
-        {
-            foreach( et in @content )
-            {
-                var j = (x + (y + z));
-            }
-        }
-    }
-
 	return @data.length;
 }

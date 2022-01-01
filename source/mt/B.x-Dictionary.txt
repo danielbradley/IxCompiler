@@ -1,0 +1,120 @@
+
+.. Dictionary
+
+~!include/ixcompiler.Dictionary.h~
+#ifndef IXCOMPILER_DICTIONARY_H
+#define IXCOMPILER_DICTIONARY_H
+
+#include "ixcompiler.h"
+
+Dictionary* Dictionary_new();
+
+Dictionary* Dictionary_free( Dictionary** self );
+
+bool          Dictionary_put(       Dictionary* self, String** key, String** value );
+bool          Dictionary_has( const Dictionary* self, const String* key );
+const String* Dictionary_get( const Dictionary* self, const String* key );
+
+#endif
+~
+
+~!c/ixcompiler.Dictionary.c~
+#include "ixcompiler.Array.h"
+#include "ixcompiler.Dictionary.h"
+#include "ixcompiler.Entry.h"
+#include "ixcompiler.Platform.h"
+#include "ixcompiler.String.h"
+
+struct _Dictionary
+{
+    bool   isMap;
+    Array* entries;
+};
+
+static const Entry* Dictionary_find( const Dictionary* self, const String* key );
+~
+
+~c/ixcompiler.Dictionary.c~
+Dictionary* Dictionary_new( bool is_map )
+{
+    Dictionary* self = Platform_Alloc( sizeof( Dictionary ) );
+    if ( self )
+    {
+        self->isMap = is_map;
+        self->entries = Array_new();
+    }
+    return self;
+}
+~
+
+~c/ixcompiler.Dictionary.c~
+Dictionary* Dictionary_free( Dictionary** self )
+{
+    if ( *self )
+    {
+        Entry* tmp;
+        while( (tmp = (Entry*) Array_pop( (*self)->entries )) )
+        {
+            Entry_free( &tmp );
+        }
+
+        Array_free( &(*self)->entries );
+
+        Platform_Free( self );
+    }
+    return *self;
+}
+~
+
+~c/ixcompiler.Dictionary.c~
+bool Dictionary_put( Dictionary* self, String** key, String** value )
+{
+    if ( self->isMap && Dictionary_has( self, *key ) )
+    {
+        String_free( key   );
+        String_free( value );
+
+        return FALSE;
+    }
+    else
+    {
+        Entry* entry = Entry_new( key, value );
+        Array_push( self->entries, (void**) &entry );
+        return TRUE;
+    }
+}
+~
+
+~c/ixcompiler.Dictionary.c~
+bool Dictionary_has( const Dictionary* self, const String* key )
+{
+    return (null != Dictionary_find( self, key ));
+}
+~
+
+~c/ixcompiler.Dictionary.c~
+const String* Dictionary_get( const Dictionary* self, const String* key )
+{
+    const Entry* tmp = Dictionary_find( self, key );
+
+    return (tmp) ? Entry_getValue( tmp ) : null;
+}
+~
+
+~c/ixcompiler.Dictionary.c~
+static const Entry* Dictionary_find( const Dictionary* self, const String* key )
+{
+    int n = Array_getLength( self->entries );
+    for ( int i=0; i < n; i++ )
+    {
+        const Entry* tmp = (const Entry*) Array_getObject( self->entries, i );
+
+        if ( String_equals( key, Entry_getKey( tmp ) ) )
+        {
+            return tmp;
+        }
+    }
+
+    return null;
+}
+~

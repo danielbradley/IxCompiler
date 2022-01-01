@@ -1,0 +1,71 @@
+
+.. Entry
+
+~!include/ixcompiler.Entry.h~
+#ifndef IXCOMPILER_ENTRY_H
+#define IXCOMPILER_ENTRY_H
+
+#include "ixcompiler.h"
+
+Entry* Entry_new( String** key, String** val );
+
+      Entry*  Entry_free    (       Entry** self );
+const String* Entry_getKey  ( const Entry*  self );
+const String* Entry_getValue( const Entry*  self );
+
+#endif
+~
+
+~!c/ixcompiler.Entry.c~
+#include "ixcompiler.Entry.h"
+#include "ixcompiler.Platform.h"
+#include "ixcompiler.String.h"
+
+struct _Entry
+{
+    String* key;
+    String* val;
+
+};
+~
+
+~c/ixcompiler.Entry.c~
+Entry* Entry_new( String** key, String** val )
+{
+    Entry* self = Platform_Alloc( sizeof( Entry ) );
+    if ( self )
+    {
+        self->key = Take( key );
+        self->val = Take( val );
+    }
+    return self;
+}
+~
+
+~c/ixcompiler.Entry.c~
+Entry* Entry_free( Entry** self )
+{
+    if ( *self )
+    {
+        String_free( &(*self)->key );
+        String_free( &(*self)->val );
+
+        Platform_Free( self );
+    }
+    return *self;
+}
+~
+
+~c/ixcompiler.Entry.c~
+const String* Entry_getKey( const Entry* self )
+{
+    return self->key;
+}
+~
+
+~c/ixcompiler.Entry.c~
+const String* Entry_getValue( const Entry* self )
+{
+    return self->val;
+}
+~

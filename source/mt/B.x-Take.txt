@@ -1,18 +1,21 @@
 
 .. Take
 
-~!include/ixcompiler.Take.h~
-#ifndef IXCOMPILER_TAKE_H
-#define IXCOMPILER_TAKE_H
-
-void* Take( void* giver );
-
-#endif
-~
-
 ~!c/ixcompiler.Take.c~
 #include "ixcompiler.h"
-#include "ixcompiler.Take.h"
+
+static void* stash[100];
+
+void** Give( void* pointer )
+{
+    void** tmp = stash;
+
+    while ( *tmp ) tmp++;
+
+    *tmp = pointer;
+
+    return tmp;
+}
 
 void* Take( void* giver )
 {

@@ -32,11 +32,12 @@ enum _EnumTokenType
     ENDTAG,
 
     //  Symbolic
+    OFTYPE,
     OPERATOR,
     ASSIGNMENTOP,
     PREFIXOP,
     INFIXOP,
-    POSTFIXOP,
+	POSTFIXOP,
     PREINFIXOP,
     PREPOSTFIXOP,
     STOP,
@@ -127,6 +128,7 @@ const char* EnumTokenType_asString( EnumTokenType type )
     case ENDEXPRESSION:      return "ENDEXPRESSION";
     case ENDSUBSCRIPT:       return "ENDSUBSCRIPT";
     case ENDTAG:             return "ENDTAG";
+    case OFTYPE:             return "OFTYPE";
     case OPERATOR:           return "OPERATOR";
     case ASSIGNMENTOP:       return "ASSIGNMENTOP";
     case PREFIXOP:           return "PREFIXOP";

@@ -249,6 +249,7 @@ EnumTokenType Token_DetermineSymbolicType( const char* content )
 {
     switch ( content[0] )
     {
+    case ':':   return OFTYPE;
     case '~':   return SYMBOL;
     case '!':
         switch ( content[1] )
@@ -330,7 +331,6 @@ EnumTokenType Token_DetermineSymbolicType( const char* content )
         }
         break;
 
-    case ':':   return OPERATOR;
     case ';':   return STOP;
     case '<':   return INFIXOP;
     case '>':   return INFIXOP;
@@ -361,7 +361,6 @@ EnumTokenType Token_DetermineAlphanumericType( const char* content )
     else if ( String_Equals( content, "boolean"    ) ) return PRIMITIVE;
     else if ( String_Equals( content, "byte"       ) ) return PRIMITIVE;
     else if ( String_Equals( content, "char"       ) ) return PRIMITIVE;
-    else if ( String_Equals( content, "const"      ) ) return PRIMITIVE;
     else if ( String_Equals( content, "double"     ) ) return PRIMITIVE;
     else if ( String_Equals( content, "float"      ) ) return PRIMITIVE;
     else if ( String_Equals( content, "int"        ) ) return PRIMITIVE;
@@ -376,6 +375,7 @@ EnumTokenType Token_DetermineAlphanumericType( const char* content )
     else if ( String_Equals( content, "break"      ) ) return KEYWORD;
     else if ( String_Equals( content, "case"       ) ) return KEYWORD;
     else if ( String_Equals( content, "catch"      ) ) return KEYWORD;
+    else if ( String_Equals( content, "const"      ) ) return KEYWORD;
     else if ( String_Equals( content, "default"    ) ) return KEYWORD;
     else if ( String_Equals( content, "extends"    ) ) return KEYWORD;
     else if ( String_Equals( content, "implements" ) ) return KEYWORD;
@@ -387,7 +387,7 @@ EnumTokenType Token_DetermineAlphanumericType( const char* content )
     else if ( String_Equals( content, "switch"     ) ) return KEYWORD;
     else if ( String_Equals( content, "try"        ) ) return KEYWORD;
     else if ( String_Equals( content, "var"        ) ) return KEYWORD;
-    else                                              return WORD;
+    else                                               return WORD;
 }
 ~
 

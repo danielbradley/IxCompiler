@@ -13,6 +13,7 @@ int            String_getLength  ( const String*  self );
 String*        String_copy       ( const String*  self );
 String*        String_cat        ( const String*  self, const String* other );
 bool           String_equals     ( const String*  self, const String* other );
+bool           String_contains   ( const String*  self, const String* other );
 ArrayOfString* String_split      ( const String*  self, char separator      );
 String*        String_toUpperCase( const String*  self );
 String*        String_replace    ( const String*  self, char ch, char with );
@@ -101,6 +102,13 @@ String* String_cat( const String* self, const String* other )
 bool String_equals( const String* self, const String* other )
 {
     return String_Equals( self->content, other->content );
+}
+~
+
+~c/ixcompiler.String.c~
+bool String_contains( const String* self, const String* other )
+{
+    return (NULL != strstr( String_content( self ), String_content( other ) ) );
 }
 ~
 

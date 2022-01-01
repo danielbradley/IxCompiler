@@ -61,6 +61,8 @@ typedef struct _ArrayOfIxSourceStatement        ArrayOfIxSourceStatement;
 typedef struct _ArrayOfString                   ArrayOfString;
 typedef struct _AST                             AST;
 typedef struct _ASTCollection                   ASTCollection;
+typedef struct _Dictionary                      Dictionary;
+typedef struct _Entry                           Entry;
 typedef enum   _EnumTokenGroup                  EnumTokenGroup;
 typedef enum   _EnumTokenType                   EnumTokenType;
 typedef struct _File                            File;
@@ -92,6 +94,9 @@ typedef struct _Tokenizer                       Tokenizer;
 typedef struct _Tree                            Tree;
 
 typedef int(*GeneratorFn)( const IxSourceUnitCollection*, const Path* );
+
+void** Give( void* pointer );
+void*  Take( void* giver   );
 
 #endif
 ~

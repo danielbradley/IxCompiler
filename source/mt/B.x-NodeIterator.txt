@@ -5,11 +5,13 @@
 #ifndef IXCOMPILER_NODEITERATOR_H
 #define IXCOMPILER_NODEITERATOR_H
 
-NodeIterator* NodeIterator_new             ( const Array*  nodes );
-NodeIterator* NodeIterator_free            ( NodeIterator** self );
-bool          NodeIterator_hasNext         ( NodeIterator*  self );
-bool          NodeIterator_hasNonWhitespace( NodeIterator*  self );
-const Node*   NodeIterator_next            ( NodeIterator*  self );
+NodeIterator* NodeIterator_new                   ( const Array*  nodes );
+NodeIterator* NodeIterator_free                  ( NodeIterator** self );
+bool          NodeIterator_hasNext               ( NodeIterator*  self );
+bool          NodeIterator_hasNonWhitespace      ( NodeIterator*  self );
+bool          NodeIterator_hasNonWhitespaceOfType( NodeIterator*  self, EnumTokenType type );
+const Node*   NodeIterator_next                  ( NodeIterator*  self );
+const Node*   NodeIterator_peek                  ( NodeIterator*  self );
 
 #endif
 ~
@@ -106,8 +108,29 @@ bool NodeIterator_hasNonWhitespace( NodeIterator* self )
 ~
 
 ~c/ixcompiler.NodeIterator.c~
+bool NodeIterator_hasNonWhitespaceOfType( NodeIterator* self, EnumTokenType type )
+{
+    bool has = FALSE;
+
+    if ( NodeIterator_hasNonWhitespace( self ) )
+    {
+        const Node* peek = NodeIterator_peek( self );
+        has = (type == Token_getTokenType( Node_getToken( peek ) ) );
+    }
+    return has;
+}
+~
+
+~c/ixcompiler.NodeIterator.c~
 const Node* NodeIterator_next( NodeIterator* self )
 {
     return (const void*) Array_getObject( self->nodes, self->next++ );
+}
+~
+
+~c/ixcompiler.NodeIterator.c~
+const Node* NodeIterator_peek( NodeIterator* self )
+{
+    return (const void*) Array_getObject( self->nodes, self->next );
 }
 ~

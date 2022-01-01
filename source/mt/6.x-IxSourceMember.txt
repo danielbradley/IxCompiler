@@ -27,7 +27,6 @@ const String*   IxSourceMember_getDefaultValue( const IxSourceMember*  self );
 #include "ixcompiler.Platform.h"
 #include "ixcompiler.String.h"
 #include "ixcompiler.StringBuffer.h"
-#include "ixcompiler.Take.h"
 #include "ixcompiler.Token.h"
 
 struct _IxSourceMember
@@ -36,7 +35,7 @@ struct _IxSourceMember
     bool    isInstance;
     String* prefix;
     String* name;
-    String* operator;
+    String* oftype;
     String* type;
     String* equals;
     String* defaultValue;
@@ -162,9 +161,9 @@ static void IxSource_Unit_parseMember( IxSourceMember* self, const Node* prefixN
         const Node*  node  = NodeIterator_next( it );
         const Token* token = Node_getToken( node ); 
 
-        if ( Token_getTokenType( token ) == OPERATOR )
+        if ( Token_getTokenType( token ) == OFTYPE )
         {
-            self->operator = String_new( Token_getContent( token ) );
+            self->oftype = String_new( Token_getContent( token ) );
         }
         else
         {

@@ -21,7 +21,6 @@ const String* IxSourceParameter_getDefaultValue( const IxSourceParameter* self )
 #include "ixcompiler.IxSourceParameter.h"
 #include "ixcompiler.Platform.h"
 #include "ixcompiler.String.h"
-#include "ixcompiler.Take.h"
 
 struct _IxSourceParameter
 {

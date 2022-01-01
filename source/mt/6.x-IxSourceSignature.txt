@@ -24,7 +24,6 @@ const String*                   IxSourceSignature_getReturnType    ( const IxSou
 #include "ixcompiler.IxSourceSignature.h"
 #include "ixcompiler.Platform.h"
 #include "ixcompiler.String.h"
-#include "ixcompiler.Take.h"
 
 struct _IxSourceSignature
 {

@@ -5,6 +5,8 @@
 #ifndef IXCOMPILER_ARRAY_H
 #define IXCOMPILER_ARRAY_H
 
+#include "ixcompiler.h"
+
 Array* Array_new    ();
 Array* Array_free   ( Array** self );
 Array* Array_push   ( Array*  self, void** object );
@@ -19,7 +21,6 @@ const void* Array_getObject( const Array* self, int index );
 ~
 
 ~!c/ixcompiler.Array.c~
-#include "ixcompiler.h"
 #include "ixcompiler.Array.h"
 #include "ixcompiler.Platform.h"
 

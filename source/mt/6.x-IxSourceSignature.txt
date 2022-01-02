@@ -7,20 +7,18 @@
 
 #include "ixcompiler.h"
 
-IxSourceSignature* IxSourceSignature_new( String** access_modifier, bool const, String** method_name, ArrayOfIxSourceParameter** parameters, String** return_type );
+IxSourceSignature* IxSourceSignature_new( String** access_modifier, bool const, String** method_name, String** return_type );
 IxSourceSignature* IxSourceSignature_free( IxSourceSignature** self );
 
 const String*                   IxSourceSignature_getAccessModifier( const IxSourceSignature* self );
 bool                            IxSourceSignature_isConst          ( const IxSourceSignature* self );
 const String*                   IxSourceSignature_getMethodName    ( const IxSourceSignature* self );
-const ArrayOfIxSourceParameter* IxSourceSignature_getParameters    ( const IxSourceSignature* self );
 const String*                   IxSourceSignature_getReturnType    ( const IxSourceSignature* self );
 
 #endif
 ~
 
 ~!c/ixcompiler.IxSourceSignature.c~
-#include "ixcompiler.ArrayOfIxSourceParameter.h"
 #include "ixcompiler.IxSourceSignature.h"
 #include "ixcompiler.Platform.h"
 #include "ixcompiler.String.h"
@@ -30,13 +28,13 @@ struct _IxSourceSignature
     String*                   accessModifier;
     bool                      isConst;
     String*                   methodName;
-    ArrayOfIxSourceParameter* parameters;
+    //ArrayOfIxSourceParameter* parameters;
     String*                   returnType;
 };
 ~
 
 ~c/ixcompiler.IxSourceSignature.c~
-IxSourceSignature* IxSourceSignature_new( String** access_modifier, bool is_const, String** method_name, ArrayOfIxSourceParameter** parameters, String** return_type )
+IxSourceSignature* IxSourceSignature_new( String** access_modifier, bool is_const, String** method_name, String** return_type )
 {
     IxSourceSignature* self = Platform_Alloc( sizeof( IxSourceSignature ) );
     if ( self )
@@ -44,7 +42,7 @@ IxSourceSignature* IxSourceSignature_new( String** access_modifier, bool is_cons
         self->accessModifier = Take( access_modifier );
         self->isConst        = is_const;
         self->methodName     = Take( method_name );
-        self->parameters     = Take( parameters  );
+        //self->parameters     = Take( parameters  );
         self->returnType     = Take( return_type );
     }
     return self;
@@ -58,7 +56,7 @@ IxSourceSignature* IxSourceSignature_free( IxSourceSignature** self )
     {
         String_free                   ( &(*self)->accessModifier );
         String_free                   ( &(*self)->methodName     );
-        ArrayOfIxSourceParameter_free ( &(*self)->parameters     );
+        //ArrayOfIxSourceParameter_free ( &(*self)->parameters     );
         String_free                   ( &(*self)->returnType     );
         Platform_Free                 (    self                  );
     }

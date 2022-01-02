@@ -93,7 +93,8 @@ typedef struct _TokenGroup                      TokenGroup;
 typedef struct _Tokenizer                       Tokenizer;
 typedef struct _Tree                            Tree;
 
-typedef int(*GeneratorFn)( const IxSourceUnitCollection*, const Path* );
+typedef void* (*Destructor )( void**                                     );
+typedef int   (*GeneratorFn)( const IxSourceUnitCollection*, const Path* );
 
 void** Give( void* pointer );
 void*  Take( void* giver   );

@@ -133,13 +133,13 @@ static String* GenerateStructMembersForSourceUnit( const IxSourceUnit* sourceUni
     {
         StringBuffer* sb = StringBuffer_new();
         {
-            const IxSourceClass*         class = IxSourceUnit_getClass( sourceUnit );
-            const ArrayOfIxSourceMember* array = IxSourceClass_getMembers( class );
+            const IxSourceClass* class = IxSourceUnit_getClass( sourceUnit );
+            const Array*         array = IxSourceClass_getMembers( class );
             {
-                int n = ArrayOfIxSourceMember_getLength( array );
+                int n = Array_getLength( array );
                 for ( int i=0; i < n; i++ )
                 {
-                    const IxSourceMember* member = ArrayOfIxSourceMember_getObject( array, i );
+                    const IxSourceMember* member = (IxSourceMember*) Array_getObject( array, i );
 
                     if ( IxSourceMember_isInstance( member ) )
                     {
@@ -229,12 +229,12 @@ static String* GenerateMethodsForSourceUnit( const IxSourceUnit* sourceUnit )
     {
         StringBuffer* sb = StringBuffer_new();
         {
-            const ArrayOfIxSourceMethod* methods = IxSourceUnit_getMethods( sourceUnit );
+            const Array* methods = IxSourceUnit_getMethods( sourceUnit );
             {
-                int n = ArrayOfIxSourceMethod_getLength( methods );
+                int n = Array_getLength( methods );
                 for ( int i=0; i < n; i++ )
                 {
-                    const IxSourceMethod* method = ArrayOfIxSourceMethod_getObject( methods, i );
+                    const IxSourceMethod* method = (IxSourceMethod*) Array_getObject( methods, i );
                     StringBuffer_appendLine( sb, "", GenerateFunctionForMethod( method, classPrefix ) );
                 }
             }

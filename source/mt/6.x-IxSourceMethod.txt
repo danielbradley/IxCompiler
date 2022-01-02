@@ -19,11 +19,11 @@ const char*     IxSourceMethod_getReturnType    ( const IxSourceMethod*  self );
 ~
 
 ~!c/ixcompiler.IxSourceMethod.c~
-#include "ixcompiler.ArrayOfIxSourceParameter.h"
-//#include "ixcompiler.ArrayOfIxSourceStatement.h"
+#include "ixcompiler.Array.h"
 #include "ixcompiler.Console.h"
 #include "ixcompiler.EnumTokenType.h"
 #include "ixcompiler.IxSourceMethod.h"
+#include "ixcompiler.IxSourceParameter.h"
 #include "ixcompiler.Node.h"
 #include "ixcompiler.NodeIterator.h"
 #include "ixcompiler.Platform.h"
@@ -37,14 +37,15 @@ struct _IxSourceMethod
     String*                   modifier;     //  public
     String*                   konst;        //  const
     String*                   methodName;   //  getSomething
-    ArrayOfIxSourceParameter* parameters;   //  ( name: Type*, size: int )
+    Array*                    parameters;   //  ( name: Type*, size: int )
     String*                   oftype;       //  :
     String*                   returnType;   //  String*
-    ArrayOfIxSourceStatement* statements;   //  ...
+    Array*                    statements;   //  ...
 };
 
 void IxSourceMethod_parseModifier    ( IxSourceMethod* self, const Node* modifierNode );
 void IxSourceMethod_parseNameChildren( IxSourceMethod* self, const Node* nameNode     );
+void IxSourceMethod_parseParameters  ( IxSourceMethod* self, const Node* startNode    );
 ~
 
 ~c/ixcompiler.IxSourceMethod.c~
@@ -59,7 +60,7 @@ IxSourceMethod* IxSourceMethod_new( const Node* modifierNode )
         self->oftype     = String_new( "" );
         self->returnType = String_new( "" );
 
-        self->parameters = ArrayOfIxSourceParameter_new();
+        self->parameters = Array_new_destructor( (void*(*)(void**)) IxSourceParameter_free );
         //self->statements = ArrayOfIxSourceStatement_new();
 
         IxSourceMethod_parseModifier( self, modifierNode );
@@ -73,6 +74,14 @@ IxSourceMethod* IxSourceMethod_free( IxSourceMethod** self )
 {
     if ( *self )
     {
+        String_free( &(*self)->modifier   );
+        String_free( &(*self)->konst      );
+        String_free( &(*self)->methodName );
+        String_free( &(*self)->oftype     );
+        String_free( &(*self)->returnType );
+
+        Array_free( &(*self)->parameters );
+
         Platform_Free( self );
     }
     return *self;
@@ -165,9 +174,8 @@ void IxSourceMethod_parseNameChildren( IxSourceMethod* self, const Node* nameNod
     //  '(' START
     if ( NodeIterator_hasNonWhitespaceOfType( it, STARTEXPRESSION ) )
     {
-        NodeIterator_next( it );
-        Console_Write( "Has Parameters\n", null );
-        //
+        const Node* startNode = NodeIterator_next( it );
+        IxSourceMethod_parseParameters( self, startNode );
     }
     else
     {
@@ -188,6 +196,20 @@ void IxSourceMethod_parseNameChildren( IxSourceMethod* self, const Node* nameNod
         {
             self->invalid = TRUE;
         }
+    }
+}
+~
+
+~c/ixcompiler.IxSourceMethod.c~
+void IxSourceMethod_parseParameters( IxSourceMethod* self, const Node* startNode )
+{
+    NodeIterator* it = Node_iterator( startNode );
+
+    while ( NodeIterator_hasNonWhitespaceOfType( it, WORD ) )
+    {
+        const Node* wordNode = NodeIterator_next( it );
+
+        //Array_push( self->parameters, Give( IxSourceParameter_new( wordNode ) ) );
     }
 }
 ~

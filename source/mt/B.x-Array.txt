@@ -7,12 +7,14 @@
 
 #include "ixcompiler.h"
 
-Array* Array_new    ();
-Array* Array_free   ( Array** self );
-Array* Array_push   ( Array*  self, void** object );
-void*  Array_pop    ( Array*  self );
-void*  Array_shift  ( Array*  self );
-Array* Array_unshift( Array*  self, void** object );
+Array* Array_new           ();
+Array* Array_new_destructor( Destructor destructor );
+Array* Array_free          ( Array** self );
+Array* Array_push          ( Array*  self, void** object );
+void*  Array_pop           ( Array*  self );
+void*  Array_shift         ( Array*  self );
+Array* Array_unshift       ( Array*  self, void** object );
+
 
 int         Array_getLength( const Array* self            );
 const void* Array_getObject( const Array* self, int index );
@@ -26,9 +28,10 @@ const void* Array_getObject( const Array* self, int index );
 
 struct _Array
 {
-    void** objects;
-    int    length;
-    int    size;
+    Destructor destroy;
+    void**     objects;
+    int        length;
+    int        size;
 };
 ~
 
@@ -66,6 +69,23 @@ Array* Array_new()
 
     if ( self )
     {
+        self->destroy = 0;
+        self->objects = 0;
+        self->length  = 0;
+        self->size    = 0;
+    }
+    return self;
+}
+~
+
+~c/ixcompiler.Array.c~
+Array* Array_new_destructor( Destructor destructor )
+{
+    Array* self = Platform_Alloc( sizeof( Array ) );
+
+    if ( self )
+    {
+        self->destroy = destructor;
         self->objects = 0;
         self->length  = 0;
         self->size    = 0;
@@ -77,9 +97,20 @@ Array* Array_new()
 ~c/ixcompiler.Array.c~
 Array* Array_free( Array** self )
 {
-    Platform_Free( &(*self)->objects );
-    Platform_Free( *self );
+    if ( *self )
+    {
+        if ( (*self)->destroy )
+        {
+            void* object;
+            while ( (object = Array_pop( *self )) )
+            {
+                (*self)->destroy( &object );
+            }
+        }
 
+        Platform_Free( &(*self)->objects );
+        Platform_Free( self );
+    }
     return *self;
 }
 ~

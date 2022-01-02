@@ -11,15 +11,15 @@ IxSourceClass* IxSourceClass_new( const Node* classNode );
 
 IxSourceClass* IxSourceClass_free( IxSourceClass** self );
 
-const ArrayOfIxSourceMember* IxSourceClass_getMembers( const IxSourceClass* self );
+const Array* IxSourceClass_getMembers( const IxSourceClass* self );
 
 #endif
 ~
 
 ~!c/ixcompiler.IxSourceClass.c~
 #include <stdio.h>
+#include "ixcompiler.Array.h"
 #include "ixcompiler.ArrayOfString.h"
-#include "ixcompiler.ArrayOfIxSourceMember.h"
 #include "ixcompiler.Console.h"
 #include "ixcompiler.EnumTokenType.h"
 #include "ixcompiler.IxSourceClass.h"
@@ -36,7 +36,7 @@ struct _IxSourceClass
     String*                accessModifier;
     String*                className;
     ArrayOfString*         interfaces;
-    ArrayOfIxSourceMember* members;
+    Array*                 members;
 };
 
 static void parseModifier( IxSourceClass* self, const Node* node );
@@ -53,8 +53,10 @@ IxSourceClass* IxSourceClass_new( const Node* classModifierNode )
     IxSourceClass* self = Platform_Alloc( sizeof( IxSourceClass ) );
     if ( self )
     {
-        self->interfaces = ArrayOfString_new();
-        self->members    = ArrayOfIxSourceMember_new();
+        self->accessModifier = String_new( "" );
+        self->className      = String_new( "" );
+        self->interfaces     = ArrayOfString_new();
+        self->members        = Array_new( (Destructor) IxSourceMember_free );
 
         parseModifier( self, classModifierNode );
     }
@@ -63,7 +65,20 @@ IxSourceClass* IxSourceClass_new( const Node* classModifierNode )
 ~
 
 ~c/ixcompiler.IxSourceClass.c~
-const ArrayOfIxSourceMember* IxSourceClass_getMembers( const IxSourceClass* self )
+IxSourceClass* IxSourceClass_free( IxSourceClass** self )
+{
+    if ( *self )
+    {
+        String_free       ( &(*self)->accessModifier );
+        String_free       ( &(*self)->className      );
+        ArrayOfString_free( &(*self)->interfaces     );
+        Array_free        ( &(*self)->members        );
+    }
+}
+~
+
+~c/ixcompiler.IxSourceClass.c~
+const Array* IxSourceClass_getMembers( const IxSourceClass* self )
 {
     return self->members;
 }
@@ -72,6 +87,7 @@ const ArrayOfIxSourceMember* IxSourceClass_getMembers( const IxSourceClass* self
 ~c/ixcompiler.IxSourceClass.c~
 static void parseModifier( IxSourceClass* self, const Node* classModifierNode )
 {
+    String_free( &self->accessModifier );
     self->accessModifier = String_new( Token_getContent( Node_getToken( classModifierNode ) ) );
 
     NodeIterator* it = Node_iterator( classModifierNode );
@@ -164,6 +180,6 @@ static void parseMember( IxSourceClass* self, const Node* node )
 {
     IxSourceMember* member = IxSourceMember_new( node );
 
-    ArrayOfIxSourceMember_push( self->members, &member );
+    Array_push( self->members, Give( member ) );
 }
 ~

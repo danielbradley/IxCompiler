@@ -14,8 +14,7 @@ int Generator_FunctionForC( const IxSourceUnitCollection* source_units, const Pa
 
 ~!c/ixcompiler.GeneratorForC.c~
 #include <stdio.h>
-#include "ixcompiler.ArrayOfIxSourceMember.h"
-#include "ixcompiler.ArrayOfIxSourceMethod.h"
+#include "ixcompiler.Array.h"
 #include "ixcompiler.ArrayOfString.h"
 #include "ixcompiler.Console.h"
 #include "ixcompiler.Dictionary.h"

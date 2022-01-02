@@ -1,0 +1,48 @@
+
+~!include/ixcompiler.IxSourceInterface.h~
+#ifndef IXCOMPILER_IXSOURCEINTERFACE_H
+#define IXCOMPILER_IXSOURCEINTERFACE_H
+
+#include "ixcompiler.h"
+
+IxSourceInterface* IxSourceInterface_new( const Node* startNode );
+
+IxSourceInterface* IxSourceInterface_free( IxSourceInterface** self );
+
+#endif
+~
+
+~!c/ixcompiler.IxSourceInterface.c~
+#include "ixcompiler.IxSourceInterface.h"
+#include "ixcompiler.Platform.h"
+#include "ixcompiler.String.h"
+
+struct _IxSourceInterface
+{
+    String* name;
+};
+~
+
+~c/ixcompiler.IxSourceInterface.c~
+IxSourceInterface* IxSourceInterface_new( const Node* startNode )
+{
+    IxSourceInterface* self = Platform_Alloc( sizeof(IxSourceInterface) );
+    {
+        self->name = String_new( "" );
+    }
+    return self;
+}
+~
+
+~c/ixcompiler.IxSourceInterface.c~
+IxSourceInterface* IxSourceInterface_free( IxSourceInterface** self )
+{
+    if ( *self )
+    {
+        String_free( &(*self)->name );
+
+        Platform_Free( self );
+    }
+    return *self;
+}
+~

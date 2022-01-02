@@ -42,6 +42,8 @@ static void ParseClass     ( Node* parent, Tokenizer* tokenizer );
 static void ParseMethod    ( Node* parent, Tokenizer* tokenizer );
 static void ParseStatement ( Node* parent, Tokenizer* tokenizer, bool one_liner );
 static void ParseBlock     ( Node* parent, Tokenizer* tokenizer );
+static void ParseParameters( Node* parent, Tokenizer* tokenizer );
+static bool ParseParameter ( Node* parent, Tokenizer* tokenizer );
 static void ParseExpression( Node* parent, Tokenizer* tokenizer );
 ~
 
@@ -226,7 +228,7 @@ static void ParseMethod( Node* parent, Tokenizer* tokenizer )
         else
         if ( (token_group == OPEN) && (token_type == STARTEXPRESSION) )
         {
-            ParseExpression( Node_getLastChild( parent ), tokenizer );
+            ParseParameters( Node_getLastChild( parent ), tokenizer );
         }
         else
         if ( (token_group == OPEN) && (token_type == STARTBLOCK) )
@@ -311,6 +313,67 @@ static void ParseBlock( Node* parent, Tokenizer* tokenizer )
         if ( (token_group == ALPHANUMERIC) )
         {
             ParseStatement( Node_getLastChild( parent ), tokenizer, FALSE );
+        }
+    }
+}
+~
+
+~c/ixcompiler.AST.c~
+static void ParseParameters( Node* parent, Tokenizer* tokenizer )
+{
+    while ( Tokenizer_hasMoreTokens( tokenizer ) )
+    {
+        Token*         token       = Tokenizer_nextToken( tokenizer );
+        EnumTokenGroup token_group = TokenGroup_getGroupType( Token_getTokenGroup( token ) );
+        EnumTokenType  token_type  = Token_getTokenType( token );
+        const char*    content     = Token_getContent( token );
+        int            ch          = content[0];
+
+        Node_addChild( parent, &token );
+
+        if ( (token_group == CLOSE)    && (token_type == ENDEXPRESSION) ) break;
+        else
+        if ( token_type == WORD )
+        {
+            if ( ParseParameter( Node_getLastChild( parent ), tokenizer ) )
+            {
+                break;
+            }
+        }
+        else
+        {
+            continue;
+        }
+    }
+}
+~
+
+~c/ixcompiler.AST.c~
+//  Returns true if last parameter and endexpression encountered
+static bool ParseParameter( Node* parent, Tokenizer* tokenizer )
+{
+    while ( Tokenizer_hasMoreTokens( tokenizer ) )
+    {
+        Token*         token       = Tokenizer_nextToken( tokenizer );
+        EnumTokenGroup token_group = TokenGroup_getGroupType( Token_getTokenGroup( token ) );
+        EnumTokenType  token_type  = Token_getTokenType( token );
+        const char*    content     = Token_getContent( token );
+        int            ch          = content[0];
+
+        Node_addChild( parent, &token );
+
+        if ( token_type == ENDEXPRESSION )
+        {
+            return TRUE;
+        }
+        else
+        if ( (token_type == SYMBOL) && (',' == content[0]) )
+        {
+            return FALSE;
+        }
+        else
+        {
+            continue;
         }
     }
 }

@@ -5,6 +5,8 @@
 #ifndef IXCOMPILER_IXSOURCEUNITCOLLECTION_H
 #define IXCOMPILER_IXSOURCEUNITCOLLECTION_H
 
+#include "ixcompiler.h"
+
 IxSourceUnitCollection* IxSourceUnitCollection_new();
 IxSourceUnitCollection* IxSourceUnitCollection_free( IxSourceUnitCollection** self                              );
 void                    IxSourceUnitCollection_add ( IxSourceUnitCollection*  self, IxSourceUnit** IxSourceUnit );
@@ -22,7 +24,6 @@ const Dictionary*       IxSourceUnitCollection_getResolvedTypes ( const IxSource
 ~
 
 ~!c/ixcompiler.IxSourceUnitCollection.c~
-#include "ixcompiler.h"
 #include "ixcompiler.Array.h"
 #include "ixcompiler.ArrayOfString.h"
 #include "ixcompiler.Dictionary.h"

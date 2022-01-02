@@ -13,7 +13,6 @@ AST*           IxParser_parse         ( IxParser* self )                      ;
 ~
 
 ~!c/ixcompiler.IxParser.c~
-#include "ixcompiler.h"
 #include "ixcompiler.AST.h"
 #include "ixcompiler.EnumTokenGroup.h"
 #include "ixcompiler.EnumTokenType.h"

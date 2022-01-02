@@ -6,6 +6,8 @@
 #ifndef IXCOMPILER_IXSOURCEHEADER_H
 #define IXCOMPILER_IXSOURCEHEADER_H
 
+#include "ixcompiler.h"
+
 IxSourceHeader* IxSourceHeader_new ( const char* keyword, const char* freeform_text );
 
 IxSourceHeader* IxSourceHeader_free      (       IxSourceHeader** self );
@@ -16,7 +18,6 @@ const char*     IxSourceHeader_getText   ( const IxSourceHeader*  self );
 ~
 
 ~!c/ixcompiler.IxSourceHeader.c~
-#include "ixcompiler.h"
 #include "ixcompiler.IxSourceHeader.h"
 #include "ixcompiler.Platform.h"
 #include "ixcompiler.String.h"

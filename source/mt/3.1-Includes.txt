@@ -79,6 +79,7 @@ typedef struct _IxSourceMethod                  IxSourceMethod;
 typedef struct _IxSourceParameter               IxSourceParameter;
 typedef struct _IxSourceSignature               IxSourceSignature;
 typedef struct _IxSourceStatement               IxSourceStatement;
+typedef struct _IxSourceType                    IxSourceType;
 typedef struct _IxSourceUnit                    IxSourceUnit;
 typedef struct _IxSourceUnitCollection          IxSourceUnitCollection;
 typedef struct _Node                            Node;

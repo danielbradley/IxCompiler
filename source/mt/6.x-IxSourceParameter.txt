@@ -7,38 +7,50 @@
 
 #include "ixcompiler.h"
 
-IxSourceParameter* IxSourceParameter_new( String** name, String** type, String** defaultValue );
-IxSourceParameter* IxSourceParameter_free( IxSourceParameter** self );
+IxSourceParameter* IxSourceParameter_new( const Node* wordNode );
 
-const String* IxSourceParameter_getName        ( const IxSourceParameter* self );
-const String* IxSourceParameter_getType        ( const IxSourceParameter* self );
-const String* IxSourceParameter_getDefaultValue( const IxSourceParameter* self );
+IxSourceParameter*  IxSourceParameter_free           (       IxSourceParameter** self );
+const String*       IxSourceParameter_getName        ( const IxSourceParameter*  self );
+const IxSourceType* IxSourceParameter_getType        ( const IxSourceParameter*  self );
+const String*       IxSourceParameter_getDefaultValue( const IxSourceParameter*  self );
 
 #endif
 ~
 
 ~!c/ixcompiler.IxSourceParameter.c~
+#include "ixcompiler.EnumTokenType.h"
 #include "ixcompiler.IxSourceParameter.h"
+#include "ixcompiler.IxSourceType.h"
+#include "ixcompiler.Node.h"
+#include "ixcompiler.NodeIterator.h"
 #include "ixcompiler.Platform.h"
 #include "ixcompiler.String.h"
+#include "ixcompiler.Token.h"
 
 struct _IxSourceParameter
 {
-    String* name;
-    String* type;
-    String* defaultValue;
+    bool          invalid;
+    String*       name;
+    String*       oftype;
+    IxSourceType* type;
+    String*       defaultValue;
 };
+
+void parseWordNode( IxSourceParameter* self, const Node* wordNode );
 ~
 
 ~c/ixcompiler.IxSourceParameter.c~
-IxSourceParameter* IxSourceParameter_new( String** name, String** type, String** default_value )
+IxSourceParameter* IxSourceParameter_new( const Node* wordNode )
 {
     IxSourceParameter* self = Platform_Alloc( sizeof( IxSourceParameter ) );
     if ( self )
     {
-        self->name         = Take( name          );
-        self->type         = Take( type          );
-        self->defaultValue = Take( default_value );
+        self->name         = String_new( "" );
+        self->oftype       = String_new( "" );
+        self->type         = IxSourceType_new( self->oftype );
+        self->defaultValue = String_new( "" );
+
+        parseWordNode( self, wordNode );
     }
     return self;
 }
@@ -49,10 +61,11 @@ IxSourceParameter* IxSourceParameter_free( IxSourceParameter** self )
 {
     if ( *self )
     {
-        String_free  ( &(*self)->name         );
-        String_free  ( &(*self)->type         );
-        String_free  ( &(*self)->defaultValue );
-        Platform_Free(    self                );
+        String_free      ( &(*self)->name         );
+        String_free      ( &(*self)->oftype       );
+        IxSourceType_free( &(*self)->type         );
+        String_free      ( &(*self)->defaultValue );
+        Platform_Free    (    self                );
     }
     return *self;
 }
@@ -66,7 +79,7 @@ const String* IxSourceParameter_getName( const IxSourceParameter* self )
 ~
 
 ~c/ixcompiler.IxSourceParameter.c~
-const String* IxSourceParameter_getType( const IxSourceParameter* self )
+const IxSourceType* IxSourceParameter_getType( const IxSourceParameter* self )
 {
     return self->type;
 }
@@ -76,5 +89,60 @@ const String* IxSourceParameter_getType( const IxSourceParameter* self )
 const String* IxSourceParameter_getDefaultValue( const IxSourceParameter* self )
 {
     return self->defaultValue;
+}
+~
+
+~c/ixcompiler.IxSourceParameter.c~
+void parseWordNode( IxSourceParameter* self, const Node* wordNode )
+{
+    const Token* token = Node_getToken( wordNode );
+
+    if ( WORD == Token_getTokenType( token ) )
+    {
+        String_free( &self->name );
+        self->name = String_new( Token_getContent( token ) );
+
+        NodeIterator* it = Node_iterator( wordNode );
+        if ( NodeIterator_hasNonWhitespaceOfType( it, OFTYPE ) )
+        {
+            self->oftype = String_new( Token_getContent( Node_getToken( NodeIterator_next( it ) ) ) );
+
+            if
+            (
+                NodeIterator_hasNonWhitespaceOfType( it, PRIMITIVE )
+            ||  NodeIterator_hasNonWhitespaceOfType( it, WORD      )
+            )
+            {
+                self->type = IxSourceType_new( String_new( Token_getContent( Node_getToken( NodeIterator_next( it ) ) ) ) );
+            }
+            else
+            {
+                self->invalid = TRUE;
+            }
+
+            if ( NodeIterator_hasNonWhitespaceOfType( it, STARTSUBSCRIPT ) )
+            {
+                NodeIterator_next( it );
+                IxSourceType_setAsArray( self->type, TRUE );
+
+                if ( NodeIterator_hasNonWhitespaceOfType( it, ENDSUBSCRIPT ) )
+                {
+                    NodeIterator_next( it );
+                }
+                else
+                {
+                    self->invalid = TRUE;
+                }
+            }
+        }
+        else
+        {
+            self->invalid = TRUE;
+        }
+    }
+    else
+    {
+        self->invalid = TRUE;
+    }
 }
 ~

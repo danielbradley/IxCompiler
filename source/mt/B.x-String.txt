@@ -7,16 +7,18 @@
 
 String*        String_new    ( const char* content );
 
-String*        String_free       (       String** self );
-const char*    String_content    ( const String*  self );
-int            String_getLength  ( const String*  self );
-String*        String_copy       ( const String*  self );
-String*        String_cat        ( const String*  self, const String* other );
-bool           String_equals     ( const String*  self, const String* other );
-bool           String_contains   ( const String*  self, const String* other );
-ArrayOfString* String_split      ( const String*  self, char separator      );
-String*        String_toUpperCase( const String*  self );
-String*        String_replace    ( const String*  self, char ch, char with );
+String*        String_free          (       String** self );
+const char*    String_content       ( const String*  self );
+int            String_getLength     ( const String*  self );
+String*        String_copy          ( const String*  self );
+String*        String_cat           ( const String*  self, const String* other );
+bool           String_equals        ( const String*  self, const String* other );
+bool           String_equals_chars  ( const String*  self, const char*   chars );
+bool           String_contains      ( const String*  self, const String* other );
+bool           String_contains_chars( const String*  self, const char*   chars );
+ArrayOfString* String_split         ( const String*  self, char separator      );
+String*        String_toUpperCase   ( const String*  self );
+String*        String_replace       ( const String*  self, char ch, char with );
 
 char*          String_Cat   ( const char* string1, const char* string2 );
 bool           String_Equals( const char* string1, const char* string2 );
@@ -106,9 +108,31 @@ bool String_equals( const String* self, const String* other )
 ~
 
 ~c/ixcompiler.String.c~
+bool String_equals_chars( const String* self, const char* chars )
+{
+    if ( self && chars )
+    {
+        const char* content = String_content( self );
+        return (0 == strcmp( content, chars ));
+    }
+    else
+    {
+        return FALSE;
+    }
+}
+~
+
+~c/ixcompiler.String.c~
 bool String_contains( const String* self, const String* other )
 {
-    return (NULL != strstr( String_content( self ), String_content( other ) ) );
+    return String_contains_chars( self, String_content( other ) );
+}
+~
+
+~c/ixcompiler.String.c~
+bool String_contains_chars( const String* self, const char* chars )
+{
+    return (NULL != strstr( String_content( self ), chars ));
 }
 ~
 

@@ -6,7 +6,17 @@ License: LGPLv2.
 
 public class
 {
-    @objectCount: int
+    %objectCount: int
+}
+
+public new()
+{
+    %objectCount++;
+}
+
+public free()
+{
+    %objectCount--;
 }
 
 public GetObjectCount(): int

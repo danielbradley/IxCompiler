@@ -5,8 +5,9 @@ License: LGPLv2.
 
 public class // StringBuffer
 {
-	@data : Array
-	@name : String = "XXX"
+	@data : Array*
+	@name : string* = "XXX"
+	@ref  : string&
 }
 
 public new()

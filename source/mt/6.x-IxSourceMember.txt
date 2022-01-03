@@ -9,12 +9,12 @@
 
 IxSourceMember* IxSourceMember_new( const Node* prefixNode );
 
-IxSourceMember* IxSourceMember_free(                  IxSourceMember** self );
-bool            IxSourceMember_isInvalid      ( const IxSourceMember*  self );
-bool            IxSourceMember_isInstance     ( const IxSourceMember*  self );
-const String*   IxSourceMember_getName        ( const IxSourceMember*  self );
-const String*   IxSourceMember_getType        ( const IxSourceMember*  self );
-const String*   IxSourceMember_getDefaultValue( const IxSourceMember*  self );
+IxSourceMember*     IxSourceMember_free(                  IxSourceMember** self );
+bool                IxSourceMember_isInvalid      ( const IxSourceMember*  self );
+bool                IxSourceMember_isInstance     ( const IxSourceMember*  self );
+const String*       IxSourceMember_getName        ( const IxSourceMember*  self );
+const IxSourceType* IxSourceMember_getType        ( const IxSourceMember*  self );
+const String*       IxSourceMember_getDefaultValue( const IxSourceMember*  self );
 
 #endif
 ~
@@ -22,6 +22,7 @@ const String*   IxSourceMember_getDefaultValue( const IxSourceMember*  self );
 ~!c/ixcompiler.IxSourceMember.c~
 #include "ixcompiler.EnumTokenType.h"
 #include "ixcompiler.IxSourceMember.h"
+#include "ixcompiler.IxSourceType.h"
 #include "ixcompiler.Node.h"
 #include "ixcompiler.NodeIterator.h"
 #include "ixcompiler.Platform.h"
@@ -31,14 +32,14 @@ const String*   IxSourceMember_getDefaultValue( const IxSourceMember*  self );
 
 struct _IxSourceMember
 {
-    bool    invalid;
-    bool    isInstance;
-    String* prefix;
-    String* name;
-    String* oftype;
-    String* type;
-    String* equals;
-    String* defaultValue;
+    bool          invalid;
+    bool          isInstance;
+    String*       prefix;
+    String*       name;
+    String*       oftype;
+    IxSourceType* type;
+    String*       equals;
+    String*       defaultValue;
 };
 
 static void IxSource_Unit_parseMember( IxSourceMember* self, const Node* prefixNode );
@@ -50,6 +51,13 @@ IxSourceMember* IxSourceMember_new( const Node* prefixNode )
     IxSourceMember* self = Platform_Alloc( sizeof( IxSourceMember ) );
     if ( self )
     {
+        self->prefix = String_new( "" );
+        self->name   = String_new( "" );
+        self->oftype = String_new( "" );
+        self->type   = IxSourceType_new( self->oftype );
+        self->equals = String_new( "" );
+        self->defaultValue = String_new( "" );
+
         IxSource_Unit_parseMember( self, prefixNode );
     }
     return self;
@@ -61,10 +69,10 @@ IxSourceMember* IxSourceMember_free( IxSourceMember** self )
 {
     if ( *self )
     {
-        String_free  ( &(*self)->name         );
-        String_free  ( &(*self)->type         );
-        String_free  ( &(*self)->defaultValue );
-        Platform_Free(    self                );
+        String_free      ( &(*self)->name         );
+        IxSourceType_free( &(*self)->type         );
+        String_free      ( &(*self)->defaultValue );
+        Platform_Free    (    self                );
     }
     return *self;
 }
@@ -92,7 +100,7 @@ const String* IxSourceMember_getName( const IxSourceMember* self )
 ~
 
 ~c/ixcompiler.IxSourceMember.c~
-const String* IxSourceMember_getType( const IxSourceMember* self )
+const IxSourceType* IxSourceMember_getType( const IxSourceMember* self )
 {
     return self->type;
 }
@@ -140,93 +148,87 @@ static void IxSource_Unit_parseMember( IxSourceMember* self, const Node* prefixN
     NodeIterator* it = Node_iterator( prefixNode );
     
     //  name
-    if ( NodeIterator_hasNonWhitespace( it ) )
+    if ( NodeIterator_hasNonWhitespaceOfType( it, WORD ) )
     {
-        const Node*  node  = NodeIterator_next( it );
-        const Token* token = Node_getToken( node ); 
-
-        if ( Token_getTokenType( token ) == WORD )
-        {
-            self->name = String_new( Token_getContent( token ) );
-        }
-        else
-        {
-            self->invalid = TRUE;
-        }
+        String_free( &self->name );
+        self->name = String_new( Token_getContent( Node_getToken( NodeIterator_next( it ) ) ) );
+    }
+    else
+    {
+        self->invalid = TRUE;
     }
 
     //  operator
-    if ( NodeIterator_hasNonWhitespace( it ) )
+    if ( NodeIterator_hasNonWhitespaceOfType( it, OFTYPE ) )
     {
-        const Node*  node  = NodeIterator_next( it );
-        const Token* token = Node_getToken( node ); 
-
-        if ( Token_getTokenType( token ) == OFTYPE )
-        {
-            self->oftype = String_new( Token_getContent( token ) );
-        }
-        else
-        {
-            self->invalid = TRUE;
-        }
+        String_free( &self->oftype );
+        self->oftype = String_new( Token_getContent( Node_getToken( NodeIterator_next( it ) ) ) );
+    }
+    else
+    {
+        self->invalid = TRUE;
     }
 
     //  type
-    if ( NodeIterator_hasNonWhitespace( it ) )
+    if
+    (
+        NodeIterator_hasNonWhitespaceOfType( it, PRIMITIVE )
+        ||
+        NodeIterator_hasNonWhitespaceOfType( it, WORD )
+    )
     {
         const Node*  node  = NodeIterator_next( it );
-        const Token* token = Node_getToken( node ); 
+        const Token* token = Node_getToken( node );
 
+        String* type_name = String_new( Token_getContent( token ) );
         {
-            StringBuffer* sb = StringBuffer_new();
+            IxSourceType_free( &self->type );
+            self->type = IxSourceType_new( type_name );
+        }
+        String_free( &type_name );
 
-            switch ( Token_getTokenType( token ) )
+        if ( NodeIterator_hasNonWhitespaceOfType( it, STARTSUBSCRIPT ) )
+        {
+            NodeIterator_next( it );
+            IxSourceType_setAsArray( self->type, TRUE );
+
+            if ( NodeIterator_hasNonWhitespaceOfType( it, ENDSUBSCRIPT ) )
             {
-            case PRIMITIVE:
-            case WORD:
-                StringBuffer_append( sb, Token_getContent( token ) );
-                break;
-
-            default:
+                NodeIterator_next( it );
+            }
+            else
+            {
                 self->invalid = TRUE;
             }
+        }
 
-            if ( NodeIterator_hasNonWhitespace( it ) )
+        if ( NodeIterator_hasNonWhitespaceOfType( it, INFIXOP ) )
+        {
+            const Token* token   = Node_getToken( NodeIterator_next( it ) );
+            const char*  content = Token_getContent( token );
+
+            switch ( content[0] )
             {
-                const Node*  node  = NodeIterator_next( it );
-                const Token* token = Node_getToken( node );
-
-                switch ( Token_getTokenType( token ) )
-                {
-                case STARTSUBSCRIPT:
-                    StringBuffer_append( sb, "[" );
-                    if ( NodeIterator_hasNonWhitespace( it ) )
-                    {
-                        const Node*  node  = NodeIterator_next( it );
-                        const Token* token = Node_getToken( node );
-
-                        switch ( Token_getTokenType( token ) )
-                        {
-                        case ENDSUBSCRIPT:
-                            StringBuffer_append( sb, "]" );
-                            break;
-                        default:
-                            self->invalid = TRUE;
-                        }
-                    }
-                    break;
-
-                case ASSIGNMENTOP:
-                    self->equals = String_new( Token_getContent( token ) );
-                    break;
-                
-                default:
-                    self->invalid = TRUE;
-                }
+            case '*':
+                IxSourceType_setAsPointer( self->type, TRUE );
+                break;
+            
+            case '&':
+                IxSourceType_setAsReference( self->type, TRUE );
+                break;
             }
-            self->type = StringBuffer_toString( sb );
+        }
 
-            StringBuffer_free( &sb );
+        if ( NodeIterator_hasNonWhitespaceOfType( it, ASSIGNMENTOP ) )
+        {
+            const Token* token = Node_getToken( NodeIterator_next( it ) );
+            self->equals = String_new( Token_getContent( token ) );
+        }
+
+        if ( NodeIterator_hasNonWhitespace( it ) )
+        {
+            const Token* token = Node_getToken( NodeIterator_next( it ) );
+            self->defaultValue = String_new( Token_getContent( token ) );
         }
     }
 }

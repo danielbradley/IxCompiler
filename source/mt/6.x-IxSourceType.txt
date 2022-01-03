@@ -1,0 +1,183 @@
+
+.. Ix Source Type
+
+~!include/ixcompiler.IxSourceType.h~
+#ifndef IXCOMPILER_IXSOURCETYPE_H
+#define IXCOMPILER_IXSOURCETYPE_H
+
+#include "ixcompiler.h"
+
+IxSourceType* IxSourceType_new( const String* name );
+
+IxSourceType* IxSourceType_free          ( IxSourceType** self               );
+void          IxSourceType_setAsArray    ( IxSourceType*  self, bool isArray );
+void          IxSourceType_setAsConst    ( IxSourceType*  self, bool isArray );
+void          IxSourceType_setAsFullName ( IxSourceType*  self, bool isArray );
+void          IxSourceType_setAsPointer  ( IxSourceType*  self, bool isArray );
+void          IxSourceType_setAsReference( IxSourceType*  self, bool isArray );
+
+const String* IxSourceType_getName    ( const IxSourceType*  self );
+bool          IxSourceType_isArray    ( const IxSourceType*  self );
+bool          IxSourceType_isConst    ( const IxSourceType*  self );
+bool          IxSourceType_isFullName ( const IxSourceType*  self );
+bool          IxSourceType_isPointer  ( const IxSourceType*  self );
+bool          IxSourceType_isPrimitive( const IxSourceType*  self );
+bool          IxSourceType_isReference( const IxSourceType*  self );
+
+#endif
+~
+
+~!c/ixcompiler.IxSourceType.c~
+#include "ixcompiler.IxSourceType.h"
+#include "ixcompiler.Platform.h"
+#include "ixcompiler.String.h"
+
+struct _IxSourceType
+{
+    bool    isArray;
+    bool    isConst;
+    bool    isFullName;
+    bool    isPointer;
+    bool    isPrimitive;
+    bool    isReference;
+    String* name;
+};
+
+static bool IxSourceType_IsPrimitive( const String* name );
+~
+
+~c/ixcompiler.IxSourceType.c~
+IxSourceType* IxSourceType_new( const String* name )
+{
+    IxSourceType* self = Platform_Alloc( sizeof(IxSourceType) );
+    if ( self )
+    {
+        self->name        = String_copy( name );
+        self->isFullName  = String_contains_chars( name, "." );
+        self->isPrimitive = IxSourceType_IsPrimitive( name );
+    }
+    return self;
+}
+~
+
+~c/ixcompiler.IxSourceType.c~
+IxSourceType* IxSourceType_free( IxSourceType** self )
+{
+    if ( self )
+    {
+        String_free( &(*self)->name );
+    }
+    return *self;
+}
+~
+
+~c/ixcompiler.IxSourceType.c~
+void IxSourceType_setAsArray( IxSourceType* self, bool isArray )
+{
+    self->isArray = isArray;
+}
+~
+
+~c/ixcompiler.IxSourceType.c~
+void IxSourceType_setAsConst( IxSourceType* self, bool isConst )
+{
+    self->isConst = isConst;
+}
+~
+
+~c/ixcompiler.IxSourceType.c~
+void IxSourceType_setAsPointer( IxSourceType* self, bool isPointer )
+{
+    self->isPointer = isPointer;
+}
+~
+
+~c/ixcompiler.IxSourceType.c~
+void IxSourceType_setAsReference( IxSourceType* self, bool isReference )
+{
+    self->isReference = isReference;
+}
+~
+
+~c/ixcompiler.IxSourceType.c~
+const String* IxSourceType_getName( const IxSourceType* self )
+{
+    return self->name;
+}
+~
+
+~c/ixcompiler.IxSourceType.c~
+bool IxSourceType_isArray( const IxSourceType* self )
+{
+    return self->isArray;
+}
+~
+
+~c/ixcompiler.IxSourceType.c~
+bool IxSourceType_isConst( const IxSourceType* self )
+{
+    return self->isConst;
+}
+~
+
+~c/ixcompiler.IxSourceType.c~
+bool IxSourceType_isFullName( const IxSourceType* self )
+{
+    return self->isFullName;
+}
+~
+
+~c/ixcompiler.IxSourceType.c~
+bool IxSourceType_isPointer( const IxSourceType* self )
+{
+    return self->isPointer;
+}
+~
+
+~c/ixcompiler.IxSourceType.c~
+bool IxSourceType_isPrimitive( const IxSourceType* self )
+{
+    return self->isPrimitive;
+}
+~
+
+~c/ixcompiler.IxSourceType.c~
+bool IxSourceType_isReference( const IxSourceType* self )
+{
+    return self->isReference;
+}
+~
+
+~c/ixcompiler.IxSourceType.c~
+static bool IxSourceType_IsPrimitive( const String* name )
+{
+    int len = String_getLength( name );
+
+    switch( len )
+    {
+    case 3:
+        return
+            String_equals_chars( name, "int" );
+
+    case 4:
+        return
+            String_equals_chars( name, "bool" ) ||
+            String_equals_chars( name, "byte" ) ||
+            String_equals_chars( name, "char" ) ||
+            String_equals_chars( name, "long" ) ||
+            String_equals_chars( name, "void" );
+
+    case 5:
+        return
+            String_equals_chars( name, "float" ) ||
+            String_equals_chars( name, "short" );
+
+    case 6:
+        return
+            String_equals_chars( name, "double" );
+
+    default:
+        return FALSE;
+    }
+}
+~

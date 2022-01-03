@@ -73,6 +73,13 @@ static String* GenerateHeaderFile( const IxSourceUnitCollection* sourceUnits )
             StringBuffer_append( sb, "\n" );
         }
 
+        // Defines
+        {
+            StringBuffer_append( sb, "#ifndef REF\n" );
+            StringBuffer_append( sb, "#define REF\n" );
+            StringBuffer_append( sb, "#endif\n"      );
+        }
+
         // Types
         {
             ArrayOfString* types   = IxSourceUnitCollection_retrieveTypes( sourceUnits );

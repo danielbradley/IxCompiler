@@ -1,4 +1,18 @@
 
+... Generate C Source File
+
+~c/ixcompiler.GeneratorForC.c~
+static String* GenerateSourceFile                ( const IxSourceUnitCollection* sourceUnits );
+static String* GenerateIncludes                  ( const IxSourceUnitCollection* sourceUnits );
+static String* GenerateStructs                   ( const IxSourceUnitCollection* sourceUnits );
+static String* GenerateStructForSourceUnit       ( const IxSourceUnit*           sourceUnit, const Dictionary* resolvedTypes );
+static String* GenerateStructMembersForSourceUnit( const IxSourceUnit*           sourceUnit, const Dictionary* resolvedTypes );
+static String* GenerateMethods                   ( const IxSourceUnitCollection* sourceUnits );
+static String* GenerateMethodsForSourceUnit      ( const IxSourceUnit*           sourceUnit, const Dictionary* resolvedTypes );
+static String* GenerateFunctionForMethod         ( const IxSourceMethod*         method,     const Dictionary* resolvedTypes, const char* classPrefix );
+static String* GenerateParametersForMethod       ( const IxSourceMethod*         method,     const Dictionary* resolvedTypes );
+~
+
 ~c/ixcompiler.GeneratorForC.c~
 static void GenerateAndWriteSourceFile( const IxSourceUnitCollection* sourceUnits, const String* outputDir )
 {
@@ -146,45 +160,47 @@ static String* GenerateStructMembersForSourceUnit( const IxSourceUnit* sourceUni
                         StringBuffer_append( sb, "\n" );
                         StringBuffer_append( sb, "\t" );
 
-                        if ( IxSourceMember_isInvalid( member ) )
+                        const IxSourceType* type = IxSourceMember_getType( member );
+                        const String*       name = IxSourceType_getName( type );
+                        const String*       full = null;
+
+                        if
+                        (
+                            IxSourceType_isFullName( type )
+                            ||
+                            IxSourceType_isPrimitive( type )
+                        )
                         {
-                            StringBuffer_append( sb, "!!" );
+                            full = name;
+                        }
+                        else
+                        {
+                            full = Dictionary_get( resolvedTypes, name );
                         }
 
-                        const String* type = IxSourceMember_getType( member );
+                        String* converted = (full) ? String_replace( full, '.', '_' ) : String_new( "" );
                         {
-                            String* ctype     = String_copy( type );
-                            String* subscript = String_new( "[]" );
+                            StringBuffer_append( sb, String_content( converted ) );
+                            if ( IxSourceType_isPointer( type ) )
                             {
-                                if ( String_contains( ctype, subscript ) )
-                                {
-                                    String_free( &ctype );
-                                    ctype = String_replace( type, '[', '\0' );
-                                }
-                                else
-                                {
-                                    String_free( &subscript );
-                                    subscript = String_new( "" );
-                                }
-
-                                {
-                                    const String* fullCType = Dictionary_get( resolvedTypes, ctype );
-                                    if ( fullCType )
-                                    {
-                                        String_free( &ctype );
-                                        ctype = String_replace( fullCType, '.', '_' );
-                                    }
-                                }
-
-                                StringBuffer_append( sb, String_content( ctype ) );
-                                StringBuffer_append( sb, " "  );
-                                StringBuffer_append( sb, String_content( IxSourceMember_getName( member ) ) );
-                                StringBuffer_append( sb, String_content( subscript ) );
-                                StringBuffer_append( sb, ";"  );
+                                StringBuffer_append( sb, "*"  );
                             }
-                            String_free( &ctype     );
-                            String_free( &subscript );
-                        }
+
+                            if ( IxSourceType_isReference( type ) )
+                            {
+                                StringBuffer_append( sb, "* REF"  );
+                            }
+
+                            StringBuffer_append( sb, " "  );
+                            StringBuffer_append( sb, String_content( IxSourceMember_getName( member ) ) );
+
+                            if ( IxSourceType_isArray( type ) )
+                            {
+                                StringBuffer_append( sb, "[]" );
+                            }
+                            StringBuffer_append( sb, ";"  );
+                        }   
+                        String_free( &converted );
                     }
                 }
             }
@@ -199,6 +215,8 @@ static String* GenerateStructMembersForSourceUnit( const IxSourceUnit* sourceUni
 ~c/ixcompiler.GeneratorForC.c~
 static String* GenerateMethods( const IxSourceUnitCollection* sourceUnits )
 {
+    const Dictionary* resolvedTypes = IxSourceUnitCollection_getResolvedTypes( sourceUnits );
+
     String* methods = null;
     {
         StringBuffer* sb = StringBuffer_new();
@@ -208,7 +226,7 @@ static String* GenerateMethods( const IxSourceUnitCollection* sourceUnits )
             for ( int i=0; i < n; i++ )
             {
                 const IxSourceUnit* sourceUnit = IxSourceUnitCollection_get( sourceUnits, i );
-                StringBuffer_appendLine( sb, "", GenerateMethodsForSourceUnit( sourceUnit ) );
+                StringBuffer_appendLine( sb, "", GenerateMethodsForSourceUnit( sourceUnit, resolvedTypes ) );
             }
             methods = StringBuffer_toString( sb );
         }
@@ -219,9 +237,7 @@ static String* GenerateMethods( const IxSourceUnitCollection* sourceUnits )
 ~
 
 ~c/ixcompiler.GeneratorForC.c~
-static String* GenerateFunctionForMethod( const IxSourceMethod* method, const char* classPrefix );
-
-static String* GenerateMethodsForSourceUnit( const IxSourceUnit* sourceUnit )
+static String* GenerateMethodsForSourceUnit( const IxSourceUnit* sourceUnit, const Dictionary* resolvedTypes )
 {
     const char* classPrefix = IxSourceUnit_getPrefix( sourceUnit );
 
@@ -235,7 +251,7 @@ static String* GenerateMethodsForSourceUnit( const IxSourceUnit* sourceUnit )
                 for ( int i=0; i < n; i++ )
                 {
                     const IxSourceMethod* method = (IxSourceMethod*) Array_getObject( methods, i );
-                    StringBuffer_appendLine( sb, "", GenerateFunctionForMethod( method, classPrefix ) );
+                    StringBuffer_appendLine( sb, "", GenerateFunctionForMethod( method, resolvedTypes, classPrefix ) );
                 }
             }
             st_methods = StringBuffer_toString( sb );
@@ -247,7 +263,7 @@ static String* GenerateMethodsForSourceUnit( const IxSourceUnit* sourceUnit )
 ~
 
 ~c/ixcompiler.GeneratorForC.c~
-static String* GenerateFunctionForMethod( const IxSourceMethod* method, const char* classPrefix )
+static String* GenerateFunctionForMethod( const IxSourceMethod* method, const Dictionary* resolvedTypes, const char* classPrefix )
 {
     String* st_method = null;
     {
@@ -281,7 +297,13 @@ static String* GenerateFunctionForMethod( const IxSourceMethod* method, const ch
             StringBuffer_append( sb, methodName );
             StringBuffer_append( sb, "\n" );
             StringBuffer_append( sb, "(" );
-            StringBuffer_append( sb, "\n" );
+
+            const Array* parameters = IxSourceMethod_getParameters( method );
+            if ( 0 < Array_getLength( parameters ) )
+            {
+                StringBuffer_appendLine( sb, "", GenerateParametersForMethod( method, resolvedTypes ) );
+            }
+
             StringBuffer_append( sb, ")" );
             StringBuffer_append( sb, "\n" );
             StringBuffer_append( sb, "{" );
@@ -294,5 +316,55 @@ static String* GenerateFunctionForMethod( const IxSourceMethod* method, const ch
         StringBuffer_free( &sb );
     }
     return st_method;
+}
+~
+
+~c/ixcompiler.GeneratorForC.c~
+static String* GenerateParametersForMethod( const IxSourceMethod* method, const Dictionary* resolvedTypes )
+{
+    String* st_parameters = null;
+    {
+        StringBuffer* sb = StringBuffer_new();
+        {
+            const Array* parameters = IxSourceMethod_getParameters( method );
+            int          n          = Array_getLength( parameters );
+
+            for ( int i=0; i < n; i++ )
+            {
+                const IxSourceParameter* parameter = (IxSourceParameter*) Array_getObject( parameters, i );
+                const IxSourceType*      type      = IxSourceParameter_getType( parameter );
+                const String*            name      = IxSourceParameter_getName( parameter );
+                const String*            typeName  = IxSourceType_getName( type );
+
+                if ( !IxSourceType_isFullName( type ) && Dictionary_get( resolvedTypes, typeName ) )
+                {
+                    typeName = Dictionary_get( resolvedTypes, typeName );
+                }
+
+                {
+                    String* ctype = String_replace( typeName, '.', '_' );
+
+                    StringBuffer_append( sb, "\n" );
+                    StringBuffer_append( sb, "\t" );
+                    StringBuffer_append( sb, String_content( ctype ) );
+                    StringBuffer_append( sb, " " );
+                    StringBuffer_append( sb, String_content( name ) );
+                    if ( IxSourceType_isArray( type ) )
+                    {
+                        StringBuffer_append( sb, "[]" );
+                    }
+                    if ( i < (n-1) )
+                    {
+                        StringBuffer_append( sb, "," );
+                    }
+
+                    String_free( &ctype );
+                }
+            }
+            st_parameters = StringBuffer_toString( sb );
+        }
+        StringBuffer_free( &sb );
+    }
+    return st_parameters;
 }
 ~

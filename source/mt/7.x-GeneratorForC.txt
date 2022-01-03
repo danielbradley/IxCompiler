@@ -23,6 +23,8 @@ int Generator_FunctionForC( const IxSourceUnitCollection* source_units, const Pa
 #include "ixcompiler.IxSourceClass.h"
 #include "ixcompiler.IxSourceMember.h"
 #include "ixcompiler.IxSourceMethod.h"
+#include "ixcompiler.IxSourceParameter.h"
+#include "ixcompiler.IxSourceType.h"
 #include "ixcompiler.IxSourceUnit.h"
 #include "ixcompiler.IxSourceUnitCollection.h"
 #include "ixcompiler.Path.h"
@@ -39,13 +41,6 @@ static String* GenerateIfDef             ( const IxSourceUnit*           sourceU
 static String* GenerateTypeDef           ( const String*                 type,        int           longest  );
 
 static void    GenerateAndWriteSourceFile        ( const IxSourceUnitCollection* sourceUnits, const String* outputDir );
-static String* GenerateSourceFile                ( const IxSourceUnitCollection* sourceUnits );
-static String* GenerateIncludes                  ( const IxSourceUnitCollection* sourceUnits );
-static String* GenerateStructs                   ( const IxSourceUnitCollection* sourceUnits );
-static String* GenerateStructForSourceUnit       ( const IxSourceUnit*           sourceUnit, const Dictionary* resolvedTypes );
-static String* GenerateStructMembersForSourceUnit( const IxSourceUnit*           sourceUnit, const Dictionary* resolvedTypes );
-static String* GenerateMethods                   ( const IxSourceUnitCollection* sourceUnits );
-static String* GenerateMethodsForSourceUnit      ( const IxSourceUnit*           sourceUnit  );
 ~
 
 ~c/ixcompiler.GeneratorForC.c~

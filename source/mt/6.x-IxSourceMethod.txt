@@ -13,6 +13,7 @@ IxSourceMethod* IxSourceMethod_free             (       IxSourceMethod** self );
 const char*     IxSourceMethod_getAccessModifier( const IxSourceMethod*  self );
 const char*     IxSourceMethod_getConst         ( const IxSourceMethod*  self );
 const char*     IxSourceMethod_getMethodName    ( const IxSourceMethod*  self );
+const Array*    IxSourceMethod_getParameters    ( const IxSourceMethod*  self );
 const char*     IxSourceMethod_getReturnType    ( const IxSourceMethod*  self );
 
 #endif
@@ -106,6 +107,13 @@ const char* IxSourceMethod_getConst( const IxSourceMethod* self )
 const char* IxSourceMethod_getMethodName( const IxSourceMethod* self )
 {
     return String_content( self->methodName );
+}
+~
+
+~c/ixcompiler.IxSourceMethod.c~
+const Array* IxSourceMethod_getParameters( const IxSourceMethod* self )
+{
+    return self->parameters;
 }
 ~
 
@@ -209,7 +217,7 @@ void IxSourceMethod_parseParameters( IxSourceMethod* self, const Node* startNode
     {
         const Node* wordNode = NodeIterator_next( it );
 
-        //Array_push( self->parameters, Give( IxSourceParameter_new( wordNode ) ) );
+        Array_push( self->parameters, Give( IxSourceParameter_new( wordNode ) ) );
     }
 }
 ~

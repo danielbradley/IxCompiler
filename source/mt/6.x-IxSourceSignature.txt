@@ -7,43 +7,61 @@
 
 #include "ixcompiler.h"
 
-IxSourceSignature* IxSourceSignature_new( String** access_modifier, bool const, String** method_name, String** return_type );
-IxSourceSignature* IxSourceSignature_free( IxSourceSignature** self );
+IxSourceSignature* IxSourceSignature_new( const Node* accessModifierNode );
 
-const String*                   IxSourceSignature_getAccessModifier( const IxSourceSignature* self );
-bool                            IxSourceSignature_isConst          ( const IxSourceSignature* self );
-const String*                   IxSourceSignature_getMethodName    ( const IxSourceSignature* self );
-const String*                   IxSourceSignature_getReturnType    ( const IxSourceSignature* self );
+IxSourceSignature* IxSourceSignature_free             (       IxSourceSignature** self );
+const String*      IxSourceSignature_getAccessModifier( const IxSourceSignature*  self );
+const String*      IxSourceSignature_getConst         ( const IxSourceSignature*  self );
+bool               IxSourceSignature_isConst          ( const IxSourceSignature*  self );
+const String*      IxSourceSignature_getMethodName    ( const IxSourceSignature*  self );
+const Array*       IxSourceSignature_getParameters    ( const IxSourceSignature*  self );
+const String*      IxSourceSignature_getReturnType    ( const IxSourceSignature*  self );
 
 #endif
 ~
 
 ~!c/ixcompiler.IxSourceSignature.c~
+#include "ixcompiler.Array.h"
+#include "ixcompiler.EnumTokenType.h"
+#include "ixcompiler.IxSourceParameter.h"
 #include "ixcompiler.IxSourceSignature.h"
+#include "ixcompiler.Node.h"
+#include "ixcompiler.NodeIterator.h"
 #include "ixcompiler.Platform.h"
 #include "ixcompiler.String.h"
+#include "ixcompiler.Token.h"
 
 struct _IxSourceSignature
 {
-    String*                   accessModifier;
+    bool                      invalid;
     bool                      isConst;
-    String*                   methodName;
-    //ArrayOfIxSourceParameter* parameters;
-    String*                   returnType;
+    String*                   modifier;     //  public
+    String*                   konst;        //  const
+    String*                   methodName;   //  getSomething
+    Array*                    parameters;   //  ( name: Type*, size: int )
+    String*                   oftype;       //  :
+    String*                   returnType;   //  String*
 };
+
+void IxSourceSignature_parseModifier    ( IxSourceSignature* self, const Node* modifierNode );
+void IxSourceSignature_parseNameChildren( IxSourceSignature* self, const Node* nameNode     );
+void IxSourceSignature_parseParameters  ( IxSourceSignature* self, const Node* startNode    );
 ~
 
 ~c/ixcompiler.IxSourceSignature.c~
-IxSourceSignature* IxSourceSignature_new( String** access_modifier, bool is_const, String** method_name, String** return_type )
+IxSourceSignature* IxSourceSignature_new( const Node* accessModifierNode )
 {
     IxSourceSignature* self = Platform_Alloc( sizeof( IxSourceSignature ) );
     if ( self )
     {
-        self->accessModifier = Take( access_modifier );
-        self->isConst        = is_const;
-        self->methodName     = Take( method_name );
-        //self->parameters     = Take( parameters  );
-        self->returnType     = Take( return_type );
+        self->modifier   = String_new( "" );
+        self->konst      = String_new( "" );
+        self->methodName = String_new( "" );
+        self->parameters = Array_new( (Destructor) IxSourceSignature_free );
+        self->oftype     = String_new( "" );
+        self->returnType = String_new( "" );
+
+        IxSourceSignature_parseModifier( self, accessModifierNode );
     }
     return self;
 }
@@ -54,12 +72,155 @@ IxSourceSignature* IxSourceSignature_free( IxSourceSignature** self )
 {
     if ( *self )
     {
-        String_free                   ( &(*self)->accessModifier );
-        String_free                   ( &(*self)->methodName     );
-        //ArrayOfIxSourceParameter_free ( &(*self)->parameters     );
-        String_free                   ( &(*self)->returnType     );
-        Platform_Free                 (    self                  );
+        String_free  ( &(*self)->modifier   );
+        String_free  ( &(*self)->konst      );
+        String_free  ( &(*self)->methodName );
+        Array_free   ( &(*self)->parameters );
+        String_free  ( &(*self)->oftype     );
+        String_free  ( &(*self)->returnType );
+        Platform_Free(    self              );
     }
     return *self;
+}
+~
+
+~c/ixcompiler.IxSourceSignature.c~
+const String* IxSourceSignature_getAccessModifier( const IxSourceSignature* self )
+{
+    return self->modifier;
+}
+~
+
+~c/ixcompiler.IxSourceSignature.c~
+const String* IxSourceSignature_getConst( const IxSourceSignature* self )
+{
+    return self->konst;
+}
+~
+
+~c/ixcompiler.IxSourceSignature.c~
+bool IxSourceSignature_isConst( const IxSourceSignature* self )
+{
+    return self->isConst;
+}
+~
+
+~c/ixcompiler.IxSourceSignature.c~
+const String* IxSourceSignature_getMethodName( const IxSourceSignature* self )
+{
+    return self->methodName;
+}
+~
+
+~c/ixcompiler.IxSourceSignature.c~
+const Array* IxSourceSignature_getParameters( const IxSourceSignature* self )
+{
+    return self->parameters;
+}
+~
+
+~c/ixcompiler.IxSourceSignature.c~
+const String* IxSourceSignature_getReturnType( const IxSourceSignature* self )
+{
+    return self->returnType;
+}
+~
+
+~c/ixcompiler.IxSourceSignature.c~
+void IxSourceSignature_parseModifier( IxSourceSignature* self, const Node* modifierNode )
+{
+    const Token* token = Node_getToken( modifierNode );
+    
+    if ( MODIFIER != Token_getTokenType( token ) )
+    {
+        self->invalid = TRUE;
+    }
+
+    String_free( &self->modifier );
+    self->modifier = String_new( Token_getContent( Node_getToken( modifierNode ) ) );
+
+    NodeIterator* it = Node_iterator( modifierNode );
+
+    //  const (optional)
+    if ( NodeIterator_hasNonWhitespaceOfType( it, KEYWORD ) )
+    {
+        const Node*  node  = NodeIterator_next( it );
+        const Token* token = Node_getToken( node );
+
+        if ( String_Equals( "const", Token_getContent( token ) ) )
+        {
+            String_free( &(self->konst) );
+            self->konst = String_new( Token_getContent( token ) );
+            self->isConst = TRUE;
+        }
+        else
+        {
+            self->invalid = TRUE;
+        }
+    }
+
+    //  name
+    if ( NodeIterator_hasNonWhitespaceOfType( it, WORD ) )
+    {
+        const Node*  node  = NodeIterator_next( it );
+        const Token* token = Node_getToken( node );
+
+        String_free( &(self->methodName) );
+        self->methodName = String_new( Token_getContent( token ) );
+
+        IxSourceSignature_parseNameChildren( self, node );
+    }
+    else
+    {
+        self->invalid = TRUE;
+    }
+}
+~
+
+~c/ixcompiler.IxSourceSignature.c~
+void IxSourceSignature_parseNameChildren( IxSourceSignature* self, const Node* nameNode )
+{
+    NodeIterator* it = Node_iterator( nameNode );
+
+    //  '(' START
+    if ( NodeIterator_hasNonWhitespaceOfType( it, STARTEXPRESSION ) )
+    {
+        const Node* startNode = NodeIterator_next( it );
+        IxSourceSignature_parseParameters( self, startNode );
+    }
+    else
+    {
+        self->invalid = TRUE;
+    }
+
+    if ( NodeIterator_hasNonWhitespaceOfType( it, OFTYPE ) )
+    {
+        String_free( &(self->oftype) );
+        self->oftype = String_new( Token_getContent( Node_getToken( NodeIterator_next( it ) ) ) );
+
+        if ( NodeIterator_hasNonWhitespaceOfType( it, PRIMITIVE ) || NodeIterator_hasNonWhitespaceOfType( it, PRIMITIVE ) )
+        {
+            String_free( &(self->returnType) );
+            self->returnType = String_new( Token_getContent( Node_getToken( NodeIterator_next( it ) ) ) );
+        }
+        else
+        {
+            self->invalid = TRUE;
+        }
+    }
+}
+~
+
+~c/ixcompiler.IxSourceSignature.c~
+void IxSourceSignature_parseParameters( IxSourceSignature* self, const Node* startNode )
+{
+    NodeIterator* it = Node_iterator( startNode );
+
+    while ( NodeIterator_hasNonWhitespaceOfType( it, WORD ) )
+    {
+        const Node* wordNode = NodeIterator_next( it );
+
+        Array_push( self->parameters, Give( IxSourceParameter_new( wordNode ) ) );
+    }
 }
 ~

@@ -7,11 +7,12 @@
 
 #include "ixcompiler.h"
 
-Entry* Entry_new( String** key, String** val );
+Entry* Entry_new           ( String** key, void** val );
+Entry* Entry_new_destructor( String** key, void** val, Destructor destructor );
 
       Entry*  Entry_free    (       Entry** self );
 const String* Entry_getKey  ( const Entry*  self );
-const String* Entry_getValue( const Entry*  self );
+const void*   Entry_getValue( const Entry*  self );
 
 #endif
 ~
@@ -23,14 +24,15 @@ const String* Entry_getValue( const Entry*  self );
 
 struct _Entry
 {
-    String* key;
-    String* val;
+    Destructor destroy;
+    String*    key;
+    void*      val;
 
 };
 ~
 
 ~c/ixcompiler.Entry.c~
-Entry* Entry_new( String** key, String** val )
+Entry* Entry_new( String** key, void** val )
 {
     Entry* self = Platform_Alloc( sizeof( Entry ) );
     if ( self )
@@ -43,13 +45,30 @@ Entry* Entry_new( String** key, String** val )
 ~
 
 ~c/ixcompiler.Entry.c~
+Entry* Entry_new_destructor( String** key, void** val, Destructor destructor )
+{
+    Entry* self = Platform_Alloc( sizeof( Entry ) );
+    if ( self )
+    {
+        self->destroy = destructor;
+        self->key     = Take( key );
+        self->val     = Take( val );
+    }
+    return self;
+}
+~
+
+~c/ixcompiler.Entry.c~
 Entry* Entry_free( Entry** self )
 {
     if ( *self )
     {
         String_free( &(*self)->key );
-        String_free( &(*self)->val );
 
+        if ( (*self)->destroy )
+        {
+            (*self)->destroy( &(*self)->val );
+        }
         Platform_Free( self );
     }
     return *self;
@@ -64,7 +83,7 @@ const String* Entry_getKey( const Entry* self )
 ~
 
 ~c/ixcompiler.Entry.c~
-const String* Entry_getValue( const Entry* self )
+const void* Entry_getValue( const Entry* self )
 {
     return self->val;
 }

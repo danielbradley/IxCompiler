@@ -7,13 +7,16 @@
 
 #include "ixcompiler.h"
 
-Dictionary* Dictionary_new();
+Dictionary* Dictionary_new           ( bool is_map );
+Dictionary* Dictionary_new_destructor( bool is_map, Destructor destructor );
 
 Dictionary* Dictionary_free( Dictionary** self );
 
-bool          Dictionary_put(       Dictionary* self, String** key, String** value );
-bool          Dictionary_has( const Dictionary* self, const String* key );
-const String* Dictionary_get( const Dictionary* self, const String* key );
+bool         Dictionary_put          (       Dictionary* self,       String** key,       void** value     );
+bool         Dictionary_put_reference(       Dictionary* self,       String** key, const void*  reference );
+bool         Dictionary_has          ( const Dictionary* self, const String* key );
+const void*  Dictionary_get          ( const Dictionary* self, const String* key );
+const Array* Dictionary_getEntries   ( const Dictionary* self );
 
 #endif
 ~
@@ -27,8 +30,9 @@ const String* Dictionary_get( const Dictionary* self, const String* key );
 
 struct _Dictionary
 {
-    bool   isMap;
-    Array* entries;
+    Destructor destroy;
+    bool       isMap;
+    Array*     entries;
 };
 
 static const Entry* Dictionary_find( const Dictionary* self, const String* key );
@@ -41,6 +45,20 @@ Dictionary* Dictionary_new( bool is_map )
     if ( self )
     {
         self->isMap = is_map;
+        self->entries = Array_new();
+    }
+    return self;
+}
+~
+
+~c/ixcompiler.Dictionary.c~
+Dictionary* Dictionary_new_destructor( bool is_map, Destructor destructor )
+{
+    Dictionary* self = Platform_Alloc( sizeof( Dictionary ) );
+    if ( self )
+    {
+        self->destroy = destructor;
+        self->isMap   = is_map;
         self->entries = Array_new();
     }
     return self;
@@ -67,18 +85,36 @@ Dictionary* Dictionary_free( Dictionary** self )
 ~
 
 ~c/ixcompiler.Dictionary.c~
-bool Dictionary_put( Dictionary* self, String** key, String** value )
+bool Dictionary_put( Dictionary* self, String** key, void** value )
 {
     if ( self->isMap && Dictionary_has( self, *key ) )
     {
         String_free( key   );
-        String_free( value );
+
+        self->destroy( value );
 
         return FALSE;
     }
     else
     {
-        Entry* entry = Entry_new( key, value );
+        Entry* entry = Entry_new_destructor( key, value, self->destroy );
+        Array_push( self->entries, (void**) &entry );
+        return TRUE;
+    }
+}
+~
+
+~c/ixcompiler.Dictionary.c~
+bool Dictionary_put_reference( Dictionary* self, String** key, const void* reference )
+{
+    if ( self->isMap && Dictionary_has( self, *key ) )
+    {
+        String_free( key );
+        return FALSE;
+    }
+    else
+    {
+        Entry* entry = Entry_new( key, (void**) &reference );
         Array_push( self->entries, (void**) &entry );
         return TRUE;
     }
@@ -93,11 +129,18 @@ bool Dictionary_has( const Dictionary* self, const String* key )
 ~
 
 ~c/ixcompiler.Dictionary.c~
-const String* Dictionary_get( const Dictionary* self, const String* key )
+const void* Dictionary_get( const Dictionary* self, const String* key )
 {
     const Entry* tmp = Dictionary_find( self, key );
 
     return (tmp) ? Entry_getValue( tmp ) : null;
+}
+~
+
+~c/ixcompiler.Dictionary.c~
+const Array* Dictionary_getEntries( const Dictionary* self )
+{
+    return self->entries;
 }
 ~
 

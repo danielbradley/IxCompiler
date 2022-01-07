@@ -5,7 +5,9 @@
 #include "ixcompiler.h"
 
 static void* stash[100];
+~
 
+~c/ixcompiler.Take.c~
 void** Give( void* pointer )
 {
     void** tmp = stash;
@@ -16,12 +18,14 @@ void** Give( void* pointer )
 
     return tmp;
 }
+~
 
-void* Take( void* giver )
+~c/ixcompiler.Take.c~
+void* Take( ANY given )
 {
-    void** _giver = (void**) giver;
+    void** _given = (void**) given;
 
-    void* keeper = *_giver; *_giver = null;
+    void* keeper = *_given; *_given = null;
 
     return keeper;
 }

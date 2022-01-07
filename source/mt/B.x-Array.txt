@@ -15,19 +15,22 @@ void*  Array_pop           ( Array*  self );
 void*  Array_shift         ( Array*  self );
 Array* Array_unshift       ( Array*  self, void** object );
 
-
 int         Array_getLength( const Array* self            );
 const void* Array_getObject( const Array* self, int index );
+
+int Array_Sizeof();
 
 #endif
 ~
 
 ~!c/ixcompiler.Array.c~
 #include "ixcompiler.Array.h"
+#include "ixcompiler.Object.h"
 #include "ixcompiler.Platform.h"
 
 struct _Array
 {
+    Object     super;
     Destructor destroy;
     void**     objects;
     int        length;
@@ -69,10 +72,11 @@ Array* Array_new()
 
     if ( self )
     {
-        self->destroy = 0;
-        self->objects = 0;
-        self->length  = 0;
-        self->size    = 0;
+        self->super.free = (Destructor) Array_free;
+        self->destroy    = 0;
+        self->objects    = 0;
+        self->length     = 0;
+        self->size       = 0;
     }
     return self;
 }

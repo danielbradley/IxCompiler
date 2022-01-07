@@ -1,0 +1,29 @@
+
+.. Object
+
+~!include/ixcompiler.Object.h~
+#ifndef IXCOMPILER_OBJECT_H
+#define IXCOMPILER_OBJECT_H
+
+#include "ixcompiler.h"
+
+struct _Object
+{
+    Destructor free;
+};
+
+int Object_Sizeof();
+
+#endif
+~
+
+~!c/ixcompiler.Object.c~
+#include "ixcompiler.Object.h"
+~
+
+~c/ixcompiler.Object.c~
+int Object_Sizeof()
+{
+    return sizeof(Object);
+}
+~

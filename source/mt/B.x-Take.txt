@@ -32,12 +32,14 @@ void* Take( ANY given )
 ~
 
 ~c/ixcompiler.Take.c~
-void Swap( ANY one, ANY two )
+void Swap( ANY _one, ANY _two )
 {
-    void* tmp;
+    void** one = _one;
+    void** two = _two;
+    void*  tmp;
 
-    tmp = *one;
-    one =  two;
-    two =  tmp;
+    tmp  = *one;
+    *one = *two;
+    *two =  tmp;
 }
 ~

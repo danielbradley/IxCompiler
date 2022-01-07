@@ -101,7 +101,7 @@ typedef int   (*GeneratorFn)( const IxSourceUnitCollection*, const Path* );
 
 void** Give  ( void* pointer );
 void*  Take  ( void* giver   );
-void   Swap  ( ANY _dst, ANY _src );
+void   Swap  ( ANY one, ANY two );
 
 #endif
 ~

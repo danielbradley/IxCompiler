@@ -4,12 +4,11 @@
 #ifndef IXCOMPILER_STRINGBUFFER_H
 #define IXCOMPILER_STRINGBUFFER_H
 
-StringBuffer* StringBuffer_new              ();
-StringBuffer* StringBuffer_free             ( StringBuffer** self                     );
-StringBuffer* StringBuffer_append           ( StringBuffer*  self, const char* suffix );
-StringBuffer* StringBuffer_append_char      ( StringBuffer*  self, char        ch     );
-StringBuffer* StringBuffer_appendLine       ( StringBuffer*  self, char* prefix, DISPOSABLE String* string );
-
+StringBuffer* StringBuffer_new                       ();
+StringBuffer* StringBuffer_free                      ( StringBuffer** self                                                );
+StringBuffer* StringBuffer_append_char               ( StringBuffer*  self,       char  ch                                );
+StringBuffer* StringBuffer_append                    ( StringBuffer*  self, const char* suffix                            );
+StringBuffer* StringBuffer_appendLine_prefix_optional( StringBuffer*  self, const char* prefix, String** optional         );
 
 const char*   StringBuffer_content    ( const StringBuffer*  self );
 bool          StringBuffer_isEmpty    ( const StringBuffer*  self );
@@ -62,19 +61,6 @@ StringBuffer* StringBuffer_free( StringBuffer** self )
 ~
 
 ~c/ixcompiler.StringBuffer.c~
-StringBuffer* StringBuffer_append( StringBuffer* self, const char* suffix )
-{
-    self->length += String_Length( suffix );
-    char* tmp = self->content;
-    self->content = String_Cat( tmp, suffix );
-
-    Platform_Free( &tmp );
-
-    return self;
-}
-~
-
-~c/ixcompiler.StringBuffer.c~
 StringBuffer* StringBuffer_append_char( StringBuffer* self, char ch )
 {
     char suffix[2] = { ch , '\0' };
@@ -84,18 +70,31 @@ StringBuffer* StringBuffer_append_char( StringBuffer* self, char ch )
 ~
 
 ~c/ixcompiler.StringBuffer.c~
-StringBuffer* StringBuffer_appendLine ( StringBuffer*  self, char* prefix, DISPOSABLE String* optional_string )
+StringBuffer* StringBuffer_append( StringBuffer* self, const const char* suffix )
 {
-    if ( String_Length( prefix ) )
+    self->length += String_Length( suffix );
+    char*   tmp   = self->content;
+    self->content = String_Convert( (String**) Give( String_Cat( tmp, suffix ) ) );
+
+    Platform_Free( &tmp );
+
+    return self;
+}
+~
+
+~c/ixcompiler.StringBuffer.c~
+StringBuffer* StringBuffer_appendLine_prefix_optional( StringBuffer* self, const char* prefix, String** optional )
+{
+    if ( prefix && String_Length( prefix ) )
     {
         StringBuffer_append( self, prefix );
         StringBuffer_append( self, " "    );
     }
 
-    if ( optional_string )
+    if ( optional && *optional )
     {
-        StringBuffer_append( self, String_content( optional_string ) );
-        String_free( &optional_string );
+        StringBuffer_append( self, String_content( *optional ) );
+        String_free( optional );
     }
     StringBuffer_append( self, "\n" );
 }

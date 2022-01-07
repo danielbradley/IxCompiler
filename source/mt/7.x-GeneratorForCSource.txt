@@ -49,9 +49,9 @@ static String* GenerateSourceFile( const IxSourceUnitCollection* sourceUnits )
     {
         StringBuffer* sb = StringBuffer_new();
 
-        StringBuffer_appendLine( sb, "#include", GenerateIncludes( sourceUnits ) );
-        StringBuffer_appendLine( sb,         "", GenerateStructs ( sourceUnits ) );
-        StringBuffer_appendLine( sb,         "", GenerateMethods ( sourceUnits ) );
+        StringBuffer_appendLine_prefix_optional( sb, "#include", (String**) Give( GenerateIncludes( sourceUnits ) ) );
+        StringBuffer_appendLine_prefix_optional( sb,         "", (String**) Give( GenerateStructs ( sourceUnits ) ) );
+        StringBuffer_appendLine_prefix_optional( sb,         "", (String**) Give( GenerateMethods ( sourceUnits ) ) );
 
         ret = String_new( StringBuffer_content( sb ) );
     }
@@ -96,7 +96,7 @@ static String* GenerateStructs( const IxSourceUnitCollection* sourceUnits )
             {
                 const IxSourceUnit* sourceUnit = IxSourceUnitCollection_get( sourceUnits, i );
 
-                StringBuffer_appendLine( sb, "", GenerateStructForSourceUnit( sourceUnit, resolvedTypes ) );
+                StringBuffer_appendLine_prefix_optional( sb, "", (String**) Give( GenerateStructForSourceUnit( sourceUnit, resolvedTypes ) ) );
             }
             structs = StringBuffer_toString( sb );
         }
@@ -127,7 +127,7 @@ static String* GenerateStructForSourceUnit( const IxSourceUnit* sourceUnit, cons
                 StringBuffer_append( sb, String_content( name ) );
                 StringBuffer_append( sb, "\n" );
                 StringBuffer_append( sb, "{" );
-                StringBuffer_appendLine( sb, "", GenerateStructMembersForSourceUnit( sourceUnit, resolvedTypes ) );
+                StringBuffer_appendLine_prefix_optional( sb, "", (String**) Give( GenerateStructMembersForSourceUnit( sourceUnit, resolvedTypes ) ) );
                 StringBuffer_append( sb, "};" );
 
                 String_free( &pkg );
@@ -226,7 +226,7 @@ static String* GenerateMethods( const IxSourceUnitCollection* sourceUnits )
             for ( int i=0; i < n; i++ )
             {
                 const IxSourceUnit* sourceUnit = IxSourceUnitCollection_get( sourceUnits, i );
-                StringBuffer_appendLine( sb, "", GenerateMethodsForSourceUnit( sourceUnit, resolvedTypes ) );
+                StringBuffer_appendLine_prefix_optional( sb, "", (String**) Give( GenerateMethodsForSourceUnit( sourceUnit, resolvedTypes ) ) );
             }
             methods = StringBuffer_toString( sb );
         }
@@ -251,7 +251,7 @@ static String* GenerateMethodsForSourceUnit( const IxSourceUnit* sourceUnit, con
                 for ( int i=0; i < n; i++ )
                 {
                     const IxSourceMethod* method = (IxSourceMethod*) Array_getObject( methods, i );
-                    StringBuffer_appendLine( sb, "", GenerateFunctionForMethod( method, resolvedTypes, classPrefix ) );
+                    StringBuffer_appendLine_prefix_optional( sb, "", (String**) Give( GenerateFunctionForMethod( method, resolvedTypes, classPrefix ) ) );
                 }
             }
             st_methods = StringBuffer_toString( sb );
@@ -265,23 +265,12 @@ static String* GenerateMethodsForSourceUnit( const IxSourceUnit* sourceUnit, con
 ~c/ixcompiler.GeneratorForC.c~
 static String* GenerateFunctionForMethod( const IxSourceMethod* method, const Dictionary* resolvedTypes, const char* classPrefix )
 {
+    const IxSourceSignature* ixSig = IxSourceMethod_getSignature( method );
+
+    CSignature* csig = CSignature_new( ixSig, resolvedTypes );
+
     String* st_method = null;
     {
-        const char* returnType = IxSourceMethod_getReturnType( method );
-        const char* pointer    = "";
-
-        if ( String_Equals( returnType, "" ) )
-        {
-            returnType = "void";
-        }
-
-        const char* methodName = IxSourceMethod_getMethodName( method );
-        if ( String_Equals( methodName, "new" ) )
-        {
-            returnType = classPrefix;
-            pointer    = "*";
-        }
-
         StringBuffer* sb = StringBuffer_new();
         {
             StringBuffer_append( sb, "// " );
@@ -289,22 +278,11 @@ static String* GenerateFunctionForMethod( const IxSourceMethod* method, const Di
             StringBuffer_append( sb, " " );
             StringBuffer_append( sb, IxSourceMethod_getConst( method ) );
             StringBuffer_append( sb, "\n" );
-            StringBuffer_append( sb, returnType );
-            StringBuffer_append( sb, pointer );
+            StringBuffer_append( sb, String_content( CSignature_getReturnType( csig ) ) );
             StringBuffer_append( sb, "\n" );
-            StringBuffer_append( sb, classPrefix );
-            StringBuffer_append( sb, "_" );
-            StringBuffer_append( sb, methodName );
+            StringBuffer_append( sb, String_content( CSignature_getFunctionName( csig ) ) );
             StringBuffer_append( sb, "\n" );
-            StringBuffer_append( sb, "(" );
-
-            const Array* parameters = IxSourceMethod_getParameters( method );
-            if ( 0 < Array_getLength( parameters ) )
-            {
-                StringBuffer_appendLine( sb, "", GenerateParametersForMethod( method, resolvedTypes ) );
-            }
-
-            StringBuffer_append( sb, ")" );
+            StringBuffer_append( sb, String_content( CSignature_getParameters( csig ) ) );
             StringBuffer_append( sb, "\n" );
             StringBuffer_append( sb, "{" );
             StringBuffer_append( sb, "\n" );
@@ -326,40 +304,11 @@ static String* GenerateParametersForMethod( const IxSourceMethod* method, const 
     {
         StringBuffer* sb = StringBuffer_new();
         {
-            const Array* parameters = IxSourceMethod_getParameters( method );
-            int          n          = Array_getLength( parameters );
+            const IxSourceSignature* signature = IxSourceMethod_getSignature( method );
 
-            for ( int i=0; i < n; i++ )
+            CSignature* csig = CSignature_new( signature, resolvedTypes );
             {
-                const IxSourceParameter* parameter = (IxSourceParameter*) Array_getObject( parameters, i );
-                const IxSourceType*      type      = IxSourceParameter_getType( parameter );
-                const String*            name      = IxSourceParameter_getName( parameter );
-                const String*            typeName  = IxSourceType_getName( type );
-
-                if ( !IxSourceType_isFullName( type ) && Dictionary_get( resolvedTypes, typeName ) )
-                {
-                    typeName = Dictionary_get( resolvedTypes, typeName );
-                }
-
-                {
-                    String* ctype = String_replace( typeName, '.', '_' );
-
-                    StringBuffer_append( sb, "\n" );
-                    StringBuffer_append( sb, "\t" );
-                    StringBuffer_append( sb, String_content( ctype ) );
-                    StringBuffer_append( sb, " " );
-                    StringBuffer_append( sb, String_content( name ) );
-                    if ( IxSourceType_isArray( type ) )
-                    {
-                        StringBuffer_append( sb, "[]" );
-                    }
-                    if ( i < (n-1) )
-                    {
-                        StringBuffer_append( sb, "," );
-                    }
-
-                    String_free( &ctype );
-                }
+                StringBuffer_append( sb, String_content( CSignature_getParameters( csig ) ) );
             }
             st_parameters = StringBuffer_toString( sb );
         }

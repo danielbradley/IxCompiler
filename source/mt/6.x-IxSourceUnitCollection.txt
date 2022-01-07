@@ -19,6 +19,7 @@ ArrayOfString*          IxSourceUnitCollection_retrieveFunctions( const IxSource
 const ArrayOfString*    IxSourceUnitCollection_getCopyrightLines( const IxSourceUnitCollection* self );
 const ArrayOfString*    IxSourceUnitCollection_getLicenseLines  ( const IxSourceUnitCollection* self );
 const Dictionary*       IxSourceUnitCollection_getResolvedTypes ( const IxSourceUnitCollection* self );
+const Dictionary*       IxSourceUnitCollection_getSignatures    ( const IxSourceUnitCollection* self );
 
 #endif
 ~
@@ -27,6 +28,8 @@ const Dictionary*       IxSourceUnitCollection_getResolvedTypes ( const IxSource
 #include "ixcompiler.Array.h"
 #include "ixcompiler.ArrayOfString.h"
 #include "ixcompiler.Dictionary.h"
+#include "ixcompiler.IxSourceMethod.h"
+#include "ixcompiler.IxSourceSignature.h"
 #include "ixcompiler.IxSourceUnit.h"
 #include "ixcompiler.IxSourceUnitCollection.h"
 #include "ixcompiler.Platform.h"
@@ -38,6 +41,7 @@ struct _IxSourceUnitCollection
     ArrayOfString* copyrightLines;
     ArrayOfString* licenseLines;
     Dictionary*    resolvedTypes;
+    Dictionary*    signatures;
 };
 ~
 
@@ -50,7 +54,8 @@ IxSourceUnitCollection* IxSourceUnitCollection_new()
         self->collection     = Array_new();
         self->copyrightLines = ArrayOfString_new();
         self->licenseLines   = ArrayOfString_new();
-        self->resolvedTypes  = Dictionary_new();
+        self->resolvedTypes  = Dictionary_new_destructor( FALSE, (Destructor) String_free );
+        self->signatures     = Dictionary_new           ( FALSE );
     }
     return self;
 }
@@ -73,6 +78,7 @@ IxSourceUnitCollection* IxSourceUnitCollection_free( IxSourceUnitCollection** se
             ArrayOfString_free( &(*self)->copyrightLines );
             ArrayOfString_free( &(*self)->licenseLines   );
             Dictionary_free   ( &(*self)->resolvedTypes  );
+            Dictionary_free   ( &(*self)->signatures     );
 
             Platform_Free( self );
         }
@@ -91,8 +97,21 @@ void IxSourceUnitCollection_add( IxSourceUnitCollection* self, IxSourceUnit** so
     (
         self->resolvedTypes,
         (String**) Give( String_copy( IxSourceUnit_getName    ( *sourceUnit ) ) ),
-        (String**) Give( String_copy( IxSourceUnit_getFullName( *sourceUnit ) ) )
+        (void**)   Give( String_copy( IxSourceUnit_getFullName( *sourceUnit ) ) )
     );
+
+    const char*  prefix  = IxSourceUnit_getPrefix ( *sourceUnit );
+    const Array* methods = IxSourceUnit_getMethods( *sourceUnit );
+    int n = Array_getLength( methods );
+    for ( int i=0; i < n; i++ )
+    {
+        const IxSourceMethod*    method    = (const IxSourceMethod*) Array_getObject( methods, i );
+        const IxSourceSignature* signature = IxSourceMethod_getSignature( method );
+
+        String* signature_name = IxSourceSignature_generateName( signature, prefix );
+
+        Dictionary_put_reference( self->signatures, &signature_name, signature );
+    }
 
     Array_push( self->collection, (void**) sourceUnit );
 }
@@ -137,13 +156,6 @@ ArrayOfString* IxSourceUnitCollection_retrieveTypes( const IxSourceUnitCollectio
 ArrayOfString* IxSourceUnitCollection_retrieveFunctions( const IxSourceUnitCollection* self )
 {
     ArrayOfString* functions = ArrayOfString_new();
-    {
-        int n = IxSourceUnitCollection_getLength( self );
-        for ( int i=0; i < n; i++ )
-        {
-            ArrayOfString_append( functions, IxSourceUnit_getSignatures( IxSourceUnitCollection_get( self, i ) ) );
-        }
-    }
     return functions;
 }
 ~
@@ -166,5 +178,12 @@ const ArrayOfString* IxSourceUnitCollection_getLicenseLines( const IxSourceUnitC
 const Dictionary* IxSourceUnitCollection_getResolvedTypes( const IxSourceUnitCollection* self )
 {
     return self->resolvedTypes;
+}
+~
+
+~c/ixcompiler.IxSourceUnitCollection.c~
+const Dictionary* IxSourceUnitCollection_getSignatures( const IxSourceUnitCollection* self )
+{
+    return self->signatures;
 }
 ~

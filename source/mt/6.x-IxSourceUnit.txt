@@ -144,13 +144,6 @@ const IxSourceClass* IxSourceUnit_getClass( const IxSourceUnit* self )
 ~
 
 ~c/ixcompiler.IxSourceUnit.c~
-const ArrayOfString* IxSourceUnit_getSignatures( const IxSourceUnit* self )
-{
-    return ArrayOfString_new();
-}
-~
-
-~c/ixcompiler.IxSourceUnit.c~
 const ArrayOfString* IxSourceUnit_getCopyrightLines( const IxSourceUnit* self )
 {
     return self->copyrightLines;
@@ -232,7 +225,7 @@ static void initChildren( IxSourceUnit* self, const AST* ast )
         else
         if ( tag && String_equals( tag, method ) )
         {
-            Array_push( self->methods,  Give( IxSourceMethod_new( node ) ) );
+            Array_push( self->methods,  Give( IxSourceMethod_new( self, node ) ) );
         }
     }
 

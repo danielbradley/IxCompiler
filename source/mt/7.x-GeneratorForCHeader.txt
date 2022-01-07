@@ -2,6 +2,12 @@
 ... Generate C Header
 
 ~c/ixcompiler.GeneratorForC.c~
+#include "ixcompiler.CSignature.h"
+
+static String* GenerateHeaderFileSignatures( const IxSourceUnitCollection* sourceUnits );
+~
+
+~c/ixcompiler.GeneratorForC.c~
 static void GenerateAndWriteHeaderFile( const IxSourceUnitCollection* sourceUnits, const String* outputDir )
 {
     if ( 0 < IxSourceUnitCollection_getLength( sourceUnits ) )
@@ -39,9 +45,9 @@ static String* GenerateHeaderFile( const IxSourceUnitCollection* sourceUnits )
     StringBuffer* sb      = StringBuffer_new();
     String*       content = null;
     {
-        StringBuffer_appendLine( sb, "#ifndef", GenerateIfDef( first ) );
-        StringBuffer_appendLine( sb, "#define", GenerateIfDef( first ) );
-        StringBuffer_appendLine( sb, "",        null                   );
+        StringBuffer_appendLine_prefix_optional( sb, "#ifndef", (String**) Give( GenerateIfDef( first ) ) );
+        StringBuffer_appendLine_prefix_optional( sb, "#define", (String**) Give( GenerateIfDef( first ) ) );
+        StringBuffer_appendLine_prefix_optional( sb, "",        (String**) null                           );
 
         // Copyright lines
         {
@@ -78,6 +84,7 @@ static String* GenerateHeaderFile( const IxSourceUnitCollection* sourceUnits )
             StringBuffer_append( sb, "#ifndef REF\n" );
             StringBuffer_append( sb, "#define REF\n" );
             StringBuffer_append( sb, "#endif\n"      );
+            StringBuffer_append( sb, "\n"            );
         }
 
         // Types
@@ -89,14 +96,15 @@ static String* GenerateHeaderFile( const IxSourceUnitCollection* sourceUnits )
             for ( int i=0; i < num; i++ )
             {
                 const String* type = ArrayOfString_getObject( types, i );
-                StringBuffer_appendLine( sb, "typedef struct", GenerateTypeDef( type, longest ) );
+                StringBuffer_appendLine_prefix_optional( sb, "typedef struct", (String**) Give( GenerateTypeDef( type, longest ) ) );
             }
         }
 
-        ArrayOfString* functions = IxSourceUnitCollection_retrieveFunctions( sourceUnits );
+        //  Signatures
+        StringBuffer_appendLine_prefix_optional( sb, "", (String**) Give( GenerateHeaderFileSignatures( sourceUnits ) ) );
 
-        StringBuffer_appendLine( sb, "",        null                   );
-        StringBuffer_appendLine( sb, "#endif",  null                   );
+        StringBuffer_appendLine_prefix_optional( sb, "",        null );
+        StringBuffer_appendLine_prefix_optional( sb, "#endif",  null );
     }
     content = String_new( StringBuffer_content( sb ) );
     StringBuffer_free( &sb );
@@ -149,5 +157,46 @@ static String* GenerateTypeDef( const String* type, int longest )
         String_free( &ctype );
     }
     return ret;
+}
+~
+
+~c/ixcompiler.GeneratorForC.c~
+static String* GenerateHeaderFileSignatures( const IxSourceUnitCollection* sourceUnits )
+{
+    String* st_signatures = null;
+    {
+        StringBuffer* sb = StringBuffer_new();
+        {
+            const Dictionary* resolvedTypes = IxSourceUnitCollection_getResolvedTypes( sourceUnits );
+            const Dictionary* signatures    = IxSourceUnitCollection_getSignatures   ( sourceUnits );
+            const Array*      entries       = Dictionary_getEntries( signatures );
+            {
+                StringBuffer_append( sb, "\n" );
+                int n = Array_getLength( entries );
+                for ( int i=0; i < n; i++ )
+                {
+                    const Entry*             entry      = (const Entry*) Array_getObject( entries, i );
+                    const String*            key        = Entry_getKey( entry );
+                    const IxSourceSignature* sig        = (IxSourceSignature*) Entry_getValue( entry );
+                    {
+                        CSignature* csig = CSignature_new( sig, resolvedTypes );
+                        {
+                            StringBuffer_append( sb, String_content( CSignature_getReturnType( csig ) ) );
+                            StringBuffer_append( sb, "\n" );
+                            StringBuffer_append( sb, String_content( CSignature_getFunctionName( csig ) ) );
+                            StringBuffer_append( sb, "\n" );
+                            StringBuffer_append( sb, String_content( CSignature_getParameters( csig ) ) );
+                            StringBuffer_append( sb, ";\n" );
+                            StringBuffer_append( sb, "\n" );
+                        }
+                        CSignature_free( &csig );
+                    }
+                }
+                st_signatures = StringBuffer_toString( sb );
+            }
+        }
+        StringBuffer_free( &sb );
+    }
+    return st_signatures;
 }
 ~

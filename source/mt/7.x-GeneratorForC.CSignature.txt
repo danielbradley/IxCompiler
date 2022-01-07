@@ -1,0 +1,300 @@
+
+... C Signature
+
+~!include/ixcompiler.CSignature.h~
+#ifndef IXCOMPILER_GENERATORFORC_CSIGNATURE_H
+#define IXCOMPILER_GENERATORFORC_CSIGNATURE_H
+
+#include "ixcompiler.h"
+
+CSignature* CSignature_new( const IxSourceSignature* signature, const Dictionary* resolvedTypes );
+
+  CSignature* CSignature_free                   (       CSignature** self );
+      String* CSignature_generateHeaderSignature( const CSignature*  self );
+
+const String* CSignature_getReturnType          ( const CSignature*  self );
+const String* CSignature_getFunctionName        ( const CSignature*  self );
+const String* CSignature_getParameters          ( const CSignature*  self );
+
+#endif
+~
+
+~!c/ixcompiler.CSignature.c~
+#include "ixcompiler.Array.h"
+#include "ixcompiler.CSignature.h"
+#include "ixcompiler.Dictionary.h"
+#include "ixcompiler.IxSourceSignature.h"
+#include "ixcompiler.IxSourceParameter.h"
+#include "ixcompiler.IxSourceType.h"
+#include "ixcompiler.IxSourceUnit.h"
+#include "ixcompiler.Platform.h"
+#include "ixcompiler.String.h"
+#include "ixcompiler.StringBuffer.h"
+
+struct _CSignature
+{
+    const IxSourceSignature* signature;
+    const Dictionary*        resolvedTypes;
+
+    String* returnType;
+    String* functionName;
+    String* parameters;
+};
+
+static void    CSignature_initReturnType  ( CSignature* self );
+static void    CSignature_initFunctionName( CSignature* self );
+static void    CSignature_initParameters  ( CSignature* self );
+
+static String* CSignature_ToFullCType( const IxSourceType* stype, const Dictionary* resolvedTypes );
+~
+
+~c/ixcompiler.CSignature.c~
+CSignature* CSignature_new( const IxSourceSignature* signature, const Dictionary* resolvedTypes )
+{
+    CSignature* self = Platform_Alloc( sizeof( CSignature ) );
+    if ( self )
+    {
+        self->signature     = signature;
+        self->resolvedTypes = resolvedTypes;
+
+        CSignature_initReturnType  ( self );
+        CSignature_initFunctionName( self );
+        CSignature_initParameters  ( self );
+    }
+    return self;
+}
+~
+
+~c/ixcompiler.CSignature.c~
+CSignature* CSignature_free( CSignature** self )
+{
+    if ( *self )
+    {
+        String_free( &(*self)->returnType   );
+        String_free( &(*self)->functionName );
+        String_free( &(*self)->parameters   );
+
+        Platform_Free( self );
+    }
+    return *self;
+}
+~
+
+~c/ixcompiler.CSignature.c~
+const String* CSignature_getReturnType( const CSignature*  self )
+{
+    return self->returnType;
+}
+~
+
+~c/ixcompiler.CSignature.c~
+const String* CSignature_getFunctionName( const CSignature* self )
+{
+    return self->functionName;
+}
+~
+
+~c/ixcompiler.CSignature.c~
+const String* CSignature_getParameters( const CSignature* self )
+{
+    return self->parameters;
+}
+~
+
+~c/ixcompiler.CSignature.c~
+String* CSignature_generateHeaderSignature( const CSignature*  self )
+{
+    const IxSourceUnit* unit = IxSourceSignature_getSourceUnit( self->signature );
+    const char*       prefix = IxSourceUnit_getPrefix( unit );
+
+    return String_new( "" );
+}
+~
+
+~c/ixcompiler.CSignature.c~
+void CSignature_initReturnType( CSignature* self )
+{
+    const IxSourceType* stype = IxSourceSignature_getReturnType( self->signature );
+    const String*       rtype = IxSourceType_getName( stype );
+    {
+        String* tmp = null;
+
+        if ( 0 == String_getLength( rtype ) )
+        {
+            tmp = String_new( "void" );
+        }
+        else
+        if ( !IxSourceType_isFullName( stype ) )
+        {
+            if ( Dictionary_has( self->resolvedTypes, rtype ) )
+            {
+                rtype = Dictionary_get( self->resolvedTypes, rtype );
+                tmp = String_replace( rtype, '.', '_' );
+            }
+            else
+            {
+                tmp = String_copy( rtype );
+            }
+        }
+        else
+        {
+            tmp = String_replace( rtype, '.', '_' );
+        }
+
+        if ( IxSourceType_isPointer( stype ) && IxSourceType_isArray( stype ) )
+        {
+            self->returnType = String_cat_chars( tmp, "?" );
+        }
+        else
+        if ( IxSourceType_isPointer( stype ) )
+        {
+            self->returnType = String_cat_chars( tmp, "*" );
+        }
+        else
+        if ( IxSourceType_isArray( stype ) )
+        {
+            self->returnType = String_cat_chars( tmp, "[]" );
+        }
+        else
+        {
+            self->returnType = String_copy( tmp );
+        }
+
+        String_free( &tmp );
+    }
+}
+~
+
+~c/ixcompiler.CSignature.c~
+void CSignature_initFunctionName( CSignature* self )
+{
+    const IxSourceUnit* unit         = IxSourceSignature_getSourceUnit( self->signature );
+    const char*         prefix       = IxSourceUnit_getPrefix( unit );
+    const String*       functionName = IxSourceSignature_getMethodName( self->signature );
+    const Array*        parameters   = IxSourceSignature_getParameters( self->signature );
+
+    StringBuffer* sb = StringBuffer_new();
+    {
+        StringBuffer_append( sb, prefix );
+        StringBuffer_append( sb, "__"   );
+        StringBuffer_append( sb, String_content( functionName ) );
+
+        int n = Array_getLength( parameters );
+        if ( 0 < n )
+        {
+            StringBuffer_append( sb, "_" );
+
+            for ( int i=0; i < n; i++ )
+            {
+                const IxSourceParameter* parameter = Array_getObject( parameters, i );
+                const String*            name      = IxSourceParameter_getName( parameter );
+                StringBuffer_append( sb, "_"                    );
+                StringBuffer_append( sb, String_content( name ) );
+            }
+        }
+        self->functionName = StringBuffer_toString( sb );
+    }
+    StringBuffer_free( &sb );
+}
+~
+
+~c/ixcompiler.CSignature.c~
+void CSignature_initParameters( CSignature* self )
+{
+    const Array* parameters = IxSourceSignature_getParameters( self->signature );
+    {
+        int n = Array_getLength( parameters );
+        if ( 0 == n )
+        {
+            self->parameters = String_new( "()" );
+        }
+        else
+        {
+            StringBuffer* sb = StringBuffer_new();
+            {
+                StringBuffer_append( sb, "(\n" );
+
+                for ( int i=0; i < n; i++ )
+                {
+                    const IxSourceParameter* parameter = (const IxSourceParameter*) Array_getObject( parameters, i );
+                    const IxSourceType*      ixtype    = IxSourceParameter_getType( parameter );
+
+                    String* rtype = CSignature_ToFullCType( ixtype, self->resolvedTypes );
+                    {
+                        StringBuffer_append( sb, "\t" );
+                        StringBuffer_append( sb, String_content( rtype ) );
+                        StringBuffer_append( sb, " " );
+                        StringBuffer_append( sb, String_content( IxSourceParameter_getName( parameter ) ) );
+                    }
+                    String_free( &rtype );
+                }
+                StringBuffer_append( sb, "\n)" );
+                self->parameters = StringBuffer_toString( sb );
+            }
+            StringBuffer_free( &sb );
+        }
+    }
+}
+~
+
+~c/ixcompiler.CSignature.c~
+static String* CSignature_ToFullCType( const IxSourceType* stype, const Dictionary* resolvedTypes )
+{
+    String* ctype = null;
+    {
+        const String* rtype = IxSourceType_getName( stype );
+        {
+            String* tmp = null;
+
+            if ( 0 == String_getLength( rtype ) )
+            {
+                tmp = String_new( "void" );
+            }
+            else
+            if ( !IxSourceType_isFullName( stype ) )
+            {
+                if ( Dictionary_has( resolvedTypes, rtype ) )
+                {
+                    rtype = Dictionary_get( resolvedTypes, rtype );
+                    tmp = String_replace( rtype, '.', '_' );
+                }
+                else
+                {
+                    tmp = String_copy( rtype );
+                }
+            }
+            else
+            {
+                tmp = String_replace( rtype, '.', '_' );
+            }
+
+            if ( IxSourceType_isPointer( stype ) && IxSourceType_isArray( stype ) )
+            {
+                ctype = String_cat_chars( tmp, "?" );
+            }
+            else
+            if ( IxSourceType_isPointer( stype ) )
+            {
+                ctype = String_cat_chars( tmp, "*" );
+            }
+            else
+            if ( IxSourceType_isReference( stype ) )
+            {
+                ctype = String_cat_chars( tmp, "* REF" );
+            }
+            else
+            if ( IxSourceType_isArray( stype ) )
+            {
+                ctype = String_cat_chars( tmp, "[]" );
+            }
+            else
+            {
+                ctype = String_copy( tmp );
+            }
+
+            String_free( &tmp );
+        }
+    }
+    return ctype;
+}
+~

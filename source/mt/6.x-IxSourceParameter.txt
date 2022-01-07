@@ -134,6 +134,23 @@ void parseWordNode( IxSourceParameter* self, const Node* wordNode )
                     self->invalid = TRUE;
                 }
             }
+
+            if ( NodeIterator_hasNonWhitespaceOfType( it, INFIXOP ) )
+            {
+                const Token* token   = Node_getToken( NodeIterator_next( it ) );
+                const char*  content = Token_getContent( token );
+
+                switch ( content[0] )
+                {
+                case '*':
+                    IxSourceType_setAsPointer( self->type, TRUE );
+                    break;
+                
+                case '&':
+                    IxSourceType_setAsReference( self->type, TRUE );
+                    break;
+                }
+            }
         }
         else
         {

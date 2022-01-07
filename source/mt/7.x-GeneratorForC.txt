@@ -18,12 +18,14 @@ int Generator_FunctionForC( const IxSourceUnitCollection* source_units, const Pa
 #include "ixcompiler.ArrayOfString.h"
 #include "ixcompiler.Console.h"
 #include "ixcompiler.Dictionary.h"
+#include "ixcompiler.Entry.h"
 #include "ixcompiler.File.h"
 #include "ixcompiler.GeneratorForC.h"
 #include "ixcompiler.IxSourceClass.h"
 #include "ixcompiler.IxSourceMember.h"
 #include "ixcompiler.IxSourceMethod.h"
 #include "ixcompiler.IxSourceParameter.h"
+#include "ixcompiler.IxSourceSignature.h"
 #include "ixcompiler.IxSourceType.h"
 #include "ixcompiler.IxSourceUnit.h"
 #include "ixcompiler.IxSourceUnitCollection.h"
@@ -72,10 +74,6 @@ int Generator_FunctionForC( const IxSourceUnitCollection* sourceUnits, const Pat
 
     GenerateAndWriteHeaderFile( sourceUnits, target_header_dir );
     GenerateAndWriteSourceFile( sourceUnits, target_source_dir );
-
-    for ( int i=0; i < n; i++ )
-    {
-    }
 
     String_free( &output_dir        );
     String_free( &target_header     );

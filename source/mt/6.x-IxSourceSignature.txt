@@ -7,15 +7,18 @@
 
 #include "ixcompiler.h"
 
-IxSourceSignature* IxSourceSignature_new( const Node* accessModifierNode );
+IxSourceSignature* IxSourceSignature_new( const IxSourceUnit* sourceUnit, const Node* accessModifierNode );
 
-IxSourceSignature* IxSourceSignature_free             (       IxSourceSignature** self );
-const String*      IxSourceSignature_getAccessModifier( const IxSourceSignature*  self );
-const String*      IxSourceSignature_getConst         ( const IxSourceSignature*  self );
-bool               IxSourceSignature_isConst          ( const IxSourceSignature*  self );
-const String*      IxSourceSignature_getMethodName    ( const IxSourceSignature*  self );
-const Array*       IxSourceSignature_getParameters    ( const IxSourceSignature*  self );
-const String*      IxSourceSignature_getReturnType    ( const IxSourceSignature*  self );
+IxSourceSignature*  IxSourceSignature_free             (       IxSourceSignature** self );
+const String*       IxSourceSignature_getAccessModifier( const IxSourceSignature*  self );
+const String*       IxSourceSignature_getConst         ( const IxSourceSignature*  self );
+bool                IxSourceSignature_isConst          ( const IxSourceSignature*  self );
+const String*       IxSourceSignature_getMethodName    ( const IxSourceSignature*  self );
+const Array*        IxSourceSignature_getParameters    ( const IxSourceSignature*  self );
+const IxSourceType* IxSourceSignature_getReturnType    ( const IxSourceSignature*  self );
+
+String*             IxSourceSignature_generateName     ( const IxSourceSignature*  self, const char* prefix );
+const IxSourceUnit* IxSourceSignature_getSourceUnit    ( const IxSourceSignature*  self );
 
 #endif
 ~
@@ -25,14 +28,18 @@ const String*      IxSourceSignature_getReturnType    ( const IxSourceSignature*
 #include "ixcompiler.EnumTokenType.h"
 #include "ixcompiler.IxSourceParameter.h"
 #include "ixcompiler.IxSourceSignature.h"
+#include "ixcompiler.IxSourceType.h"
+#include "ixcompiler.IxSourceUnit.h"
 #include "ixcompiler.Node.h"
 #include "ixcompiler.NodeIterator.h"
 #include "ixcompiler.Platform.h"
 #include "ixcompiler.String.h"
+#include "ixcompiler.StringBuffer.h"
 #include "ixcompiler.Token.h"
 
 struct _IxSourceSignature
 {
+    const IxSourceUnit*       sourceUnit;
     bool                      invalid;
     bool                      isConst;
     String*                   modifier;     //  public
@@ -40,7 +47,7 @@ struct _IxSourceSignature
     String*                   methodName;   //  getSomething
     Array*                    parameters;   //  ( name: Type*, size: int )
     String*                   oftype;       //  :
-    String*                   returnType;   //  String*
+    IxSourceType*             returnType;   //  String*
 };
 
 void IxSourceSignature_parseModifier    ( IxSourceSignature* self, const Node* modifierNode );
@@ -49,17 +56,18 @@ void IxSourceSignature_parseParameters  ( IxSourceSignature* self, const Node* s
 ~
 
 ~c/ixcompiler.IxSourceSignature.c~
-IxSourceSignature* IxSourceSignature_new( const Node* accessModifierNode )
+IxSourceSignature* IxSourceSignature_new( const IxSourceUnit* sourceUnit, const Node* accessModifierNode )
 {
     IxSourceSignature* self = Platform_Alloc( sizeof( IxSourceSignature ) );
     if ( self )
     {
+        self->sourceUnit = sourceUnit;
         self->modifier   = String_new( "" );
         self->konst      = String_new( "" );
         self->methodName = String_new( "" );
         self->parameters = Array_new( (Destructor) IxSourceSignature_free );
         self->oftype     = String_new( "" );
-        self->returnType = String_new( "" );
+        self->returnType = IxSourceType_new( String_new( "" ) );
 
         IxSourceSignature_parseModifier( self, accessModifierNode );
     }
@@ -72,13 +80,13 @@ IxSourceSignature* IxSourceSignature_free( IxSourceSignature** self )
 {
     if ( *self )
     {
-        String_free  ( &(*self)->modifier   );
-        String_free  ( &(*self)->konst      );
-        String_free  ( &(*self)->methodName );
-        Array_free   ( &(*self)->parameters );
-        String_free  ( &(*self)->oftype     );
-        String_free  ( &(*self)->returnType );
-        Platform_Free(    self              );
+        String_free      ( &(*self)->modifier   );
+        String_free      ( &(*self)->konst      );
+        String_free      ( &(*self)->methodName );
+        Array_free       ( &(*self)->parameters );
+        String_free      ( &(*self)->oftype     );
+        IxSourceType_free( &(*self)->returnType );
+        Platform_Free    (    self              );
     }
     return *self;
 }
@@ -120,9 +128,36 @@ const Array* IxSourceSignature_getParameters( const IxSourceSignature* self )
 ~
 
 ~c/ixcompiler.IxSourceSignature.c~
-const String* IxSourceSignature_getReturnType( const IxSourceSignature* self )
+const IxSourceType* IxSourceSignature_getReturnType( const IxSourceSignature* self )
 {
     return self->returnType;
+}
+~
+
+~c/ixcompiler.IxSourceSignature.c~
+String* IxSourceSignature_generateName( const IxSourceSignature* self, const char* prefix )
+{
+    String* name = null;
+    {
+        StringBuffer* sb = StringBuffer_new();
+        {
+            StringBuffer_append( sb, prefix );
+            StringBuffer_append( sb, "_" );
+            StringBuffer_append( sb, String_content( IxSourceSignature_getMethodName( self ) ) );
+
+            name = StringBuffer_toString( sb );
+        }
+        StringBuffer_free( &sb );
+    }
+
+    return name;
+}
+~
+
+~c/ixcompiler.IxSourceSignature.c~
+const IxSourceUnit* IxSourceSignature_getSourceUnit( const IxSourceSignature* self )
+{
+    return self->sourceUnit;
 }
 ~
 
@@ -193,6 +228,12 @@ void IxSourceSignature_parseNameChildren( IxSourceSignature* self, const Node* n
         self->invalid = TRUE;
     }
 
+    if ( String_equals_chars( self->methodName, "new" ) )
+    {
+        self->returnType = IxSourceType_new( IxSourceUnit_getName( self->sourceUnit ) );
+        IxSourceType_setAsPointer( self->returnType, TRUE );
+    }
+    else
     if ( NodeIterator_hasNonWhitespaceOfType( it, OFTYPE ) )
     {
         String_free( &(self->oftype) );
@@ -200,8 +241,8 @@ void IxSourceSignature_parseNameChildren( IxSourceSignature* self, const Node* n
 
         if ( NodeIterator_hasNonWhitespaceOfType( it, PRIMITIVE ) || NodeIterator_hasNonWhitespaceOfType( it, PRIMITIVE ) )
         {
-            String_free( &(self->returnType) );
-            self->returnType = String_new( Token_getContent( Node_getToken( NodeIterator_next( it ) ) ) );
+            IxSourceType_free( &(self->returnType) );
+            self->returnType = IxSourceType_new( String_new( Token_getContent( Node_getToken( NodeIterator_next( it ) ) ) ) );
         }
         else
         {

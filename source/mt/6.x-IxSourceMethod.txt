@@ -7,14 +7,15 @@
 
 #include "ixcompiler.h"
 
-IxSourceMethod* IxSourceMethod_new( const Node* modifierNode );
+IxSourceMethod* IxSourceMethod_new( const IxSourceUnit* sourceUnit, const Node* modifierNode );
 
-IxSourceMethod* IxSourceMethod_free             (       IxSourceMethod** self );
-const char*     IxSourceMethod_getAccessModifier( const IxSourceMethod*  self );
-const char*     IxSourceMethod_getConst         ( const IxSourceMethod*  self );
-const char*     IxSourceMethod_getMethodName    ( const IxSourceMethod*  self );
-const Array*    IxSourceMethod_getParameters    ( const IxSourceMethod*  self );
-const char*     IxSourceMethod_getReturnType    ( const IxSourceMethod*  self );
+IxSourceMethod*          IxSourceMethod_free             (       IxSourceMethod** self );
+const IxSourceSignature* IxSourceMethod_getSignature     ( const IxSourceMethod*  self );
+const char*              IxSourceMethod_getAccessModifier( const IxSourceMethod*  self );
+const char*              IxSourceMethod_getConst         ( const IxSourceMethod*  self );
+const char*              IxSourceMethod_getMethodName    ( const IxSourceMethod*  self );
+const Array*             IxSourceMethod_getParameters    ( const IxSourceMethod*  self );
+const char*              IxSourceMethod_getReturnType    ( const IxSourceMethod*  self );
 
 #endif
 ~
@@ -26,6 +27,8 @@ const char*     IxSourceMethod_getReturnType    ( const IxSourceMethod*  self );
 #include "ixcompiler.IxSourceMethod.h"
 #include "ixcompiler.IxSourceParameter.h"
 #include "ixcompiler.IxSourceSignature.h"
+#include "ixcompiler.IxSourceType.h"
+#include "ixcompiler.IxSourceUnit.h"
 #include "ixcompiler.Node.h"
 #include "ixcompiler.NodeIterator.h"
 #include "ixcompiler.Platform.h"
@@ -35,18 +38,20 @@ const char*     IxSourceMethod_getReturnType    ( const IxSourceMethod*  self );
 struct _IxSourceMethod
 {
     bool                      invalid;
+    const IxSourceUnit*       sourceUnit;
     IxSourceSignature*        signature;
     Array*                    statements;
 };
 ~
 
 ~c/ixcompiler.IxSourceMethod.c~
-IxSourceMethod* IxSourceMethod_new( const Node* modifierNode )
+IxSourceMethod* IxSourceMethod_new( const IxSourceUnit* sourceUnit, const Node* modifierNode )
 {
     IxSourceMethod* self = Platform_Alloc( sizeof( IxSourceMethod ) );
     if ( self )
     {
-        self->signature  = IxSourceSignature_new( modifierNode );
+        self->sourceUnit = sourceUnit;
+        self->signature  = IxSourceSignature_new( sourceUnit, modifierNode );
         self->statements = Array_new();
     }
     return self;
@@ -64,6 +69,13 @@ IxSourceMethod* IxSourceMethod_free( IxSourceMethod** self )
         Platform_Free( self );
     }
     return *self;
+}
+~
+
+~c/ixcompiler.IxSourceMethod.c~
+const IxSourceSignature* IxSourceMethod_getSignature( const IxSourceMethod* self )
+{
+    return self->signature;
 }
 ~
 
@@ -98,6 +110,6 @@ const Array* IxSourceMethod_getParameters( const IxSourceMethod* self )
 ~c/ixcompiler.IxSourceMethod.c~
 const char* IxSourceMethod_getReturnType( const IxSourceMethod*  self )
 {
-    return String_content( IxSourceSignature_getReturnType( self->signature ) );
+    return String_content( IxSourceType_getName( IxSourceSignature_getReturnType( self->signature ) ) );
 }
 ~

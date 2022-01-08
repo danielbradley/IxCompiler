@@ -40,12 +40,26 @@ int Generator_FunctionForC( const IxSourceUnitCollection* source_units, const Pa
 #define TARGET_HEADER_NAME "/include/"
 #define TARGET_SOURCE_NAME "/c/"
 
-static void    GenerateAndWriteHeaderFile( const IxSourceUnitCollection* sourceUnits, const String* outputDir );
-static String* GenerateHeaderFile        ( const IxSourceUnitCollection* sourceUnits );
-static String* GenerateIfDef             ( const IxSourceUnit*           sourceUnit  );
-static String* GenerateTypeDef           ( const String*                 type,        int           longest  );
+static void    GenerateHeaderFileThenWrite ( const IxSourceUnitCollection* sourceUnits, const String* outputDir );
+static String* GenerateHeaderFile          ( const IxSourceUnitCollection* sourceUnits );
+static String* GenerateHeaderFileIfDef     ( const IxSourceUnit*           sourceUnit  );
+static String* GenerateHeaderFileTypeDef   ( const String*                 type,        int           longest  );
+static String* GenerateHeaderFileSignatures( const IxSourceUnitCollection* sourceUnits );
 
-static void    GenerateAndWriteSourceFile        ( const IxSourceUnitCollection* sourceUnits, const String* outputDir );
+
+static void    GenerateSourceFileThenWrite                       ( const IxSourceUnitCollection* sourceUnits, const String* outputDir );
+static String* GenerateSourceFile                                ( const IxSourceUnitCollection* sourceUnits );
+static String* GenerateSourceFileIncludes                        ( const IxSourceUnitCollection* sourceUnits );
+static String* GenerateSourceFileStructs                         ( const IxSourceUnitCollection* sourceUnits );
+static String* GenerateSourceFileStructsForSourceUnit            ( const IxSourceUnit*           sourceUnit, const Dictionary* resolvedTypes );
+static String* GenerateSourceFileStructsForSourceUnitMembers     ( const IxSourceUnit*           sourceUnit, const Dictionary* resolvedTypes );
+static String* GenerateSourceFileStructsForSourceUnitClassMembers( const IxSourceUnit*           sourceUnit, const Dictionary* resolvedTypes );
+
+static String* GenerateSourceFileMethods                               ( const IxSourceUnitCollection* sourceUnits );
+static String* GenerateSourceFileMethodsForSourceUnit                  ( const IxSourceUnit*           sourceUnit, const Dictionary* resolvedTypes );
+static String* GenerateSourceFileMethodsForSourceUnitFunction          ( const IxSourceMethod*         method,     const Dictionary* resolvedTypes, const char* classPrefix );
+static String* GenerateSourceFileMethodsForSourceUnitFunctionStatements( const IxSourceMethod*         method,     const Dictionary* resolvedTypes );
+
 ~
 
 ~c/ixcompiler.GeneratorForC.c~
@@ -75,8 +89,8 @@ int Generator_FunctionForC( const IxSourceUnitCollection* sourceUnits, const Pat
     Console_Write( "Output header dir: %s\n", String_content( target_header_dir ) );
     Console_Write( "Output source dir: %s\n", String_content( target_source_dir ) );
 
-    GenerateAndWriteHeaderFile( sourceUnits, target_header_dir );
-    GenerateAndWriteSourceFile( sourceUnits, target_source_dir );
+    GenerateHeaderFileThenWrite( sourceUnits, target_header_dir );
+    GenerateSourceFileThenWrite( sourceUnits, target_source_dir );
 
     String_free( &output_dir        );
     String_free( &target_header     );

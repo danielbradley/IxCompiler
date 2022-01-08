@@ -2,11 +2,7 @@
 ... Generate C Header
 
 ~c/ixcompiler.GeneratorForC.c~
-static String* GenerateHeaderFileSignatures( const IxSourceUnitCollection* sourceUnits );
-~
-
-~c/ixcompiler.GeneratorForC.c~
-static void GenerateAndWriteHeaderFile( const IxSourceUnitCollection* sourceUnits, const String* outputDir )
+static void GenerateHeaderFileThenWrite( const IxSourceUnitCollection* sourceUnits, const String* outputDir )
 {
     if ( 0 < IxSourceUnitCollection_getLength( sourceUnits ) )
     {
@@ -43,8 +39,8 @@ static String* GenerateHeaderFile( const IxSourceUnitCollection* sourceUnits )
     StringBuffer* sb      = StringBuffer_new();
     String*       content = null;
     {
-        StringBuffer_appendLine_prefix_optional( sb, "#ifndef", (String**) Give( GenerateIfDef( first ) ) );
-        StringBuffer_appendLine_prefix_optional( sb, "#define", (String**) Give( GenerateIfDef( first ) ) );
+        StringBuffer_appendLine_prefix_optional( sb, "#ifndef", (String**) Give( GenerateHeaderFileIfDef( first ) ) );
+        StringBuffer_appendLine_prefix_optional( sb, "#define", (String**) Give( GenerateHeaderFileIfDef( first ) ) );
         StringBuffer_appendLine_prefix_optional( sb, "",        (String**) null                           );
 
         // Copyright lines
@@ -94,7 +90,7 @@ static String* GenerateHeaderFile( const IxSourceUnitCollection* sourceUnits )
             for ( int i=0; i < num; i++ )
             {
                 const String* type = ArrayOfString_getObject( types, i );
-                StringBuffer_appendLine_prefix_optional( sb, "typedef struct", (String**) Give( GenerateTypeDef( type, longest ) ) );
+                StringBuffer_appendLine_prefix_optional( sb, "typedef struct", (String**) Give( GenerateHeaderFileTypeDef( type, longest ) ) );
             }
         }
 
@@ -112,7 +108,7 @@ static String* GenerateHeaderFile( const IxSourceUnitCollection* sourceUnits )
 ~
 
 ~c/ixcompiler.GeneratorForC.c~
-static String* GenerateIfDef( const IxSourceUnit* sourceUnit )
+static String* GenerateHeaderFileIfDef( const IxSourceUnit* sourceUnit )
 {
     String* ifdef = null;
     {
@@ -136,7 +132,7 @@ typedef struct _<name> <name>;
 ~
 
 ~c/ixcompiler.GeneratorForC.c~
-static String* GenerateTypeDef( const String* type, int longest )
+static String* GenerateHeaderFileTypeDef( const String* type, int longest )
 {
     String* ret   = null;
     {

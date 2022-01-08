@@ -5,7 +5,7 @@
 #ifndef IXCOMPILER_ENUMTOKENGROUP_H
 #define IXCOMPILER_ENUMTOKENGROUP_H
 
-enum _EnumTokenGroup
+typedef enum _EnumTokenGroup
 {
     UNKNOWN_GROUP,
     WHITESPACE,
@@ -19,7 +19,7 @@ enum _EnumTokenGroup
     VALUE,
     HEX_VALUE
 
-};
+} EnumTokenGroup;
 
 #endif
 ~

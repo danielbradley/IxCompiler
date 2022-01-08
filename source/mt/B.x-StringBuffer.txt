@@ -14,6 +14,8 @@ const char*   StringBuffer_content    ( const StringBuffer*  self );
 bool          StringBuffer_isEmpty    ( const StringBuffer*  self );
 String*       StringBuffer_toString   ( const StringBuffer*  self );
 
+String*       StringBuffer_ConvertToString( StringBuffer** sb );
+
 #endif
 ~
 
@@ -118,5 +120,14 @@ bool StringBuffer_isEmpty( const StringBuffer* self )
 String* StringBuffer_toString( const StringBuffer* self )
 {
     return String_new( StringBuffer_content( self ) );
+}
+~
+
+~c/ixcompiler.StringBuffer.c~
+String* StringBuffer_ConvertToString( StringBuffer** sb )
+{
+    String* ret = String_new( (*sb)->content );
+    StringBuffer_free( sb );
+    return ret;
 }
 ~

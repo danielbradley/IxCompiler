@@ -2,8 +2,6 @@
 ... Generate C Header
 
 ~c/ixcompiler.GeneratorForC.c~
-#include "ixcompiler.CSignature.h"
-
 static String* GenerateHeaderFileSignatures( const IxSourceUnitCollection* sourceUnits );
 ~
 

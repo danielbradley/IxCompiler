@@ -1,0 +1,94 @@
+
+.. C Statement
+
+~!include/ixcompiler.CStatement.h~
+#ifndef IXCOMPILER_CSTATEMENT_H
+#define IXCOMPILER_CSTATEMENT_H
+
+#include "ixcompiler.h"
+
+CStatement* CStatement_new ( const IxSourceStatement* anIxStatement, const Dictionary* resolvedTypes );
+
+CStatement* CStatement_free    (       CStatement** self );
+String*     CStatement_toString( const CStatement*  self );
+
+#endif
+~
+
+~!c/ixcompiler.CStatement.c~
+#include "ixcompiler.ArrayOfString.h"
+#include "ixcompiler.CStatement.h"
+#include "ixcompiler.IxSourceStatement.h"
+#include "ixcompiler.Platform.h"
+#include "ixcompiler.String.h"
+#include "ixcompiler.StringBuffer.h"
+
+struct _CStatement
+{
+    const IxSourceStatement* ixStatement; 
+    const Dictionary*        resolvedTypes;
+};
+~
+
+~c/ixcompiler.CStatement.c~
+CStatement* CStatement_new( const IxSourceStatement* anIxStatement, const Dictionary* resolvedTypes )
+{
+    CStatement* self = Platform_Alloc( sizeof(CStatement) );
+    if ( self )
+    {
+        self->ixStatement   = anIxStatement;
+        self->resolvedTypes = resolvedTypes;
+    }
+    return self;
+};
+~
+
+~c/ixcompiler.CStatement.c~
+CStatement* CStatement_free( CStatement** self )
+{
+    if ( *self )
+    {
+        Platform_Free( self );
+    }
+    return *self;
+}
+~
+
+~c/ixcompiler.CStatement.c~
+String* CStatement_toString( const CStatement* self )
+{
+    StringBuffer* sb = StringBuffer_new();
+
+    if ( IxSourceStatement_isLine( self->ixStatement ) )
+    {
+        const ArrayOfString* items = IxSourceStatement_getLineItems( self->ixStatement );
+        {
+            StringBuffer_append( sb, "\t" );
+
+            int n = ArrayOfString_getLength( items );
+            for ( int i=0; i < n; i++ )
+            {
+                const String* item = ArrayOfString_getObject( items, i );
+
+                if ( '@' == String_content( item )[0] )
+                {
+                    StringBuffer_append( sb, "self->" );
+                }
+                else
+                if ( '%' == String_content( item )[0] )
+                {
+                    StringBuffer_append( sb, "/* " );
+                    StringBuffer_append( sb, String_content( item ) );
+                    StringBuffer_append( sb, " */" );
+                }
+                else
+                {
+                    StringBuffer_append( sb, String_content( item ) );
+                }
+            }
+        }
+    }
+
+    return StringBuffer_ConvertToString( &sb );
+}
+~

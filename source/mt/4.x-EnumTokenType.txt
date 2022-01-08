@@ -7,7 +7,7 @@
 
 #include "ixcompiler.h"
 
-enum _EnumTokenType
+typedef enum _EnumTokenType
 {
 	UNKNOWN_TYPE,
     UNKNOWN_WHITESPACE,
@@ -97,7 +97,7 @@ enum _EnumTokenType
 	QUOTE,
 	ESCAPED,
 	OTHER
-};
+} EnumTokenType;
 
 const char* EnumTokenType_asString( EnumTokenType type );
 

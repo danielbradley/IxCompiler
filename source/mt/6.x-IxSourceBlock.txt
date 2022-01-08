@@ -1,0 +1,91 @@
+
+.. Ix Source Block
+
+~!include/ixcompiler.IxSourceBlock.h~
+#ifndef IXCOMPILER_IXSOURCEBLOCK_H
+#define IXCOMPILER_IXSOURCEBLOCK_H
+
+#include "ixcompiler.h"
+
+IxSourceBlock* IxSourceBlock_new( const Node* startBlockNode );
+
+IxSourceBlock* IxSourceBlock_free         (       IxSourceBlock** self );
+const Array*   IxSourceBlock_getStatements( const IxSourceBlock*  self );
+
+#endif
+~
+
+~!c/ixcompiler.IxSourceBlock.c~
+#include "ixcompiler.Array.h"
+#include "ixcompiler.EnumTokenType.h"
+#include "ixcompiler.IxSourceBlock.h"
+#include "ixcompiler.IxSourceStatement.h"
+#include "ixcompiler.Node.h"
+#include "ixcompiler.NodeIterator.h"
+#include "ixcompiler.Platform.h"
+#include "ixcompiler.Token.h"
+
+struct _IxSourceBlock
+{
+    Array* statements;
+};
+
+void IxSourceBlock_parseStatements( IxSourceBlock* self, const Node* startBlock );
+~
+
+
+~c/ixcompiler.IxSourceBlock.c~
+IxSourceBlock* IxSourceBlock_new( const Node* startBlockNode )
+{
+    IxSourceBlock* self = Platform_Alloc( sizeof(IxSourceBlock) );
+    if ( self )
+    {
+        self->statements = Array_new( IxSourceStatement_free );
+
+        IxSourceBlock_parseStatements( self, startBlockNode );        
+    }
+    return self;
+}
+~
+
+~c/ixcompiler.IxSourceBlock.c~
+IxSourceBlock* IxSourceBlock_free( IxSourceBlock** self )
+{
+    if ( *self )
+    {
+        Array_free( &(*self)->statements );
+
+        Platform_Free( self );
+    }
+    return *self;
+}
+~
+
+~c/ixcompiler.IxSourceBlock.c~
+const Array* IxSourceBlock_getStatements( const IxSourceBlock* self )
+{
+    return self->statements;
+}
+~
+
+~c/ixcompiler.IxSourceBlock.c~
+void IxSourceBlock_parseStatements( IxSourceBlock* self, const Node* startBlock )
+{
+    NodeIterator* it = Node_iterator( startBlock );
+    while ( NodeIterator_hasNonWhitespace( it ) )
+    {
+        const Node*  node  = NodeIterator_next( it );
+        const Token* token = Node_getToken( node );
+
+        if ( Token_getTokenType( token ) == ENDBLOCK )
+        {
+            break;
+        }
+        else
+        {
+            Array_push( self->statements, Give( IxSourceStatement_new( node ) ) );
+        }
+    }
+    NodeIterator_free( &it );
+}
+~

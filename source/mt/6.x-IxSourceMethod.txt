@@ -16,6 +16,8 @@ const char*              IxSourceMethod_getConst         ( const IxSourceMethod*
 const char*              IxSourceMethod_getMethodName    ( const IxSourceMethod*  self );
 const Array*             IxSourceMethod_getParameters    ( const IxSourceMethod*  self );
 const char*              IxSourceMethod_getReturnType    ( const IxSourceMethod*  self );
+const IxSourceBlock*     IxSourceMethod_getMethodBlock   ( const IxSourceMethod*  self );
+const Array*             IxSourceMethod_getStatements    ( const IxSourceMethod*  self );
 
 #endif
 ~
@@ -24,6 +26,7 @@ const char*              IxSourceMethod_getReturnType    ( const IxSourceMethod*
 #include "ixcompiler.Array.h"
 #include "ixcompiler.Console.h"
 #include "ixcompiler.EnumTokenType.h"
+#include "ixcompiler.IxSourceBlock.h"
 #include "ixcompiler.IxSourceMethod.h"
 #include "ixcompiler.IxSourceParameter.h"
 #include "ixcompiler.IxSourceSignature.h"
@@ -40,8 +43,12 @@ struct _IxSourceMethod
     bool                      invalid;
     const IxSourceUnit*       sourceUnit;
     IxSourceSignature*        signature;
-    Array*                    statements;
+    IxSourceBlock*            methodBlock;
 };
+
+void IxSourceMethod_parseModifier  ( IxSourceMethod* self, const Node* modifierNode   );
+void IxSourceMethod_parseMethodName( IxSourceMethod* self, const Node* methodNameNode );
+void IxSourceMethod_parseStatements( IxSourceMethod* self, const Node* startBlockNode );
 ~
 
 ~c/ixcompiler.IxSourceMethod.c~
@@ -52,7 +59,8 @@ IxSourceMethod* IxSourceMethod_new( const IxSourceUnit* sourceUnit, const Node* 
     {
         self->sourceUnit = sourceUnit;
         self->signature  = IxSourceSignature_new( sourceUnit, modifierNode );
-        self->statements = Array_new();
+
+        IxSourceMethod_parseModifier( self, modifierNode );
     }
     return self;
 }
@@ -63,8 +71,8 @@ IxSourceMethod* IxSourceMethod_free( IxSourceMethod** self )
 {
     if ( *self )
     {
-        IxSourceSignature_free( &(*self)->signature  );
-        Array_free            ( &(*self)->statements );
+        IxSourceSignature_free( &(*self)->signature   );
+        IxSourceBlock_free    ( &(*self)->methodBlock );
 
         Platform_Free( self );
     }
@@ -108,8 +116,105 @@ const Array* IxSourceMethod_getParameters( const IxSourceMethod* self )
 ~
 
 ~c/ixcompiler.IxSourceMethod.c~
-const char* IxSourceMethod_getReturnType( const IxSourceMethod*  self )
+const char* IxSourceMethod_getReturnType( const IxSourceMethod* self )
 {
     return String_content( IxSourceType_getName( IxSourceSignature_getReturnType( self->signature ) ) );
+}
+~
+
+~c/ixcompiler.IxSourceMethod.c~
+const IxSourceBlock* IxSourceMethod_getMethodBlock( const IxSourceMethod* self )
+{
+    return self->methodBlock;
+}
+~
+
+~c/ixcompiler.IxSourceMethod.c~
+const Array* IxSourceMethod_getStatements( const IxSourceMethod* self )
+{
+    return IxSourceBlock_getStatements( self->methodBlock );
+}
+~
+
+~c/ixcompiler.IxSourceMethod.c~
+void IxSourceMethod_parseModifier( IxSourceMethod* self, const Node* modifierNode )
+{
+    const Token* token = Node_getToken( modifierNode );
+    
+    if ( MODIFIER != Token_getTokenType( token ) )
+    {
+        self->invalid = TRUE;
+    }
+
+    NodeIterator* it = Node_iterator( modifierNode );
+
+    //  const (optional)
+    if ( NodeIterator_hasNonWhitespaceOfType( it, KEYWORD ) )
+    {
+        const Node*  node  = NodeIterator_next( it );
+        const Token* token = Node_getToken( node );
+
+        if ( ! String_Equals( "const", Token_getContent( token ) ) )
+        {
+            self->invalid = TRUE;
+        }
+    }
+
+    //  name
+    if ( !NodeIterator_hasNonWhitespaceOfType( it, WORD ) )
+    {
+        self->invalid = TRUE;
+    }
+    else
+    {
+        const Node* next = NodeIterator_next( it );
+        IxSourceMethod_parseMethodName( self, next );
+    }
+}
+~
+
+~c/ixcompiler.IxSourceMethod.c~
+void IxSourceMethod_parseMethodName( IxSourceMethod* self, const Node* methodNameNode )
+{
+    NodeIterator* it = Node_iterator( methodNameNode );
+
+    //  (   (startexpression)
+    if ( NodeIterator_hasNonWhitespaceOfType( it, STARTEXPRESSION ) )
+    {
+        NodeIterator_next( it );
+
+        if ( NodeIterator_hasNonWhitespaceOfType( it, OFTYPE ) )
+        {
+            NodeIterator_next( it );
+
+            if ( NodeIterator_hasNonWhitespaceOfType( it, PRIMITIVE ) || NodeIterator_hasNonWhitespaceOfType( it, WORD ) )
+            {
+                NodeIterator_next( it );
+            }
+            else
+            {
+                self->invalid = TRUE;
+            }
+        }
+        else
+        {
+            self->invalid = TRUE;
+        }
+
+        if ( NodeIterator_hasNonWhitespaceOfType( it, STARTBLOCK ) )
+        {
+            const Node* next = NodeIterator_next( it );
+
+            self->methodBlock = IxSourceBlock_new( next );
+        }
+        else
+        {
+            self->invalid = TRUE;
+        }
+    }
+    else
+    {
+        self->invalid = TRUE;
+    }
 }
 ~

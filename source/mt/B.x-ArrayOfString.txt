@@ -10,7 +10,7 @@
 ArrayOfString* ArrayOfString_new();
 
 ArrayOfString* ArrayOfString_free      (       ArrayOfString** self );
-void           ArrayOfString_push      (       ArrayOfString*  self, String** object );
+void           ArrayOfString_push      (       ArrayOfString*  self, ANY_STRING object );
 String*        ArrayOfString_pop       (       ArrayOfString*  self );
 String*        ArrayOfString_shift     (       ArrayOfString*  self );
 void           ArrayOfString_unshift   (       ArrayOfString*  self, String** object );
@@ -72,8 +72,10 @@ ArrayOfString* ArrayOfString_free( ArrayOfString** self )
 ~
 
 ~c/ixcompiler.ArrayOfString.c~
-void ArrayOfString_push( ArrayOfString* self, String** object )
+void ArrayOfString_push( ArrayOfString* self, ANY_STRING _object )
 {
+    String** object = (String**) _object;
+
     int len = String_getLength( *object );
     if ( len > self->longest )
     {

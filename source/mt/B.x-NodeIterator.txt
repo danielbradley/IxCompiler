@@ -5,6 +5,9 @@
 #ifndef IXCOMPILER_NODEITERATOR_H
 #define IXCOMPILER_NODEITERATOR_H
 
+#include "ixcompiler.h"
+#include "ixcompiler.EnumTokenType.h"
+
 NodeIterator* NodeIterator_new                   ( const Array*  nodes );
 NodeIterator* NodeIterator_free                  ( NodeIterator** self );
 bool          NodeIterator_hasNext               ( NodeIterator*  self );

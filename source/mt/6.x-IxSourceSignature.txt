@@ -9,16 +9,17 @@
 
 IxSourceSignature* IxSourceSignature_new( const IxSourceUnit* sourceUnit, const Node* accessModifierNode );
 
-IxSourceSignature*  IxSourceSignature_free             (       IxSourceSignature** self );
-const String*       IxSourceSignature_getAccessModifier( const IxSourceSignature*  self );
-const String*       IxSourceSignature_getConst         ( const IxSourceSignature*  self );
-bool                IxSourceSignature_isConst          ( const IxSourceSignature*  self );
-const String*       IxSourceSignature_getMethodName    ( const IxSourceSignature*  self );
-const Array*        IxSourceSignature_getParameters    ( const IxSourceSignature*  self );
-const IxSourceType* IxSourceSignature_getReturnType    ( const IxSourceSignature*  self );
-
-String*             IxSourceSignature_generateName     ( const IxSourceSignature*  self, const char* prefix );
-const IxSourceUnit* IxSourceSignature_getSourceUnit    ( const IxSourceSignature*  self );
+IxSourceSignature*    IxSourceSignature_free             (       IxSourceSignature** self );
+//const IxSourceMethod* IxSourceSignature_getMethod        ( const IxSourceSignature*  self );
+const String*         IxSourceSignature_getAccessModifier( const IxSourceSignature*  self );
+const String*         IxSourceSignature_getConst         ( const IxSourceSignature*  self );
+bool                  IxSourceSignature_isConst          ( const IxSourceSignature*  self );
+bool                  IxSourceSignature_isClass          ( const IxSourceSignature*  self );
+const String*         IxSourceSignature_getMethodName    ( const IxSourceSignature*  self );
+const Array*          IxSourceSignature_getParameters    ( const IxSourceSignature*  self );
+const IxSourceType*   IxSourceSignature_getReturnType    ( const IxSourceSignature*  self );
+String*               IxSourceSignature_generateName     ( const IxSourceSignature*  self, const char* prefix );
+const IxSourceUnit*   IxSourceSignature_getSourceUnit    ( const IxSourceSignature*  self );
 
 #endif
 ~
@@ -42,6 +43,7 @@ struct _IxSourceSignature
     const IxSourceUnit*       sourceUnit;
     bool                      invalid;
     bool                      isConst;
+    bool                      isClass;
     String*                   modifier;     //  public
     String*                   konst;        //  const
     String*                   methodName;   //  getSomething
@@ -114,6 +116,13 @@ bool IxSourceSignature_isConst( const IxSourceSignature* self )
 ~
 
 ~c/ixcompiler.IxSourceSignature.c~
+bool IxSourceSignature_isClass( const IxSourceSignature* self )
+{
+    return self->isClass;
+}
+~
+
+~c/ixcompiler.IxSourceSignature.c~
 const String* IxSourceSignature_getMethodName( const IxSourceSignature* self )
 {
     return self->methodName;
@@ -176,7 +185,7 @@ void IxSourceSignature_parseModifier( IxSourceSignature* self, const Node* modif
 
     NodeIterator* it = Node_iterator( modifierNode );
 
-    //  const (optional)
+    //  const or class (optional)
     if ( NodeIterator_hasNonWhitespaceOfType( it, KEYWORD ) )
     {
         const Node*  node  = NodeIterator_next( it );
@@ -187,6 +196,34 @@ void IxSourceSignature_parseModifier( IxSourceSignature* self, const Node* modif
             String_free( &(self->konst) );
             self->konst = String_new( Token_getContent( token ) );
             self->isConst = TRUE;
+        }
+        else
+        if ( String_Equals( "class", Token_getContent( token ) ) )
+        {
+            self->isClass = TRUE;
+        }
+        else
+        {
+            self->invalid = TRUE;
+        }
+    }
+
+    //  const or class (optional)
+    if ( NodeIterator_hasNonWhitespaceOfType( it, KEYWORD ) )
+    {
+        const Node*  node  = NodeIterator_next( it );
+        const Token* token = Node_getToken( node );
+
+        if ( String_Equals( "const", Token_getContent( token ) ) )
+        {
+            String_free( &(self->konst) );
+            self->konst = String_new( Token_getContent( token ) );
+            self->isConst = TRUE;
+        }
+        else
+        if ( String_Equals( "class", Token_getContent( token ) ) )
+        {
+            self->isClass = TRUE;
         }
         else
         {
@@ -239,7 +276,7 @@ void IxSourceSignature_parseNameChildren( IxSourceSignature* self, const Node* n
         String_free( &(self->oftype) );
         self->oftype = String_new( Token_getContent( Node_getToken( NodeIterator_next( it ) ) ) );
 
-        if ( NodeIterator_hasNonWhitespaceOfType( it, PRIMITIVE ) || NodeIterator_hasNonWhitespaceOfType( it, PRIMITIVE ) )
+        if ( NodeIterator_hasNonWhitespaceOfType( it, PRIMITIVE ) || NodeIterator_hasNonWhitespaceOfType( it, WORD ) )
         {
             IxSourceType_free( &(self->returnType) );
             self->returnType = IxSourceType_new( String_new( Token_getContent( Node_getToken( NodeIterator_next( it ) ) ) ) );

@@ -1,0 +1,270 @@
+
+.. Ix Source Conditional
+
+~
+if ( <expression> )
+~
+
+~
+while ( <expression> )
+~
+
+~
+foreach ( <variable name> in <iterator name> )
+~
+
+~!include/ixcompiler.IxSourceConditional.h~
+#ifndef IXCOMPILER_IXSOURCECONDITIONAL_H
+#define IXCOMPILER_IXSOURCECONDITIONAL_H
+
+#include "ixcompiler.h"
+
+typedef enum _EnumConditionalType
+{
+    IF,
+    ELSE,
+    FOR,
+    FOREACH,
+    OR,
+    WHILE
+} EnumConditionalType;
+
+typedef enum _EnumForeachType
+{
+    AS,
+    IN
+
+} EnumForeachType;
+
+IxSourceConditional* IxSourceConditional_new( const Node* keywordNode );
+
+IxSourceConditional* IxSourceConditional_free    (       IxSourceConditional** self );
+String*              IxSourceConditional_toString( const IxSourceConditional*  self );
+
+#endif
+~
+
+~!c/ixcompiler.IxSourceConditional.c~
+#include "ixcompiler.EnumTokenType.h"
+#include "ixcompiler.IxSourceConditional.h"
+#include "ixcompiler.IxSourceExpression.h"
+#include "ixcompiler.Node.h"
+#include "ixcompiler.NodeIterator.h"
+#include "ixcompiler.Platform.h"
+#include "ixcompiler.Token.h"
+#include "ixcompiler.String.h"
+#include "ixcompiler.StringBuffer.h"
+
+struct _IxSourceConditional
+{
+    bool                invalid;
+    EnumConditionalType conditionalType;
+    IxSourceExpression* expression;
+
+    EnumForeachType     foreachType;
+    String*             foreachVariableName;
+    String*             foreachIteratorName;
+};
+
+void IxSourceConditional_parseKeywordNode( IxSourceConditional* self, const Node* keywordNode );
+void IxSourceConditional_parseForeach    ( IxSourceConditional* self, const Node* startExpressionNode );
+~
+
+~c/ixcompiler.IxSourceConditional.c~
+IxSourceConditional* IxSourceConditional_new( const Node* keywordNode )
+{
+    IxSourceConditional* self = Platform_Alloc( sizeof(IxSourceConditional) );
+    if ( self )
+    {
+        IxSourceConditional_parseKeywordNode( self, keywordNode );
+    }
+    return self;
+}
+~
+
+~c/ixcompiler.IxSourceConditional.c~
+IxSourceConditional* IxSourceConditional_free( IxSourceConditional** self )
+{
+    if ( *self )
+    {
+        IxSourceExpression_free( &(*self)->expression );
+        String_free( &(*self)->foreachVariableName );
+        String_free( &(*self)->foreachIteratorName );
+    }
+    return *self;
+}
+~
+
+~
+CONDITIONAL[ IF, ( expr ) ]
+~
+
+~c/ixcompiler.IxSourceConditional.c~
+String* IxSourceConditional_toString( const IxSourceConditional* self )
+{
+    StringBuffer* sb = StringBuffer_new();
+    {
+        switch( self->conditionalType )
+        {
+        case IF:
+            StringBuffer_append( sb, "IF" );
+            break;
+
+        case ELSE:
+            StringBuffer_append( sb, "ELSE" );
+            break;
+
+        case FOR:
+            StringBuffer_append( sb, "FOR" );
+            break;
+
+        case FOREACH:
+            StringBuffer_append( sb, "FOREACH" );
+            break;
+
+        case OR:
+            StringBuffer_append( sb, "OR" );
+            break;
+
+        case WHILE:
+            StringBuffer_append( sb, "WHILE" );
+            break;
+        }
+    }
+    return StringBuffer_ConvertToString( &sb );
+}
+~
+
+~c/ixcompiler.IxSourceConditional.c~
+void IxSourceConditional_parseKeywordNode( IxSourceConditional* self, const Node* keywordNode )
+{
+    const char* keyword = Token_getContent( Node_getToken( keywordNode ) );
+
+    if ( String_Equals( keyword, "if" ) )
+    {
+        self->conditionalType = IF;
+    }
+    else
+    if ( String_Equals( keyword, "else" ) )
+    {
+        self->conditionalType = ELSE;
+    }
+    else
+    if ( String_Equals( keyword, "for" ) )
+    {
+        self->conditionalType = FOR;
+    }
+    else
+    if ( String_Equals( keyword, "foreach" ) )
+    {
+        self->conditionalType = FOREACH;
+    }
+    else
+    if ( String_Equals( keyword, "or" ) )
+    {
+        self->conditionalType = OR;
+    }
+    else
+    if ( String_Equals( keyword, "while" ) )
+    {
+        self->conditionalType = WHILE;
+    }
+
+    NodeIterator* it = Node_iterator( keywordNode );
+    if ( NodeIterator_hasNonWhitespaceOfType( it, STARTEXPRESSION ) )
+    {
+        switch( self->conditionalType )
+        {
+        case IF:
+            self->expression = IxSourceExpression_new( NodeIterator_next( it ) );
+            break;
+
+        case ELSE:
+            self->expression = IxSourceExpression_new( NodeIterator_next( it ) );
+            break;
+
+        case FOR:
+            self->expression = IxSourceExpression_new( NodeIterator_next( it ) );
+            break;
+
+        case FOREACH:
+            IxSourceConditional_parseForeach( self, NodeIterator_next( it ) );
+            break;
+
+        case OR:
+            self->expression = IxSourceExpression_new( NodeIterator_next( it ) );
+            break;
+
+        case WHILE:
+            self->expression = IxSourceExpression_new( NodeIterator_next( it ) );
+            break;
+
+        default:
+            self->invalid = TRUE;
+        }
+    }
+    else
+    {
+        self->invalid = TRUE;
+    }
+    NodeIterator_free( &it );
+
+}
+~
+
+~c/ixcompiler.IxSourceConditional.c~
+void IxSourceConditional_parseForeach( IxSourceConditional* self, const Node* startExpressionNode )
+{
+    bool invalid = TRUE;
+
+    const char* first;
+    const char* second;
+
+    NodeIterator* it = Node_iterator( startExpressionNode );
+    if ( NodeIterator_hasNonWhitespaceOfType( it, WORD ) )
+    {
+        first = Token_getContent( Node_getToken( NodeIterator_next( it ) ) );
+
+        if ( NodeIterator_hasNonWhitespaceOfType( it, WORD ) )
+        {
+            const char* type = Token_getContent( Node_getToken( NodeIterator_next( it ) ) );
+
+            if ( String_Equals( type, "as" ) )
+            {
+                self->foreachType = AS;
+            }
+            else
+            if ( String_Equals( type, "in" ) )
+            {
+                self->foreachType = IN;
+            }
+
+            if ( NodeIterator_hasNonWhitespaceOfType( it, WORD ) )
+            {
+                second = Token_getContent( Node_getToken( NodeIterator_next( it ) ) );
+
+                switch ( self->foreachType )
+                {
+                case AS:
+                    self->foreachVariableName = String_new( second );
+                    self->foreachIteratorName = String_new( first  );
+                    break;
+                
+                case IN:
+                    self->foreachVariableName = String_new( first  );
+                    self->foreachIteratorName = String_new( second );
+                    break;
+                }
+
+                if ( NodeIterator_hasNonWhitespaceOfType( it, ENDEXPRESSION ) )
+                {
+                    invalid = FALSE;
+                }
+            }
+        }
+    }
+    NodeIterator_free( &it );
+
+    self->invalid = invalid;
+}
+~

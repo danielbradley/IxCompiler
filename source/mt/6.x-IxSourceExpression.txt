@@ -1,0 +1,100 @@
+
+.. Ix Source Expression
+
+An expression evaluates to a result.
+For example the expression 1 + 1 evaluates to 2.
+In programming languages,
+expressions can also involve the invocation of functions
+and the results of the functions can be passed to functions.
+For example,
+
+~
+div( max( c ) + max( d ), 2 )
+~
+
+As an ?expression tree?
+
+~
+div()
+    +
+    max()
+        c
+    max()
+        c
+~
+
+~!include/ixcompiler.IxSourceExpression.h~
+#ifndef IXCOMPILER_IXSOURCEEXPRESSION_H
+#define IXCOMPILER_IXSOURCEEXPRESSION_H
+
+#include "ixcompiler.h"
+
+IxSourceExpression* IxSourceExpression_new( const Node* firstNode );
+
+IxSourceExpression* IxSourceExpression_free      (       IxSourceExpression** self );
+const char*         IxSourceExpression_getContent( const IxSourceExpression*  self );
+
+#endif
+~
+
+~!c/ixcompiler.IxExpression.c~
+#include "ixcompiler.IxSourceExpression.h"
+#include "ixcompiler.Node.h"
+#include "ixcompiler.NodeIterator.h"
+#include "ixcompiler.Platform.h"
+#include "ixcompiler.StringBuffer.h"
+#include "ixcompiler.Token.h"
+
+struct _IxSourceExpression
+{
+    StringBuffer* expression;
+};
+
+void IxSourceExpresion_parseExpression( IxSourceExpression* self, const Node* firstNode );
+~
+
+~c/ixcompiler.IxExpression.c~
+IxSourceExpression* IxSourceExpression_new( const Node* firstNode )
+{
+    IxSourceExpression* self = Platform_Alloc( sizeof(IxSourceExpression) );
+    {
+        self->expression = StringBuffer_new();
+    }
+    return self;
+}
+~
+
+~c/ixcompiler.IxExpression.c~
+IxSourceExpression* IxSourceExpression_free( IxSourceExpression** self )
+{
+    if ( *self )
+    {
+        StringBuffer_free( &(*self)->expression );
+
+        Platform_Free( self );
+    }
+    return *self;
+}
+~
+
+~c/ixcompiler.IxExpression.c~
+const char* IxSourceExpression_getContent( const IxSourceExpression* self )
+{
+    return StringBuffer_content( self->expression );
+}
+~
+
+~c/ixcompiler.IxExpression.c~
+void IxSourceExpresion_parseExpression( IxSourceExpression* self, const Node* firstNode )
+{
+    StringBuffer_append( self->expression, Token_getContent( Node_getToken( firstNode ) ) );    
+
+    NodeIterator* it = Node_iterator( firstNode );
+    while ( NodeIterator_hasNext( it ) )
+    {
+        const Node* node = NodeIterator_next( it );
+        IxSourceExpresion_parseExpression( self, node );
+    }
+    NodeIterator_free( &it );
+}
+~

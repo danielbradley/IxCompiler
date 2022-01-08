@@ -157,6 +157,11 @@ bool TokenGroup_matches( const TokenGroup* self, char ch )
         return FALSE;
     }
     else
+    if ( ';' == ch )
+    {
+        return FALSE;
+    }
+    else
     {
         EnumTokenGroup secondType = TokenGroup_DetermineType( ch );
 

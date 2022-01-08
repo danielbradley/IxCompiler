@@ -6,11 +6,12 @@ static String* GenerateSourceFile                ( const IxSourceUnitCollection*
 static String* GenerateIncludes                  ( const IxSourceUnitCollection* sourceUnits );
 static String* GenerateStructs                   ( const IxSourceUnitCollection* sourceUnits );
 static String* GenerateStructForSourceUnit       ( const IxSourceUnit*           sourceUnit, const Dictionary* resolvedTypes );
+static String* GenerateClassMembersForSourceUnit ( const IxSourceUnit*           sourceUnit, const Dictionary* resolvedTypes );
 static String* GenerateStructMembersForSourceUnit( const IxSourceUnit*           sourceUnit, const Dictionary* resolvedTypes );
 static String* GenerateMethods                   ( const IxSourceUnitCollection* sourceUnits );
 static String* GenerateMethodsForSourceUnit      ( const IxSourceUnit*           sourceUnit, const Dictionary* resolvedTypes );
 static String* GenerateFunctionForMethod         ( const IxSourceMethod*         method,     const Dictionary* resolvedTypes, const char* classPrefix );
-static String* GenerateParametersForMethod       ( const IxSourceMethod*         method,     const Dictionary* resolvedTypes );
+static String* GenerateStatementsFor             ( const IxSourceMethod*         method,     const Dictionary* resolvedTypes );
 ~
 
 ~c/ixcompiler.GeneratorForC.c~
@@ -96,7 +97,8 @@ static String* GenerateStructs( const IxSourceUnitCollection* sourceUnits )
             {
                 const IxSourceUnit* sourceUnit = IxSourceUnitCollection_get( sourceUnits, i );
 
-                StringBuffer_appendLine_prefix_optional( sb, "", (String**) Give( GenerateStructForSourceUnit( sourceUnit, resolvedTypes ) ) );
+                StringBuffer_appendLine_prefix_optional( sb, "", (String**) Give( GenerateStructForSourceUnit      ( sourceUnit, resolvedTypes ) ) );
+                StringBuffer_appendLine_prefix_optional( sb, "", (String**) Give( GenerateClassMembersForSourceUnit( sourceUnit, resolvedTypes ) ) );
             }
             structs = StringBuffer_toString( sb );
         }
@@ -137,6 +139,63 @@ static String* GenerateStructForSourceUnit( const IxSourceUnit* sourceUnit, cons
         StringBuffer_free( &sb );
     }
     return _struct;
+}
+~
+
+~c/ixcompiler.GeneratorForC.c~
+static String* GenerateClassMembersForSourceUnit ( const IxSourceUnit* sourceUnit, const Dictionary* resolvedTypes )
+{
+    StringBuffer* sb = StringBuffer_new();
+
+    const String*        full    = IxSourceUnit_getFullName( sourceUnit );
+    const IxSourceClass* cls     = IxSourceUnit_getClass ( sourceUnit );
+    const Array*         members = IxSourceClass_getMembers( cls );
+    {
+        int n = Array_getLength( members );
+        for ( int i=0; i < n; i++ )
+        {
+            const IxSourceMember* member = Array_getObject( members, i );
+            
+            if ( !IxSourceMember_isInstance( member ) )
+            {
+                const IxSourceType* type = IxSourceMember_getType( member );
+                const String*       name = IxSourceType_getName( type );
+
+                String* prefix = String_replace( full, '.', '_' );
+                String* ctype = null;
+                {
+                    if ( name && IxSourceType_isFullName( type ) )
+                    {
+                        ctype = String_replace( name, '.', '_' );
+                        StringBuffer_append( sb, String_content( ctype ) );
+                    }
+                    else
+                    if ( name && IxSourceType_isPrimitive( type ) )
+                    {
+                        ctype = String_replace( name, '.', '_' );
+                        StringBuffer_append( sb, String_content( ctype ) );
+                    }
+                    else
+                    {
+                        const String* resolved_type   = Dictionary_get( resolvedTypes, name );
+                        if ( resolved_type )
+                        {
+                            ctype = String_replace( resolved_type, '.', '_' );
+                            StringBuffer_append( sb, String_content( ctype ) );
+                        }
+                    }
+                    StringBuffer_append( sb, " " );
+                    StringBuffer_append( sb, String_content( prefix ) );
+                    StringBuffer_append( sb, "_" );
+                    StringBuffer_append( sb, String_content( IxSourceMember_getName( member ) ) );
+                    StringBuffer_append( sb, ";\n" );
+                }
+                String_free( &ctype  );
+                String_free( &prefix );
+            }
+        }
+    }
+    return StringBuffer_ConvertToString( &sb );
 }
 ~
 
@@ -285,7 +344,7 @@ static String* GenerateFunctionForMethod( const IxSourceMethod* method, const Di
             StringBuffer_append( sb, String_content( CSignature_getParameters( csig ) ) );
             StringBuffer_append( sb, "\n" );
             StringBuffer_append( sb, "{" );
-            StringBuffer_append( sb, "\n" );
+            StringBuffer_appendLine_prefix_optional( sb, "", (String**) Give( GenerateStatementsFor( method, resolvedTypes ) ) );
             StringBuffer_append( sb, "}" );
             StringBuffer_append( sb, "\n" );
 
@@ -298,22 +357,27 @@ static String* GenerateFunctionForMethod( const IxSourceMethod* method, const Di
 ~
 
 ~c/ixcompiler.GeneratorForC.c~
-static String* GenerateParametersForMethod( const IxSourceMethod* method, const Dictionary* resolvedTypes )
+static String* GenerateStatementsFor( const IxSourceMethod* method, const Dictionary* resolvedTypes )
 {
-    String* st_parameters = null;
+    StringBuffer* sb = StringBuffer_new();
     {
-        StringBuffer* sb = StringBuffer_new();
+        const Array* statements = IxSourceMethod_getStatements( method );
+        int n = Array_getLength( statements );
+        if ( 0 < n )
         {
-            const IxSourceSignature* signature = IxSourceMethod_getSignature( method );
-
-            CSignature* csig = CSignature_new( signature, resolvedTypes );
-            {
-                StringBuffer_append( sb, String_content( CSignature_getParameters( csig ) ) );
-            }
-            st_parameters = StringBuffer_toString( sb );
+            StringBuffer_append( sb, "\n" );
         }
-        StringBuffer_free( &sb );
+
+        for ( int i=0; i < n; i++ )
+        {
+            const IxSourceStatement* statement = (const IxSourceStatement*) Array_getObject( statements, i );
+            {
+                CStatement* cstatement = CStatement_new( statement, resolvedTypes );
+
+                StringBuffer_appendLine_prefix_optional( sb, "", (String**) Give( CStatement_toString( cstatement ) ) );
+            }
+        }
     }
-    return st_parameters;
+    return StringBuffer_ConvertToString( &sb );
 }
 ~

@@ -1,0 +1,201 @@
+
+.. Ix Source Statement
+
+~!include/ixcompiler.IxSourceStatement.h~
+#ifndef IXCOMPILER_IXSOURCESTATEMENT_H
+#define IXCOMPILER_IXSOURCESTATEMENT_H
+
+#include "ixcompiler.h"
+
+IxSourceStatement* IxSourceStatement_new( const Node* aNode );
+
+IxSourceStatement*         IxSourceStatement_free          (       IxSourceStatement** self );
+const ArrayOfString*       IxSourceStatement_getLineItems  ( const IxSourceStatement*  self );
+const IxSourceConditional* IxSourceStatement_getConditional( const IxSourceStatement*  self );
+const IxSourceBlock*       IxSourceStatement_getBlock      ( const IxSourceStatement*  self );
+String*                    IxSourceStatement_toString      ( const IxSourceStatement*  self );
+bool                       IxSourceStatement_isComplex     ( const IxSourceStatement*  self );
+bool                       IxSourceStatement_isDeclaration ( const IxSourceStatement*  self );
+bool                       IxSourceStatement_isLine        ( const IxSourceStatement*  self );
+
+#endif
+~
+
+~!c/ixcompiler.IxSourceStatement.c~
+#include "ixcompiler.ArrayOfString.h"
+#include "ixcompiler.EnumTokenType.h"
+#include "ixcompiler.IxSourceBlock.h"
+#include "ixcompiler.IxSourceConditional.h"
+#include "ixcompiler.IxSourceStatement.h"
+#include "ixcompiler.Node.h"
+#include "ixcompiler.NodeIterator.h"
+#include "ixcompiler.Platform.h"
+#include "ixcompiler.String.h"
+#include "ixcompiler.StringBuffer.h"
+#include "ixcompiler.Token.h"
+
+struct _IxSourceStatement
+{
+    bool                 invalid;
+    bool                 isComplex;
+    bool                 isDeclaration;
+    bool                 isLine;
+    String*              statementType;
+    IxSourceConditional* conditional;
+    ArrayOfString*       lineItems;
+    IxSourceBlock*       block;
+};
+
+void IxSourceStatement_parseNodes( IxSourceStatement* self, const Node* firstNode );
+void IxSourceStatement_parseLine ( IxSourceStatement* self, const Node* startNode );
+~
+
+~c/ixcompiler.IxSourceStatement.c~
+IxSourceStatement* IxSourceStatement_new( const Node* firstNode )
+{
+    IxSourceStatement* self = Platform_Alloc( sizeof(IxSourceStatement) );
+    if ( self )
+    {
+        self->lineItems = ArrayOfString_new();
+
+        IxSourceStatement_parseNodes( self, firstNode );
+    }
+    return self;
+}
+~
+
+~c/ixcompiler.IxSourceStatement.c~
+IxSourceStatement* IxSourceStatement_free( IxSourceStatement** self )
+{
+    if ( *self )
+    {
+        String_free             ( &(*self)->statementType );
+        IxSourceConditional_free( &(*self)->conditional   );
+        ArrayOfString_free      ( &(*self)->lineItems     );
+        IxSourceBlock_free      ( &(*self)->block         );
+
+        Platform_Free( self );
+    }
+    return *self;
+}
+~
+
+~c/ixcompiler.IxSourceStatement.c~
+const ArrayOfString* IxSourceStatement_getLineItems( const IxSourceStatement* self )
+{
+    return self->lineItems;
+}
+~
+
+~c/ixcompiler.IxSourceStatement.c~
+const IxSourceConditional* IxSourceStatement_getConditional( const IxSourceStatement* self )
+{
+    return self->conditional;
+}
+~
+
+~c/ixcompiler.IxSourceStatement.c~
+const IxSourceBlock* IxSourceStatement_getBlock( const IxSourceStatement* self )
+{
+    return self->block;
+}
+~
+
+~c/ixcompiler.IxSourceStatement.c~
+String* IxSourceStatement_toString( const IxSourceStatement* self )
+{
+    StringBuffer* sb = StringBuffer_new();
+    if ( self->invalid )
+    {
+        StringBuffer_append( sb, " invalid" );
+    }
+
+    if ( self->isComplex )
+    {
+        StringBuffer_append( sb, " complex " );
+        StringBuffer_append( sb, String_content( self->statementType ) );
+        StringBuffer_appendLine_prefix_optional( sb, "", (String**) Give( IxSourceConditional_toString( self->conditional ) ) );
+    }
+    else
+    {
+        StringBuffer_append( sb, " expression" );
+    }
+
+    return StringBuffer_ConvertToString( &sb );
+}
+~
+
+~c/ixcompiler.IxSourceStatement.c~
+bool IxSourceStatement_isComplex( const IxSourceStatement* self )
+{
+    return self->isComplex;
+}
+~
+
+~c/ixcompiler.IxSourceStatement.c~
+bool IxSourceStatement_isDeclaration( const IxSourceStatement* self )
+{
+    return self->isDeclaration;
+}
+~
+
+~c/ixcompiler.IxSourceStatement.c~
+bool IxSourceStatement_isLine( const IxSourceStatement* self )
+{
+    return self->isLine;
+}
+~
+
+~c/ixcompiler.IxSourceStatement.c~
+void IxSourceStatement_parseNodes( IxSourceStatement* self, const Node* firstNode )
+{
+    const Token* token = Node_getToken( firstNode );
+    const char*  value = Token_getContent( token );
+
+    if ( Token_getTokenType( token ) == KEYWORD )
+    {
+        if ( String_Equals( value, "var" ) )
+        {
+            self->isDeclaration = TRUE;
+            IxSourceStatement_parseLine( self, firstNode );
+        }
+        else
+        if ( String_Equals( value, "return" ) )
+        {
+            self->isLine = TRUE;
+            IxSourceStatement_parseLine( self, firstNode );
+        }
+        else
+        {
+            self->isComplex     = TRUE;
+            self->statementType = String_new( Token_getContent( token ) );
+            self->conditional   = IxSourceConditional_new( firstNode );
+
+            NodeIterator* it = Node_iterator( firstNode );
+            if ( NodeIterator_hasNonWhitespaceOfType( it, STARTEXPRESSION ) )
+            {
+                NodeIterator_next( it );
+            }
+
+            if ( NodeIterator_hasNonWhitespaceOfType( it, STARTBLOCK ) )
+            {
+                self->block = IxSourceBlock_new( NodeIterator_next( it ) );
+            }
+        }
+    }
+}
+~
+
+~c/ixcompiler.IxSourceStatement.c~
+void IxSourceStatement_parseLine( IxSourceStatement* self, const Node* startNode )
+{
+    ArrayOfString_push( self->lineItems, Give( String_new( Token_getContent( Node_getToken( startNode ) ) ) ) );
+
+    NodeIterator* it = Node_iterator( startNode );
+    while ( NodeIterator_hasNext( it ) )
+    {
+        ArrayOfString_push( self->lineItems, Give( String_new( Token_getContent( Node_getToken( NodeIterator_next( it ) ) ) ) ) );
+    }
+    NodeIterator_free( &it );
+}
+~

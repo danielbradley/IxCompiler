@@ -33,7 +33,7 @@ ASTCollection* ASTCollection_new()
     ASTCollection* self = Platform_Alloc( sizeof( ASTCollection ) );
     if ( self )
     {
-        self->ast_collection = Array_new();
+        self->ast_collection = Array_new( (Destructor) AST_free );
     }
     return self;
 }
@@ -44,17 +44,8 @@ ASTCollection* ASTCollection_free( ASTCollection** self )
 {
     if ( *self )
     {
-        if ( (*self)->ast_collection )
-        {
-            AST* ast;
-
-            while ( (ast = Array_pop( (*self)->ast_collection )) )
-            {
-                AST_free( &ast );
-            }
-            Array_free( &(*self)->ast_collection );
-            Platform_Free( self );
-        }
+        Array_free( &(*self)->ast_collection );
+        Platform_Free( self );
     }
     return *self;
 }

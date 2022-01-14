@@ -1,0 +1,137 @@
+
+.. Ix Source Declaration
+
+~!include/ixcompiler.IxSourceDeclaration.h~
+#ifndef IXCOMPILER_IXSOURCEDECLARATION_H
+#define IXCOMPILER_IXSOURCEDECLARATION_H
+
+#include "ixcompiler.h"
+
+IxSourceDeclaration* IxSourceDeclaration_new( const Node* varNode );
+
+IxSourceDeclaration*      IxSourceDeclaration_free         (       IxSourceDeclaration** self );
+const String*             IxSourceDeclaration_getName      ( const IxSourceDeclaration*  self );
+const IxSourceType*       IxSourceDeclaration_getType      ( const IxSourceDeclaration*  self );
+const IxSourceExpression* IxSourceDeclaration_getExpression( const IxSourceDeclaration*  self );
+bool                      IxSourceDeclaration_hasExpression( const IxSourceDeclaration*  self );
+
+#endif
+~
+
+~!c/ixcompiler.IxSourceDeclaration.c~
+#include "ixcompiler.IxSourceDeclaration.h"
+#include "ixcompiler.IxSourceExpression.h"
+#include "ixcompiler.IxSourceType.h"
+#include "ixcompiler.Node.h"
+#include "ixcompiler.NodeIterator.h"
+#include "ixcompiler.Platform.h"
+#include "ixcompiler.String.h"
+#include "ixcompiler.Token.h"
+
+struct _IxSourceDeclaration
+{
+    bool                invalid;
+    bool                hasExpression;
+
+    String*             name;
+    IxSourceType*       type;
+    IxSourceExpression* expression;
+};
+
+static void IxSourceDeclaration_parse( IxSourceDeclaration* self, const Node* varNode );
+~
+
+~c/ixcompiler.IxSourceDeclaration.c~
+IxSourceDeclaration* IxSourceDeclaration_new( const Node* varNode )
+{
+    IxSourceDeclaration* self = Platform_Alloc( sizeof(IxSourceDeclaration) );
+    if ( self )
+    {
+        IxSourceDeclaration_parse( self, varNode );
+    }
+    return self;
+}
+~
+
+~c/ixcompiler.IxSourceDeclaration.c~
+IxSourceDeclaration* IxSourceDeclaration_free( IxSourceDeclaration** self )
+{
+    if ( *self )
+    {
+        String_free            ( &(*self)->name       );
+        IxSourceType_free      ( &(*self)->type       );
+        IxSourceExpression_free( &(*self)->expression );
+
+        Platform_Free( self );
+    }
+    return *self;
+}
+~
+
+~c/ixcompiler.IxSourceDeclaration.c~
+const String* IxSourceDeclaration_getName( const IxSourceDeclaration* self )
+{
+    return self->name;
+}
+~
+
+~c/ixcompiler.IxSourceDeclaration.c~
+const IxSourceType* IxSourceDeclaration_getType( const IxSourceDeclaration* self )
+{
+    return self->type;
+}
+~
+
+~c/ixcompiler.IxSourceDeclaration.c~
+const IxSourceExpression* IxSourceDeclaration_getExpression( const IxSourceDeclaration* self )
+{
+    return self->expression;
+}
+~
+
+~c/ixcompiler.IxSourceDeclaration.c~
+bool IxSourceDeclaration_hasExpression( const IxSourceDeclaration* self )
+{
+    return self->hasExpression;
+}
+~
+
+~c/ixcompiler.IxSourceDeclaration.c~
+static void IxSourceDeclaration_parse( IxSourceDeclaration* self, const Node* varNode )
+{
+    bool invalid = TRUE;
+    {
+        NodeIterator* it = Node_iterator( varNode );
+
+        if ( NodeIterator_hasNonWhitespaceOfType( it, WORD ) )
+        {
+            self->name = NodeIterator_nextTokenString( it );
+
+            if ( NodeIterator_hasNonWhitespaceOfType( it, OFTYPE ) )
+            {
+                NodeIterator_next( it );
+
+                if
+                (
+                    NodeIterator_hasNonWhitespaceOfType( it, PRIMITIVE )
+                    ||
+                    NodeIterator_hasNonWhitespaceOfType( it, WORD )
+                )
+                {
+                    String* type = NodeIterator_nextTokenString( it );
+                    self->type = IxSourceType_new( type );
+                    String_free( &type );
+
+                    if ( NodeIterator_hasNonWhitespaceOfType( it, ASSIGNMENTOP ) )
+                    {
+                        self->hasExpression = TRUE;
+                        self->expression = IxSourceExpression_new( NodeIterator_next( it ) );
+                    }
+                    invalid = FALSE;
+                }
+            }
+        }
+    }
+    self->invalid = invalid;
+}
+~

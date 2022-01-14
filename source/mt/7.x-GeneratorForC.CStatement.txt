@@ -7,7 +7,7 @@
 
 #include "ixcompiler.h"
 
-CStatement* CStatement_new ( const IxSourceStatement* anIxStatement, const Dictionary* resolvedTypes );
+CStatement* CStatement_new ( const IxSourceUnit* unit, const IxSourceStatement* anIxStatement, const Dictionary* resolvedTypes );
 
 CStatement* CStatement_free    (       CStatement** self );
 String*     CStatement_toString( const CStatement*  self );
@@ -16,28 +16,39 @@ String*     CStatement_toString( const CStatement*  self );
 ~
 
 ~!c/ixcompiler.CStatement.c~
-#include "ixcompiler.ArrayOfString.h"
+#include "ixcompiler.Array.h"
 #include "ixcompiler.CStatement.h"
+#include "ixcompiler.IxSourceDeclaration.h"
+#include "ixcompiler.IxSourceMethod.h"
 #include "ixcompiler.IxSourceStatement.h"
+#include "ixcompiler.IxSourceType.h"
+#include "ixcompiler.IxSourceUnit.h"
 #include "ixcompiler.Platform.h"
 #include "ixcompiler.String.h"
 #include "ixcompiler.StringBuffer.h"
+#include "ixcompiler.Token.h"
 
 struct _CStatement
 {
+    const IxSourceUnit*      unit;
     const IxSourceStatement* ixStatement; 
     const Dictionary*        resolvedTypes;
+          String*            prefix;
 };
+
+Array* CStatement_parseTokens( const CStatement* self, const Array* tokens );
 ~
 
 ~c/ixcompiler.CStatement.c~
-CStatement* CStatement_new( const IxSourceStatement* anIxStatement, const Dictionary* resolvedTypes )
+CStatement* CStatement_new( const IxSourceUnit* unit, const IxSourceStatement* anIxStatement, const Dictionary* resolvedTypes )
 {
     CStatement* self = Platform_Alloc( sizeof(CStatement) );
     if ( self )
     {
+        self->unit          = unit;
         self->ixStatement   = anIxStatement;
         self->resolvedTypes = resolvedTypes;
+        self->prefix        = String_replace( IxSourceUnit_getFullName( unit ), '.', '_' );
     }
     return self;
 };
@@ -48,6 +59,8 @@ CStatement* CStatement_free( CStatement** self )
 {
     if ( *self )
     {
+        String_free( &(*self)->prefix );
+
         Platform_Free( self );
     }
     return *self;
@@ -59,36 +72,77 @@ String* CStatement_toString( const CStatement* self )
 {
     StringBuffer* sb = StringBuffer_new();
 
-    if ( IxSourceStatement_isLine( self->ixStatement ) )
+    if ( IxSourceStatement_isDeclaration( self->ixStatement ) )
     {
-        const ArrayOfString* items = IxSourceStatement_getLineItems( self->ixStatement );
+        const IxSourceDeclaration* decl   = IxSourceStatement_getDeclaration( self->ixStatement );
+        const IxSourceType*        ixtype = IxSourceDeclaration_getType( decl );
+        const String*              type   = IxSourceType_getName( ixtype );
+
+        StringBuffer_append( sb, "// Declaration" );
+        StringBuffer_append( sb, String_content( type ) );
+    }
+    else
+    if ( IxSourceStatement_isComplex( self->ixStatement ) )
+    {
+        StringBuffer_append( sb, "// Complex" );
+    }
+    else
+    if ( IxSourceStatement_isExpression( self->ixStatement ) )
+    {
+        StringBuffer_append( sb, "// Expression" );
+
+        const IxSourceExpression* expression = IxSourceStatement_getExpression( self->ixStatement );
         {
-            StringBuffer_append( sb, "\t" );
-
-            int n = ArrayOfString_getLength( items );
-            for ( int i=0; i < n; i++ )
-            {
-                const String* item = ArrayOfString_getObject( items, i );
-
-                if ( '@' == String_content( item )[0] )
-                {
-                    StringBuffer_append( sb, "self->" );
-                }
-                else
-                if ( '%' == String_content( item )[0] )
-                {
-                    StringBuffer_append( sb, "/* " );
-                    StringBuffer_append( sb, String_content( item ) );
-                    StringBuffer_append( sb, " */" );
-                }
-                else
-                {
-                    StringBuffer_append( sb, String_content( item ) );
-                }
-            }
         }
+    }
+    else
+    {
+        StringBuffer_append( sb, "// Unknown" );
     }
 
     return StringBuffer_ConvertToString( &sb );
 }
 ~
+
+~c/ixcompiler.CStatement.c~
+Array* CStatement_parseTokens( const CStatement* self, const Array* tokens )
+{
+    Array* ret = Array_new( null );
+
+    int n = Array_getLength( tokens );
+    for ( int i=0; i < n; i++ )
+    {
+
+    }
+    return ret;
+}
+~
+
+
+
+
+        {
+            StringBuffer_append( sb, "\t" );
+
+            int n = Array_getLength( tokens );
+            for ( int i=0; i < n; i++ )
+            {
+                const Token* token = Array_getObject( tokens, i );
+                const char*  item  = Token_getContent( token );
+
+                if ( '@' == item[0] )
+                {
+                    StringBuffer_append( sb, "self->" );
+                }
+                else
+                if ( '%' == item[0] )
+                {
+                    StringBuffer_append( sb, String_content( self->prefix ) );
+                    StringBuffer_append( sb, "_" );
+                }
+                else
+                {
+                    StringBuffer_append( sb, item );
+                }
+            }
+        }

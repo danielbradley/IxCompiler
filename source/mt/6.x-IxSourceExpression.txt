@@ -31,8 +31,17 @@ div()
 
 IxSourceExpression* IxSourceExpression_new( const Node* firstNode );
 
-IxSourceExpression* IxSourceExpression_free      (       IxSourceExpression** self );
-const char*         IxSourceExpression_getContent( const IxSourceExpression*  self );
+IxSourceExpression*       IxSourceExpression_free              (       IxSourceExpression** self );
+bool                      IxSourceExpression_isValue           ( const IxSourceExpression*  self );
+bool                      IxSourceExpression_hasPrefixOperator ( const IxSourceExpression*  self );
+bool                      IxSourceExpression_hasInfixOperator  ( const IxSourceExpression*  self );
+bool                      IxSourceExpression_hasPostfixOperator( const IxSourceExpression*  self );
+const String*             IxSourceExpression_getValue          ( const IxSourceExpression*  self );
+const String*             IxSourceExpression_getPrefixOperator ( const IxSourceExpression*  self );
+const IxSourceExpression* IxSourceExpression_getLeftExpression ( const IxSourceExpression*  self );
+const String*             IxSourceExpression_getInfixOperator  ( const IxSourceExpression*  self );
+const IxSourceExpression* IxSourceExpression_getRightExpression( const IxSourceExpression*  self );
+const String*             IxSourceExpression_getPostfixOperator( const IxSourceExpression*  self );
 
 #endif
 ~
@@ -42,15 +51,23 @@ const char*         IxSourceExpression_getContent( const IxSourceExpression*  se
 #include "ixcompiler.Node.h"
 #include "ixcompiler.NodeIterator.h"
 #include "ixcompiler.Platform.h"
+#include "ixcompiler.String.h"
 #include "ixcompiler.StringBuffer.h"
 #include "ixcompiler.Token.h"
 
 struct _IxSourceExpression
 {
-    StringBuffer* expression;
+    bool                     invalid;
+    bool                     isValue;
+    String*                  value;
+    String*                  prefixOperator;
+    IxSourceExpression*      leftExpression;
+    String*                  infixOperator;
+    IxSourceExpression*      rightExpression;
+    String*                  postfixOperator;
 };
 
-void IxSourceExpresion_parseExpression( IxSourceExpression* self, const Node* firstNode );
+void IxSourceExpression_parse( IxSourceExpression* self, const Node* firstNode );
 ~
 
 ~c/ixcompiler.IxExpression.c~
@@ -58,7 +75,7 @@ IxSourceExpression* IxSourceExpression_new( const Node* firstNode )
 {
     IxSourceExpression* self = Platform_Alloc( sizeof(IxSourceExpression) );
     {
-        self->expression = StringBuffer_new();
+        IxSourceExpression_parse( self, firstNode );
     }
     return self;
 }
@@ -69,7 +86,12 @@ IxSourceExpression* IxSourceExpression_free( IxSourceExpression** self )
 {
     if ( *self )
     {
-        StringBuffer_free( &(*self)->expression );
+        String_free            ( &(*self)->value           );
+        String_free            ( &(*self)->prefixOperator  );
+        String_free            ( &(*self)->infixOperator   );
+        String_free            ( &(*self)->postfixOperator );
+        IxSourceExpression_free( &(*self)->leftExpression  );
+        IxSourceExpression_free( &(*self)->rightExpression );
 
         Platform_Free( self );
     }
@@ -78,23 +100,210 @@ IxSourceExpression* IxSourceExpression_free( IxSourceExpression** self )
 ~
 
 ~c/ixcompiler.IxExpression.c~
-const char* IxSourceExpression_getContent( const IxSourceExpression* self )
+bool IxSourceExpression_isValue( const IxSourceExpression* self )
 {
-    return StringBuffer_content( self->expression );
+    return (null != self->value);
 }
 ~
 
 ~c/ixcompiler.IxExpression.c~
-void IxSourceExpresion_parseExpression( IxSourceExpression* self, const Node* firstNode )
+bool IxSourceExpression_hasPrefixOperator( const IxSourceExpression* self )
 {
-    StringBuffer_append( self->expression, Token_getContent( Node_getToken( firstNode ) ) );    
-
-    NodeIterator* it = Node_iterator( firstNode );
-    while ( NodeIterator_hasNext( it ) )
-    {
-        const Node* node = NodeIterator_next( it );
-        IxSourceExpresion_parseExpression( self, node );
-    }
-    NodeIterator_free( &it );
+    return (null != self->prefixOperator);
 }
 ~
+~c/ixcompiler.IxExpression.c~
+bool IxSourceExpression_hasInfixOperator( const IxSourceExpression* self )
+{
+    return (null != self->infixOperator);
+}
+
+~c/ixcompiler.IxExpression.c~
+bool IxSourceExpression_hasPostfixOperator( const IxSourceExpression* self )
+{
+    return (null != self->postfixOperator);
+}
+~
+
+~c/ixcompiler.IxExpression.c~
+const String* IxSourceExpression_getValue( const IxSourceExpression* self )
+{
+    return self->value;
+}
+~
+
+~c/ixcompiler.IxExpression.c~
+const String* IxSourceExpression_getPrefixOperator( const IxSourceExpression* self )
+{
+    return self->prefixOperator;
+}
+~
+
+~c/ixcompiler.IxExpression.c~
+const IxSourceExpression* IxSourceExpression_getLeftExpression( const IxSourceExpression* self )
+{
+    return self->leftExpression;
+}
+~
+
+~c/ixcompiler.IxExpression.c~
+const String* IxSourceExpression_getInfixOperator( const IxSourceExpression* self )
+{
+    return self->infixOperator;
+}
+~
+
+~c/ixcompiler.IxExpression.c~
+const IxSourceExpression* IxSourceExpression_getRightExpression( const IxSourceExpression* self )
+{
+    return self->rightExpression;
+}
+~
+
+~c/ixcompiler.IxExpression.c~
+const String* IxSourceExpression_getPostfixOperator( const IxSourceExpression* self )
+{
+    return self->postfixOperator;
+}
+~
+
+~c/ixcompiler.IxExpression.c~
+void IxSourceExpression_parse( IxSourceExpression* self, const Node* firstNode )
+{
+
+    
+}
+~
+
+    NodeIterator* it = Node_iterator( firstNode );
+
+    //  Parse left value
+    if ( NodeIterator_hasNonWhitespace( it ) )
+    {
+        //  Parse prefix
+        const Node*  next  = NodeIterator_next( it );
+        const Token* token = Node_getToken( next );
+        const char*  value = Token_getContent( first );
+
+        switch ( Token_getTokenType( token ) )
+        {
+        case PREFIXOP:
+            self->prefixOperator = String_new( value );
+            break;
+
+        case INSTANCEMEMBER:
+        case CLASSMEMBER:
+            self->prefixOperator = String_new( value );
+            break;
+
+        case INFIXOP:
+            self->invalid = TRUE;
+            break;
+
+        case POSTFIXOP:
+            self->invalid = TRUE;
+            break;
+
+        case WORD:
+            self->value = String_new( value );
+            break;
+
+        default:
+            self->invalid = TRUE;
+        }
+
+        if ( !self->invalid && !self->value && NodeIterator_hasNonWhitespace( it ) )
+        {
+            const Node*  secondNode = NodeIterator_next( it );
+            const Token* second     = Node_getToken( secondNode );
+
+            switch ( Token_getTokenType( second ) )
+            {
+            case WORD:
+                self->value = String_new( value );
+                break;
+
+            default:
+                self->invalid = TRUE;
+            }
+
+            if ( !self->invalid && self->value && NodeIterator_hasNonWhitespace( it ) )
+            {
+                const Node*  secondNode = NodeIterator_next( it );
+                const Token* second     = Node_getToken( secondNode );
+
+                switch ( Token_getTokenType( second ) )
+                {
+                case PREFIXOP:
+                    self->invalid = TRUE;
+                    break;
+
+                case POSTFIXOP:
+                    self->postfixOperator = String_new( value );
+                    break;
+
+                case INFIXOP:
+
+                    self->infixOperator = String_new( value );
+                    IxSourceExpression_parse
+                    break;
+
+                }
+
+        //  Parse value
+        if ( !self->value && NodeIterator_hasNonWhitespace( it ) )
+        {
+            const Node*  secondNode = NodeIterator_next( it );
+            const Token* second     = Node_getToken( secondNode );
+
+            switch ( Token_getTokenType( second ) )
+            {
+            case PREFIXOP:
+            case POSTFIXOP:
+                self->invalid = TRUE;
+                break;
+
+            case INFIXOP:
+                self->infixOperator = String_new( value );
+                break;
+
+            case WORD:
+                self->value = String_new( value );
+                break;
+            
+            default:
+                self->invalid = TRUE;
+            }
+
+            if ( NodeIterator_hasNonWhitespace( it ) )
+            {
+                const Node*  thirdNode = NodeIterator_next( it );
+                const Token* third     = Node_getToken( thirdNode );
+
+                switch ( Token_getTokenType( third ) )
+                {
+                case PREFIXOP:
+                case INFIXOP:
+                    self->invalid = TRUE;
+                    break;
+
+                case POSTFIXOP:
+                    self->postfixOperator = String_new( value );
+                    break;
+
+                case WORD:
+                    self->value = String_new( value );
+                    break;
+                
+                default:
+                    self->invalid = TRUE;
+                }
+            }
+        }
+    }
+    NodeIterator_free( _it );
+}
+~
+
+
+

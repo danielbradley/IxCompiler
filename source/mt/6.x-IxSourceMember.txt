@@ -124,20 +124,10 @@ static void IxSource_Unit_parseMember( IxSourceMember* self, const Node* prefixN
 
         switch ( type )
         {
-        case SYMBOL:
-        case INFIXOP:
+        case INSTANCEMEMBER:
+            self->isInstance = TRUE;
+        case CLASSMEMBER:
             self->prefix = String_new( value );
-            switch ( value[0] )
-            {
-            case '@':
-                self->isInstance = TRUE;
-                break;
-            case '%':
-                self->isInstance = FALSE;
-                break;
-            default:
-                self->invalid = TRUE;
-            }
             break;
         
         default:

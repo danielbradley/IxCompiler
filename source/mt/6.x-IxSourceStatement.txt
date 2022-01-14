@@ -10,22 +10,24 @@
 IxSourceStatement* IxSourceStatement_new( const Node* aNode );
 
 IxSourceStatement*         IxSourceStatement_free          (       IxSourceStatement** self );
-const ArrayOfString*       IxSourceStatement_getLineItems  ( const IxSourceStatement*  self );
-const IxSourceConditional* IxSourceStatement_getConditional( const IxSourceStatement*  self );
 const IxSourceBlock*       IxSourceStatement_getBlock      ( const IxSourceStatement*  self );
-String*                    IxSourceStatement_toString      ( const IxSourceStatement*  self );
+const IxSourceConditional* IxSourceStatement_getConditional( const IxSourceStatement*  self );
+const IxSourceDeclaration* IxSourceStatement_getDeclaration( const IxSourceStatement*  self );
+const IxSourceExpression*  IxSourceStatement_getExpression ( const IxSourceStatement*  self );
 bool                       IxSourceStatement_isComplex     ( const IxSourceStatement*  self );
 bool                       IxSourceStatement_isDeclaration ( const IxSourceStatement*  self );
-bool                       IxSourceStatement_isLine        ( const IxSourceStatement*  self );
+bool                       IxSourceStatement_isExpression  ( const IxSourceStatement*  self );
 
 #endif
 ~
 
 ~!c/ixcompiler.IxSourceStatement.c~
-#include "ixcompiler.ArrayOfString.h"
+#include "ixcompiler.Array.h"
 #include "ixcompiler.EnumTokenType.h"
 #include "ixcompiler.IxSourceBlock.h"
 #include "ixcompiler.IxSourceConditional.h"
+#include "ixcompiler.IxSourceDeclaration.h"
+#include "ixcompiler.IxSourceExpression.h"
 #include "ixcompiler.IxSourceStatement.h"
 #include "ixcompiler.Node.h"
 #include "ixcompiler.NodeIterator.h"
@@ -39,15 +41,15 @@ struct _IxSourceStatement
     bool                 invalid;
     bool                 isComplex;
     bool                 isDeclaration;
-    bool                 isLine;
+    bool                 isExpression;
     String*              statementType;
-    IxSourceConditional* conditional;
-    ArrayOfString*       lineItems;
     IxSourceBlock*       block;
+    IxSourceConditional* conditional;
+    IxSourceDeclaration* declaration;
+    IxSourceExpression*  expression;
 };
 
-void IxSourceStatement_parseNodes( IxSourceStatement* self, const Node* firstNode );
-void IxSourceStatement_parseLine ( IxSourceStatement* self, const Node* startNode );
+void IxSourceStatement_parse( IxSourceStatement* self, const Node* firstNode );
 ~
 
 ~c/ixcompiler.IxSourceStatement.c~
@@ -56,9 +58,7 @@ IxSourceStatement* IxSourceStatement_new( const Node* firstNode )
     IxSourceStatement* self = Platform_Alloc( sizeof(IxSourceStatement) );
     if ( self )
     {
-        self->lineItems = ArrayOfString_new();
-
-        IxSourceStatement_parseNodes( self, firstNode );
+        IxSourceStatement_parse( self, firstNode );
     }
     return self;
 }
@@ -70,27 +70,14 @@ IxSourceStatement* IxSourceStatement_free( IxSourceStatement** self )
     if ( *self )
     {
         String_free             ( &(*self)->statementType );
-        IxSourceConditional_free( &(*self)->conditional   );
-        ArrayOfString_free      ( &(*self)->lineItems     );
         IxSourceBlock_free      ( &(*self)->block         );
+        IxSourceConditional_free( &(*self)->conditional   );
+        IxSourceDeclaration_free( &(*self)->declaration   );
+        IxSourceExpression_free ( &(*self)->expression    );
 
         Platform_Free( self );
     }
     return *self;
-}
-~
-
-~c/ixcompiler.IxSourceStatement.c~
-const ArrayOfString* IxSourceStatement_getLineItems( const IxSourceStatement* self )
-{
-    return self->lineItems;
-}
-~
-
-~c/ixcompiler.IxSourceStatement.c~
-const IxSourceConditional* IxSourceStatement_getConditional( const IxSourceStatement* self )
-{
-    return self->conditional;
 }
 ~
 
@@ -102,26 +89,23 @@ const IxSourceBlock* IxSourceStatement_getBlock( const IxSourceStatement* self )
 ~
 
 ~c/ixcompiler.IxSourceStatement.c~
-String* IxSourceStatement_toString( const IxSourceStatement* self )
+const IxSourceConditional* IxSourceStatement_getConditional( const IxSourceStatement* self )
 {
-    StringBuffer* sb = StringBuffer_new();
-    if ( self->invalid )
-    {
-        StringBuffer_append( sb, " invalid" );
-    }
+    return self->conditional;
+}
+~
 
-    if ( self->isComplex )
-    {
-        StringBuffer_append( sb, " complex " );
-        StringBuffer_append( sb, String_content( self->statementType ) );
-        StringBuffer_appendLine_prefix_optional( sb, "", (String**) Give( IxSourceConditional_toString( self->conditional ) ) );
-    }
-    else
-    {
-        StringBuffer_append( sb, " expression" );
-    }
+~c/ixcompiler.IxSourceStatement.c~
+const IxSourceDeclaration* IxSourceStatement_getDeclaration( const IxSourceStatement*  self )
+{
+    return self->declaration;
+}
+~
 
-    return StringBuffer_ConvertToString( &sb );
+~c/ixcompiler.IxSourceStatement.c~
+const IxSourceExpression*  IxSourceStatement_getExpression ( const IxSourceStatement*  self )
+{
+    return self->expression;
 }
 ~
 
@@ -140,14 +124,14 @@ bool IxSourceStatement_isDeclaration( const IxSourceStatement* self )
 ~
 
 ~c/ixcompiler.IxSourceStatement.c~
-bool IxSourceStatement_isLine( const IxSourceStatement* self )
+bool IxSourceStatement_isExpression( const IxSourceStatement* self )
 {
-    return self->isLine;
+    return self->isExpression;
 }
 ~
 
 ~c/ixcompiler.IxSourceStatement.c~
-void IxSourceStatement_parseNodes( IxSourceStatement* self, const Node* firstNode )
+void IxSourceStatement_parse( IxSourceStatement* self, const Node* firstNode )
 {
     const Token* token = Node_getToken( firstNode );
     const char*  value = Token_getContent( token );
@@ -157,13 +141,13 @@ void IxSourceStatement_parseNodes( IxSourceStatement* self, const Node* firstNod
         if ( String_Equals( value, "var" ) )
         {
             self->isDeclaration = TRUE;
-            IxSourceStatement_parseLine( self, firstNode );
+            self->declaration   = IxSourceDeclaration_new( firstNode );
         }
         else
         if ( String_Equals( value, "return" ) )
         {
-            self->isLine = TRUE;
-            IxSourceStatement_parseLine( self, firstNode );
+            self->isExpression = TRUE;
+            self->expression   = IxSourceExpression_new( firstNode );
         }
         else
         {
@@ -183,19 +167,10 @@ void IxSourceStatement_parseNodes( IxSourceStatement* self, const Node* firstNod
             }
         }
     }
-}
-~
-
-~c/ixcompiler.IxSourceStatement.c~
-void IxSourceStatement_parseLine( IxSourceStatement* self, const Node* startNode )
-{
-    ArrayOfString_push( self->lineItems, Give( String_new( Token_getContent( Node_getToken( startNode ) ) ) ) );
-
-    NodeIterator* it = Node_iterator( startNode );
-    while ( NodeIterator_hasNext( it ) )
+    else
     {
-        ArrayOfString_push( self->lineItems, Give( String_new( Token_getContent( Node_getToken( NodeIterator_next( it ) ) ) ) ) );
+        self->isExpression = TRUE;
+        self->expression   = IxSourceExpression_new( firstNode );
     }
-    NodeIterator_free( &it );
 }
 ~

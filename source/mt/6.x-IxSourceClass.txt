@@ -64,6 +64,8 @@ IxSourceClass* IxSourceClass_new( const Node* classModifierNode )
 }
 ~
 
+0x555555580e50
+
 ~c/ixcompiler.IxSourceClass.c~
 IxSourceClass* IxSourceClass_free( IxSourceClass** self )
 {
@@ -149,20 +151,12 @@ static void parseBlock ( IxSourceClass* self, const Node* startBlockNode )
 
         switch ( type )
         {
-        case SYMBOL:
-            switch( value[0] )
-            {
-            case '@':
-                parseMember( self, next );
-            }
+        case INSTANCEMEMBER:
+            parseMember( self, next );
             break;
 
-        case INFIXOP:
-            switch( value[0] )
-            {
-            case '%':
-                parseMember( self, next );
-            }
+        case CLASSMEMBER:
+            parseMember( self, next );
             break;
 
         case ENDBLOCK:

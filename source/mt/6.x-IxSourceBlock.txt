@@ -40,7 +40,7 @@ IxSourceBlock* IxSourceBlock_new( const Node* startBlockNode )
     IxSourceBlock* self = Platform_Alloc( sizeof(IxSourceBlock) );
     if ( self )
     {
-        self->statements = Array_new( IxSourceStatement_free );
+        self->statements = Array_new( (Destructor) IxSourceStatement_free );
 
         IxSourceBlock_parseStatements( self, startBlockNode );        
     }

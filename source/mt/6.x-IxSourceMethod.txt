@@ -10,6 +10,7 @@
 IxSourceMethod* IxSourceMethod_new( const IxSourceUnit* sourceUnit, const Node* modifierNode );
 
 IxSourceMethod*          IxSourceMethod_free             (       IxSourceMethod** self );
+const IxSourceUnit*      IxSourceMethod_getSourceUnit    ( const IxSourceMethod*  self );
 const IxSourceSignature* IxSourceMethod_getSignature     ( const IxSourceMethod*  self );
 const char*              IxSourceMethod_getAccessModifier( const IxSourceMethod*  self );
 const char*              IxSourceMethod_getConst         ( const IxSourceMethod*  self );
@@ -81,6 +82,13 @@ IxSourceMethod* IxSourceMethod_free( IxSourceMethod** self )
 ~
 
 ~c/ixcompiler.IxSourceMethod.c~
+const IxSourceUnit* IxSourceMethod_getSourceUnit( const IxSourceMethod* self )
+{
+    return self->sourceUnit;
+}
+~
+
+~c/ixcompiler.IxSourceMethod.c~
 const IxSourceSignature* IxSourceMethod_getSignature( const IxSourceMethod* self )
 {
     return self->signature;
@@ -132,7 +140,7 @@ const IxSourceBlock* IxSourceMethod_getMethodBlock( const IxSourceMethod* self )
 ~c/ixcompiler.IxSourceMethod.c~
 const Array* IxSourceMethod_getStatements( const IxSourceMethod* self )
 {
-    return IxSourceBlock_getStatements( self->methodBlock );
+    return (self->methodBlock) ? IxSourceBlock_getStatements( self->methodBlock ) : null;
 }
 ~
 

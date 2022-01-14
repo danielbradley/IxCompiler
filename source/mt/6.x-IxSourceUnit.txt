@@ -47,6 +47,7 @@ const Array*                 IxSourceUnit_getMethods       ( const IxSourceUnit*
 
 struct _IxSourceUnit
 {
+    bool                       invalid;
     String*                    package;
     String*                    filename;
     String*                    name;
@@ -189,7 +190,7 @@ static void initChildren( IxSourceUnit* self, const AST* ast )
 {
     self->copyrightLines = ArrayOfString_new();
     self->licenseLines   = ArrayOfString_new();
-    self->methods        = Array_new_destructor( (void*(*)(void**)) IxSourceMethod_free );
+    self->methods        = Array_new( (Destructor) IxSourceMethod_free );
 
     const Tree* tree = AST_getTree ( ast  );
     const Node* root = Tree_getRoot( tree );    
@@ -220,7 +221,14 @@ static void initChildren( IxSourceUnit* self, const AST* ast )
         else
         if ( tag && String_equals( tag, class ) )
         {
-            self->class = IxSourceClass_new( node );
+            if ( ! self->class )
+            {
+                self->class = IxSourceClass_new( node );
+            }
+            else
+            {
+                self->invalid = TRUE;
+            }
         }
         else
         if ( tag && String_equals( tag, method ) )

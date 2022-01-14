@@ -2,9 +2,6 @@
 ... Generate C Source File
 
 ~c/ixcompiler.GeneratorForC.c~
-~
-
-~c/ixcompiler.GeneratorForC.c~
 static void GenerateSourceFileThenWrite( const IxSourceUnitCollection* sourceUnits, const String* outputDir )
 {
     if ( 0 < IxSourceUnitCollection_getLength( sourceUnits ) )
@@ -177,6 +174,10 @@ static String* GenerateSourceFileStructsForSourceUnitMembers( const IxSourceUnit
                             {
                                 StringBuffer_append( sb, "*"  );
                             }
+                            if ( IxSourceType_isArray( type ) )
+                            {
+                                StringBuffer_append( sb, "*" );
+                            }
 
                             if ( IxSourceType_isReference( type ) )
                             {
@@ -185,11 +186,6 @@ static String* GenerateSourceFileStructsForSourceUnitMembers( const IxSourceUnit
 
                             StringBuffer_append( sb, " "  );
                             StringBuffer_append( sb, String_content( IxSourceMember_getName( member ) ) );
-
-                            if ( IxSourceType_isArray( type ) )
-                            {
-                                StringBuffer_append( sb, "[]" );
-                            }
                             StringBuffer_append( sb, ";"  );
                         }   
                         String_free( &converted );
@@ -349,7 +345,9 @@ static String* GenerateSourceFileMethodsForSourceUnitFunction( const IxSourceMet
 ~c/ixcompiler.GeneratorForC.c~
 static String* GenerateSourceFileMethodsForSourceUnitFunctionStatements( const IxSourceMethod* method, const Dictionary* resolvedTypes )
 {
-    StringBuffer* sb = StringBuffer_new();
+    const IxSourceUnit* unit = IxSourceMethod_getSourceUnit( method );
+
+    StringBuffer* sb     = StringBuffer_new();
     {
         const Array* statements = IxSourceMethod_getStatements( method );
         int n = Array_getLength( statements );
@@ -362,12 +360,13 @@ static String* GenerateSourceFileMethodsForSourceUnitFunctionStatements( const I
         {
             const IxSourceStatement* statement = (const IxSourceStatement*) Array_getObject( statements, i );
             {
-                CStatement* cstatement = CStatement_new( statement, resolvedTypes );
+                CStatement* cstatement = CStatement_new( unit, statement, resolvedTypes );
 
                 StringBuffer_appendLine_prefix_optional( sb, "", (String**) Give( CStatement_toString( cstatement ) ) );
             }
         }
     }
+
     return StringBuffer_ConvertToString( &sb );
 }
 ~

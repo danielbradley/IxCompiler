@@ -1,0 +1,57 @@
+
+~!include/ixcompiler.IxSourceSubExpression.h~
+#ifndef IXCOMPILER_IXSOURCESUBEXPRESSION_H
+#define IXCOMPILER_IXSOURCESUBEXPRESSION_H
+
+#include "ixcompiler.h"
+
+IxSourceSubExpression* IxSourceSubExpression_new( const Node* startExpression );
+
+IxSourceSubExpression* IxSourceSubExpression_free         (       IxSourceSubExpression** self );
+IxSourceExpression*    IxSourceSubExpression_getExpression( const IxSourceSubExpression*  self );
+
+#endif
+~
+
+~!c/ixcompiler.IxSourceSubExpression.c~
+#include "ixcompiler.IxSourceExpression.h"
+#include "ixcompiler.IxSourceSubExpression.h"
+#include "ixcompiler.Platform.h"
+
+struct _IxSourceSubExpression
+{
+    IxSourceExpression* expression;
+};
+~
+
+~c/ixcompiler.IxSourceSubExpression.c~
+IxSourceSubExpression* IxSourceSubExpression_new( const Node* startExpression )
+{
+    IxSourceSubExpression* self = Platform_Alloc( sizeof(IxSourceSubExpression) );
+    if ( self )
+    {
+        self->expression = IxSourceExpression_new( startExpression );
+    }
+    return self;
+}
+~
+
+~c/ixcompiler.IxSourceSubExpression.c~
+IxSourceSubExpression* IxSourceSubExpression_free( IxSourceSubExpression** self )
+{
+    if ( *self )
+    {
+        IxSourceExpression_free( &(*self)->expression );
+
+        Platform_Free( self );
+    }
+    return *self;
+}
+~
+
+~c/ixcompiler.IxSourceSubExpression.c~
+IxSourceExpression* IxSourceSubExpression_getExpression( const IxSourceSubExpression* self )
+{
+    return self->expression;
+}
+~

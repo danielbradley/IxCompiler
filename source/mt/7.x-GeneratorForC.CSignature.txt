@@ -203,51 +203,53 @@ void CSignature_initParameters( CSignature* self )
 {
     const Array* parameters = IxSourceSignature_getParameters( self->signature );
     {
-        int n = Array_getLength( parameters );
-        if ( 0 == n )
+        StringBuffer* sb = StringBuffer_new();
+        StringBuffer_append( sb, "(" );
         {
-            self->parameters = String_new( "()" );
-        }
-        else
-        {
-            StringBuffer* sb = StringBuffer_new();
+            int n = Array_getLength( parameters );
+
+            if ( !IxSourceSignature_isClass( self->signature ) )
             {
-                StringBuffer_append( sb, "(\n" );
-
-                if ( !IxSourceSignature_isClass( self->signature ) )
+                const IxSourceUnit* unit = IxSourceSignature_getSourceUnit( self->signature );
+                const String*       name = IxSourceUnit_getFullName( unit );
                 {
-                    const IxSourceUnit* unit = IxSourceSignature_getSourceUnit( self->signature );
-                    const String*       name = IxSourceUnit_getFullName( unit );
-                    {
-                        String* type = String_replace( name, '.', '_' );
+                    String* type = String_replace( name, '.', '_' );
 
-                        StringBuffer_append( sb, "\t" );
-                        StringBuffer_append( sb, String_content( type ) );
+                    StringBuffer_append( sb, "\n" );
+                    StringBuffer_append( sb, "\t" );
+                    StringBuffer_append( sb, String_content( type ) );
+
+                    if ( 0 < n )
+                    {
                         StringBuffer_append( sb, "* self,\n" );
-
-                        String_free( &type );
                     }
-                }
-
-                for ( int i=0; i < n; i++ )
-                {
-                    const IxSourceParameter* parameter = (const IxSourceParameter*) Array_getObject( parameters, i );
-                    const IxSourceType*      ixtype    = IxSourceParameter_getType( parameter );
-
-                    String* rtype = CSignature_ToFullCType( ixtype, self->resolvedTypes );
+                    else
                     {
-                        StringBuffer_append( sb, "\t" );
-                        StringBuffer_append( sb, String_content( rtype ) );
-                        StringBuffer_append( sb, " " );
-                        StringBuffer_append( sb, String_content( IxSourceParameter_getName( parameter ) ) );
+                        StringBuffer_append( sb, "* self\n" );
                     }
-                    String_free( &rtype );
+
+                    String_free( &type );
                 }
-                StringBuffer_append( sb, "\n)" );
-                self->parameters = StringBuffer_toString( sb );
             }
-            StringBuffer_free( &sb );
+
+            for ( int i=0; i < n; i++ )
+            {
+                const IxSourceParameter* parameter = (const IxSourceParameter*) Array_getObject( parameters, i );
+                const IxSourceType*      ixtype    = IxSourceParameter_getType( parameter );
+
+                String* rtype = CSignature_ToFullCType( ixtype, self->resolvedTypes );
+                {
+                    StringBuffer_append( sb, "\t" );
+                    StringBuffer_append( sb, String_content( rtype ) );
+                    StringBuffer_append( sb, " " );
+                    StringBuffer_append( sb, String_content( IxSourceParameter_getName( parameter ) ) );
+                    StringBuffer_append( sb, "\n" );
+                }
+                String_free( &rtype );
+            }
         }
+        StringBuffer_append( sb, ")" );
+        self->parameters = StringBuffer_ConvertToString( &sb );
     }
 }
 ~

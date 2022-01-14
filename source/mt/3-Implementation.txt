@@ -98,13 +98,19 @@ int main( int argc, char** argv )
                 exit( -1 );
             }
             else
-            if ( TRUE )
             {
-                Tokenizer* t   = Tokenizer_new( &file );
-                AST*       ast = AST_new( &t );
-
-                ASTPrinter_Print( ast );
-                ASTCollection_add( ast_collection, &ast );
+                Tokenizer* t = Tokenizer_new( &file );
+                if ( FALSE )
+                {
+                    Tokenizer_printAll( t );
+                    Tokenizer_free( &t );
+                }
+                else
+                {
+                    AST* ast = AST_new( &t );
+                    ASTPrinter_Print( ast );
+                    ASTCollection_add( ast_collection, &ast );
+                }
             }
         }
 

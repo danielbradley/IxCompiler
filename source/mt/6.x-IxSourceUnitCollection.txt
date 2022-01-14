@@ -51,11 +51,11 @@ IxSourceUnitCollection* IxSourceUnitCollection_new()
     IxSourceUnitCollection* self = Platform_Alloc( sizeof( IxSourceUnitCollection ) );
     if ( self )
     {
-        self->collection     = Array_new();
+        self->collection     = Array_new( (Destructor) IxSourceUnit_free );
         self->copyrightLines = ArrayOfString_new();
         self->licenseLines   = ArrayOfString_new();
-        self->resolvedTypes  = Dictionary_new_destructor( FALSE, (Destructor) String_free );
-        self->signatures     = Dictionary_new           ( FALSE );
+        self->resolvedTypes  = Dictionary_new( FALSE, (Destructor) String_free );
+        self->signatures     = Dictionary_new( FALSE, null );
     }
     return self;
 }

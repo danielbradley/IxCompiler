@@ -9,6 +9,8 @@
 
 typedef enum _EnumTokenType
 {
+	END,
+	PSEUDO,
 	UNKNOWN_TYPE,
     UNKNOWN_WHITESPACE,
     UNKNOWN_OPEN,
@@ -33,6 +35,8 @@ typedef enum _EnumTokenType
 
     //  Symbolic
     OFTYPE,
+	INSTANCEMEMBER,
+	CLASSMEMBER,
     OPERATOR,
     ASSIGNMENTOP,
     PREFIXOP,
@@ -41,8 +45,9 @@ typedef enum _EnumTokenType
     PREINFIXOP,
     PREPOSTFIXOP,
     STOP,
+	COMMA,
     LINECOMMENT,
-    COMMENT,
+    MULTILINECOMMENT,
 
     //  Words
 	COPYRIGHT,
@@ -97,6 +102,7 @@ typedef enum _EnumTokenType
 	QUOTE,
 	ESCAPED,
 	OTHER
+
 } EnumTokenType;
 
 const char* EnumTokenType_asString( EnumTokenType type );
@@ -113,6 +119,8 @@ const char* EnumTokenType_asString( EnumTokenType type )
 {
     switch ( type )
     {
+	case END:                return "END";
+	case PSEUDO:             return "PSEUDO";
 	case UNKNOWN_TYPE:       return "UNKNOWN_TYPE";
     case UNKNOWN_WHITESPACE: return "UNKNOWN_WHITESPACE";
     case UNKNOWN_OPEN:       return "UNKNOWN_OPEN";
@@ -129,6 +137,8 @@ const char* EnumTokenType_asString( EnumTokenType type )
     case ENDSUBSCRIPT:       return "ENDSUBSCRIPT";
     case ENDTAG:             return "ENDTAG";
     case OFTYPE:             return "OFTYPE";
+    case INSTANCEMEMBER:     return "INSTANCEMEMBER";
+    case CLASSMEMBER:        return "CLASSMEMBER";
     case OPERATOR:           return "OPERATOR";
     case ASSIGNMENTOP:       return "ASSIGNMENTOP";
     case PREFIXOP:           return "PREFIXOP";
@@ -137,8 +147,9 @@ const char* EnumTokenType_asString( EnumTokenType type )
     case PREINFIXOP:         return "PREINFIXOP";
     case PREPOSTFIXOP:       return "PREPOSTFIXOP";
     case STOP:               return "STOP";
+    case COMMA:              return "COMMA";
     case LINECOMMENT:        return "LINECOMMENT";
-    case COMMENT:            return "COMMENT";
+    case MULTILINECOMMENT:   return "MULTILINECOMMENT";
 	case COPYRIGHT:          return "COPYRIGHT";
 	case LICENSE:            return "LICENSE";
 	case WORD:               return "WORD";

@@ -5,8 +5,13 @@
 #ifndef IXCOMPILER_TOKENGROUP_H
 #define IXCOMPILER_TOKENGROUP_H
 
+#include "ixcompiler.h"
+#include "ixcompiler.EnumTokenType.h"
+#include "ixcompiler.EnumTokenGroup.h"
+
 TokenGroup*    TokenGroup_new          ( char ch );
 TokenGroup*    TokenGroup_free         ( TokenGroup** self );
+void           TokenGroup_setGroupType ( TokenGroup*  self, EnumTokenGroup groupType );
 
 EnumTokenGroup TokenGroup_getGroupType ( const TokenGroup* self );
 bool           TokenGroup_matches      ( const TokenGroup* self, char ch );
@@ -17,10 +22,8 @@ EnumTokenGroup TokenGroup_DetermineType( char ch );
 ~
 
 ~!c/ixcompiler.TokenGroup.c~
-#include "ixcompiler.h"
-#include "ixcompiler.EnumTokenGroup.h"
-#include "ixcompiler.Platform.h"
 #include "ixcompiler.TokenGroup.h"
+#include "ixcompiler.Platform.h"
 
 struct _TokenGroup
 {
@@ -59,6 +62,13 @@ TokenGroup* TokenGroup_free( TokenGroup** self )
 ~
 
 ~c/ixcompiler.TokenGroup.c~
+void TokenGroup_setGroupType( TokenGroup* self, EnumTokenGroup groupType )
+{
+    self->groupType = groupType;
+}
+~
+
+~c/ixcompiler.TokenGroup.c~
 EnumTokenGroup TokenGroup_getGroupType ( const TokenGroup*  self )
 {
     return self->groupType;
@@ -70,6 +80,9 @@ EnumTokenGroup TokenGroup_DetermineType( char ch )
 {
     switch ( ch )
     {
+    case '\0':
+        return PSEUDOGROUP;
+
     case '~':
     case '!':
     case '@':

@@ -7,13 +7,18 @@
 
 #include "ixcompiler.h"
 #include "ixcompiler.EnumTokenType.h"
+#include "ixcompiler.EnumTokenGroup.h"
 
 Token*            Token_new                      ( Tokenizer* t, const char* content, TokenGroup* aGroup );
 Token*            Token_free                     ( Token**      self );
 const char*       Token_getContent               ( const Token* self );
 const TokenGroup* Token_getTokenGroup            ( const Token* self );
 EnumTokenType     Token_getTokenType             ( const Token* self );
+EnumTokenGroup    Token_getGroupType             ( const Token* self );
+bool              Token_isAmongTypes             ( const Token* self, const EnumTokenType types[] );
 void              Token_print                    ( const Token* self, void* stream );
+Token*            Token_CreateStopToken          ( Tokenizer* t );
+bool              Token_ShouldInsertStop         ( EnumTokenType lastType, EnumTokenType nextType );
 
 #endif
 ~
@@ -60,6 +65,14 @@ Token* Token_new( Tokenizer* t, const char* content, TokenGroup* aGroup )
         self->group    = TokenGroup_copy( aGroup );
         self->type     = Token_DetermineTokenType( aGroup, content );
         self->typeName = EnumTokenType_asString( self->type );
+
+        switch( self->type )
+        {
+        case LINECOMMENT:
+        case MULTILINECOMMENT:
+            TokenGroup_setGroupType( self->group, COMMENT );
+            break;
+        }
     }
     return self;
 }
@@ -104,6 +117,13 @@ EnumTokenType Token_getTokenType( const Token* self )
 ~
 
 ~c/ixcompiler.Token.c~
+EnumTokenGroup Token_getGroupType( const Token* self )
+{
+    return TokenGroup_getGroupType( self->group );
+}
+~
+
+~c/ixcompiler.Token.c~
 void Token_print( const Token* self, void* stream )
 {
     EnumTokenGroup group_type = TokenGroup_getGroupType( self->group );
@@ -112,17 +132,14 @@ void Token_print( const Token* self, void* stream )
     {
     case OPEN:
     case CLOSE:
-    case SYMBOLIC:
-        switch( self->type )
-        {
-        case COMMENT:
-        case LINECOMMENT:
-            Term_Colour( stream, COLOR_COMMENT );
-            break;
+        break;
 
-        default:
-            Term_Colour( stream, COLOR_BOLD );
-        }
+    case COMMENT:
+        Term_Colour( stream, COLOR_COMMENT );
+        break;
+
+    case SYMBOLIC:
+        Term_Colour( stream, COLOR_BOLD );
         break;
 
     case STRING:
@@ -166,8 +183,14 @@ void Token_print( const Token* self, void* stream )
     default:
         Term_Colour( stream, COLOR_NORMAL );
     }
-    //fprintf( stream, "%s", self->content );
-    fprintf( stream, "%s (%s)", self->content, self->typeName );
+    if ( WHITESPACE == group_type )
+    {
+        fprintf( stream, "%s (%s)", " ", self->typeName );
+    }
+    else
+    {
+        fprintf( stream, "%s (%s)", self->content, self->typeName );
+    }
     Term_Colour( stream, COLOR_NORMAL );
 }
 ~
@@ -180,6 +203,10 @@ EnumTokenType Token_DetermineTokenType( TokenGroup* group, const char* content )
 
     switch ( TokenGroup_getGroupType( group ) )
     {
+    case PSEUDOGROUP:
+        type = PSEUDO;
+        break;
+
     case UNKNOWN_GROUP:
         type = UNKNOWN_TYPE;
         break;
@@ -250,6 +277,8 @@ EnumTokenType Token_DetermineSymbolicType( const char* content )
 {
     switch ( content[0] )
     {
+    case ',':   return COMMA;
+    case '.':   return SELECTOR;
     case ':':   return OFTYPE;
     case '~':   return SYMBOL;
     case '!':
@@ -260,17 +289,10 @@ EnumTokenType Token_DetermineSymbolicType( const char* content )
         }
         break;
 
-    case '@':   return SYMBOL;
-    case '#':   return SYMBOL;
+    case '@':   return INSTANCEMEMBER;
+    case '%':   return CLASSMEMBER;
+    case '#':   return LINECOMMENT;
     case '$':   return SYMBOL;
-    case '%':
-        switch ( content[1] )
-        {
-        case '=':  return ASSIGNMENTOP;
-        default:   return INFIXOP;
-        }
-        break;
-
     case '^':
         switch ( content[1] )
         {
@@ -326,7 +348,7 @@ EnumTokenType Token_DetermineSymbolicType( const char* content )
         switch ( content[1] )
         {
         case '/':  return LINECOMMENT;
-        case '*':  return COMMENT;
+        case '*':  return MULTILINECOMMENT;
         case '=':  return ASSIGNMENTOP;
         default:   return INFIXOP;
         }
@@ -388,6 +410,7 @@ EnumTokenType Token_DetermineAlphanumericType( const char* content )
     else if ( String_Equals( content, "switch"     ) ) return KEYWORD;
     else if ( String_Equals( content, "try"        ) ) return KEYWORD;
     else if ( String_Equals( content, "var"        ) ) return KEYWORD;
+    else if ( String_Equals( content, "new"        ) ) return KEYWORD;
     else                                               return WORD;
 }
 ~
@@ -427,5 +450,65 @@ EnumTokenType Token_DetermineCloseType( const char* content )
     default:
         return UNKNOWN_OPEN;
     }
+}
+~
+
+~c/ixcompiler.Token.c~
+bool Token_isAmongTypes( const Token* self, const EnumTokenType types[] )
+{
+    for ( int i=0; types[i]; i++ )
+    {
+        if ( types[i] == Token_getTokenType( self) )
+        {
+            return TRUE;
+        }
+    }
+    return FALSE;
+}
+~
+
+~c/ixcompiler.Token.c~
+Token* Token_CreateStopToken( Tokenizer* t )
+{
+    Token* stopToken = null;
+    {
+        TokenGroup* group = TokenGroup_new( ';' );
+        {
+            stopToken = Token_new( t, ";", group );
+        }
+        TokenGroup_free( &group );
+    }
+    return stopToken;
+}
+~
+
+~c/ixcompiler.Token.c~
+bool Token_ShouldInsertStop( EnumTokenType lastType, EnumTokenType nextType )
+{
+    bool insert = FALSE;
+
+    switch( lastType )
+    {
+    case POSTFIXOP:
+    case WORD:
+    case PRIMITIVE:
+    case FLOAT:
+    case ENDEXPRESSION:
+    case ENDSUBSCRIPT:
+    case PREPOSTFIXOP:
+        switch( nextType )
+        {
+        case ENDEXPRESSION:
+        case ENDBLOCK:
+        case PREFIXOP:
+        case WORD:
+        case INSTANCEMEMBER:
+        case CLASSMEMBER:
+        case KEYWORD:
+            insert = TRUE;
+        }
+    }
+
+    return insert;
 }
 ~

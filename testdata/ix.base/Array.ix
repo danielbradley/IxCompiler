@@ -3,5 +3,11 @@ Copyright 2021, Daniel Bradley. All rights reserved.
 
 License: LGPLv2.
 
-public class // Array
+/*
+This is a class that represents an Array
+*/
+
+public class extends ix.base.Object # Array
 {}
+
+//

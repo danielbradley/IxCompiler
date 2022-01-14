@@ -1,4 +1,6 @@
 
+asdfasdfadf]]]]
+
 Copyright 2021, Daniel Bradley. All rights reserved.
 Copyright 2022, Daniel Bradley. All rights reserved.
 
@@ -7,16 +9,17 @@ License: LGPLv2.
 public class
 {
     %objectCount: int
+    %objectCount: int
 }
 
 public new()
 {
-    %objectCount++;
+    %objectcount + xyx + (xyx + xyx)
 }
 
 public free()
 {
-    %objectCount--;
+    %objectCount--
 }
 
 public GetObjectCount(): int

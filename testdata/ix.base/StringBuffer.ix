@@ -3,11 +3,9 @@ Copyright 2021, Daniel Bradley. All rights reserved.
 
 License: LGPLv2.
 
-public class // StringBuffer
+public const class // StringBuffer
 {
-	@data : Array*
-	@name : string* = "XXX"
-	@ref  : string&
+	@data : char[]
 }
 
 public new()
@@ -15,12 +13,12 @@ public new()
 	@data = new char[];
 }
 
-public append_char( ch : char )
+public append( character : char ): StringBuffer&
 {
 	@data[] = ch;
 }
 
-public append_stringref( aString : string& )
+public append( stringRef : string& )
 {
 	foreach( character in aString )
 	{
@@ -28,7 +26,7 @@ public append_stringref( aString : string& )
 	}
 }
 
-public append_string( aString : string* )
+public append( aString : string* )
 {
 	foreach( character in aString )
 	{
@@ -37,17 +35,24 @@ public append_string( aString : string* )
 	delete aString;
 }
 
-public append_float( aValue : float )
+public append( aFloat : float )
 {
 	this.append( Number.convertToString( aValue ) );
 }
 
-public const charAt( i : int ) : char
+public const charAt( index : int ) : char
 {
-	return @data[i];
+	return @data[index];
 }
 
 public const getLength() : int
 {
+	return @data.length;
+}
+
+public const declaration( param1: string, param2: int, param3: char[] ) : int
+{
+	var something: String*;
+
 	return @data.length;
 }

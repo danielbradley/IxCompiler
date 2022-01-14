@@ -222,247 +222,105 @@ int main( int argc, char** argv )
     return !status;
 }
 ```
-### Includes
 
-```!include/ixcompiler.h
-//
-// Copyright 2021 Daniel Robert Bradley
-//
+### Tokenizer
 
-#ifndef IXCOMPILER_H
-#define IXCOMPILER_H
+```!include/ixcompiler.Tokenizer.h
+#ifndef IXCOMPILER_TOKENIZER_H
+#define IXCOMPILER_TOKENIZER_H
 
-#define ABORT_DIRECTORY_DOES_NOT_EXIST      "Aborting, output directory does not exist - %s\n"
-#define ABORT_DIRECTORY_IS_NOT_WRITABLE     "Aborting, cannot write to output directory - %s\n"
-#define ABORT_FILE_CANNOT_BE_READ           "Aborting, speciifed file cannot be read - %s\n"
-#define ABORT_FILE_DOES_NOT_EXIST           "Aborting, specified file does not exist - %s\n"
-#define ABORT_NO_OUTPUT_DIR                 "Aborting, no output directory specified (--output-dir)\n"
-#define ABORT_NO_SOURCE_FILES               "Aborting, no source files specified\n"
-#define ABORT_TARGET_LANGUAGE_NOT_SPECIFIED "Aborting, target language not specified (--target-language)\n"
-#define ABORT_TARGET_LANGUAGE_NOT_SUPPORTED "Aborting, could not find generator for target language - %s\n"
-
-#define ARGUMENT_DRY_RUN         "--dry-run"
-#define ARGUMENT_OUTPUT_DIR      "--output-dir"
-#define ARGUMENT_TARGET_LANGUAGE "--target-language"
-
-#define LANG_C "C"
-
-#ifndef bool
-#define bool int
-#endif
-
-#ifndef null
-#define null 0
-#endif
-
-#ifndef TRUE
-#define TRUE 1
-#endif
-
-#ifndef FALSE
-#define FALSE 0
-#endif
-
-#ifndef SUCCESS
-#define SUCCESS 1
-#endif
-
-#ifndef FAILED
-#define FAILED 0
-#endif
-
-#ifndef ANY
-#define ANY void*
-#endif
-
-#ifndef ANY_STRING
-#define ANY_STRING void*
-#endif
-
-typedef struct _Arguments                       Arguments;
-typedef struct _Array                           Array;
-typedef struct _ArrayOfIxSourceFunction         ArrayOfIxSourceFunction;
-typedef struct _ArrayOfIxSourceMember           ArrayOfIxSourceMember;
-typedef struct _ArrayOfIxSourceMethod           ArrayOfIxSourceMethod;
-typedef struct _ArrayOfIxSourceParameter        ArrayOfIxSourceParameter;
-typedef struct _ArrayOfIxSourceStatement        ArrayOfIxSourceStatement;
-typedef struct _ArrayOfString                   ArrayOfString;
-typedef struct _AST                             AST;
-typedef struct _ASTCollection                   ASTCollection;
-typedef struct _CSignature                      CSignature;
-typedef struct _CStatement                      CStatement;
-typedef struct _Dictionary                      Dictionary;
-typedef struct _Entry                           Entry;
-typedef struct _File                            File;
-typedef struct _FilesIterator                   FilesIterator;
-typedef struct _Generator                       Generator;
-typedef struct _IxParser                        IxParser;
-typedef struct _IxSourceBlock                   IxSourceBlock;
-typedef struct _IxSourceClass                   IxSourceClass;
-typedef struct _IxSourceComment                 IxSourceComment;
-typedef struct _IxSourceConditional             IxSourceConditional;
-typedef struct _IxSourceDeclaration             IxSourceDeclaration;
-typedef struct _IxSourceExpression              IxSourceExpression;
-typedef struct _IxSourceFunction                IxSourceFunction;
-typedef struct _IxSourceHeader                  IxSourceHeader;
-typedef struct _IxSourceInterface               IxSourceInterface;
-typedef struct _IxSourceMember                  IxSourceMember;
-typedef struct _IxSourceMethod                  IxSourceMethod;
-typedef struct _IxSourceParameter               IxSourceParameter;
-typedef struct _IxSourceSignature               IxSourceSignature;
-typedef struct _IxSourceStatement               IxSourceStatement;
-typedef struct _IxSourceSubExpression           IxSourceSubExpression;
-typedef struct _IxSourceType                    IxSourceType;
-typedef struct _IxSourceUnit                    IxSourceUnit;
-typedef struct _IxSourceUnitCollection          IxSourceUnitCollection;
-typedef struct _Node                            Node;
-typedef struct _NodeIterator                    NodeIterator;
-typedef struct _Object                          Object;
-typedef struct _Path                            Path;
-typedef struct _PushbackReader                  PushbackReader;
-typedef struct _Queue                           Queue;
-typedef struct _String                          String;
-typedef struct _StringBuffer                    StringBuffer;
-typedef struct _Token                           Token;
-typedef struct _TokenGroup                      TokenGroup;
-typedef struct _Tokenizer                       Tokenizer;
-typedef struct _Tree                            Tree;
-
-typedef void* (*Destructor )( void**                                     );
-typedef int   (*GeneratorFn)( const IxSourceUnitCollection*, const Path* );
-
-void** Give  ( void* pointer );
-void*  Take  ( void* giver   );
-void   Swap  ( ANY one, ANY two );
-
-#endif
-```
-
-### Arguments
-
-```!include/ixcompiler.Arguments.h
-#ifndef IXCOMPILER_ARGUMENTS_H
-#define IXCOMPILER_ARGUMENTS_H
-
-Arguments*     Arguments_new          ( int argc, char** argv );
-Arguments*     Arguments_free         ( Arguments** self );
-bool           Arguments_hasFlag      ( Arguments* self, const char* argument );
-const char*    Arguments_getOption    ( Arguments* self, const char* argument );
-FilesIterator* Arguments_filesIterator( Arguments* self );
-
-#endif
-```
-
-```!c/ixcompiler.Arguments.c
 #include "ixcompiler.h"
-#include "ixcompiler.Arguments.h"
-#include "ixcompiler.Console.h"
-#include "ixcompiler.FilesIterator.h"
-#include "ixcompiler.Platform.h"
-#include "ixcompiler.String.h"
-#include "todo.h"
+#include "ixcompiler.EnumTokenType.h"
+#include "ixcompiler.EnumTokenGroup.h"
 
-struct _Arguments
-{
-    bool         dryRun;
-    const char*  executable;
-    const char*  outputDir;
-    const char*  targetLanguage;
-    const char** files;
-};
+Tokenizer* Tokenizer_new          ( File**      file );
+
+Tokenizer*     Tokenizer_free          (       Tokenizer** self );
+Token*         Tokenizer_nextToken     (       Tokenizer*  self );
+const Token*   Tokenizer_peekToken     (       Tokenizer*  self );
+EnumTokenGroup Tokenizer_peekTokenGroup(       Tokenizer*  self );
+EnumTokenType  Tokenizer_peekTokenType (       Tokenizer*  self );
+void           Tokenizer_printAll      (       Tokenizer*  self );
+bool           Tokenizer_hasMoreTokens ( const Tokenizer*  self );
+const File*    Tokenizer_getFile       ( const Tokenizer*  self );
+
+#endif
 ```
 
-```c/ixcompiler.Arguments.c
-Arguments* Arguments_new( int argc, char** argv )
-{
-    int index = 0;
 
-    Arguments* self = Platform_Alloc( sizeof( Arguments ) );
+```!c/ixcompiler.Tokenizer.c
+#include "ixcompiler.File.h"
+#include "ixcompiler.Platform.h"
+#include "ixcompiler.PushbackReader.h"
+#include "ixcompiler.Queue.h"
+#include "ixcompiler.StringBuffer.h"
+#include "ixcompiler.Token.h"
+#include "ixcompiler.TokenGroup.h"
+#include "ixcompiler.Tokenizer.h"
+
+struct _Tokenizer
+{
+    EnumTokenType   lastType;
+    bool            ignoreUntilNewline;
+    File*           file;
+    PushbackReader* reader;
+    Queue*          queue;
+};
+
+static void primeQueue( Tokenizer* self );
+static Token*     next( Tokenizer* self );
+```
+
+```c/ixcompiler.Tokenizer.c
+Tokenizer* Tokenizer_new( File** file )
+{
+    Tokenizer* self = Platform_Alloc( sizeof( Tokenizer ) );
+
     if ( self )
     {
-        self->files      = Platform_Array( argc, sizeof( char* ) );
-        self->executable = argv[0];
+        self->file   = *file; *file = null;
+        self->reader = PushbackReader_new( File_getFilePath( self->file ) );
+        self->queue  = Queue_new( (Destructor) Token_free );
 
-        for ( int i=1; i < argc; i++ )
-        {
-            if ( String_Equals( argv[i], ARGUMENT_DRY_RUN ) )
-            {
-                self->dryRun = TRUE;
-            }
-            else
-            if ( String_Equals( argv[i], ARGUMENT_OUTPUT_DIR) )
-            {
-                i++;
-                if ( i < argc )
-                {
-                    self->outputDir = argv[i];
-                }
-            }
-            else
-            if ( String_Equals( argv[i], ARGUMENT_TARGET_LANGUAGE) )
-            {
-                i++;
-                if ( i < argc )
-                {
-                    self->targetLanguage = argv[i];
-                }
-            }
-            else
-            {
-                self->files[index++] = argv[i];
-            }
-        }
+        primeQueue( self );
     }
-
     return self;
 }
 ```
 
-```c/ixcompiler.Arguments.c
-Arguments* Arguments_free( Arguments** self )
+```c/ixcompiler.Tokenizer.c
+Tokenizer* Tokenizer_free( Tokenizer** self )
 {
-    Platform_Free( &(*self)->files );
-    Platform_Free(   self          );
+    if ( *self )
+    {
+        if ( 1 )
+        {
+            Token* tmp;
 
+            while ( (tmp = Queue_removeHead( (*self)->queue )) )
+            {
+                Token_free( &tmp );
+            }
+        }
+
+        File_free          ( &(*self)->file   );
+        PushbackReader_free( &(*self)->reader );
+        Queue_free         ( &(*self)->queue  );
+
+        Platform_Free( self );
+    }
     return *self;
 }
 ```
 
-```c/ixcompiler.Arguments.c
-bool Arguments_hasFlag( Arguments* self, const char* argument )
+```c/ixcompiler.Tokenizer.c
+Token* Tokenizer_nextToken( Tokenizer* self )
 {
-    if ( String_Equals( argument, ARGUMENT_DRY_RUN ) )
-    {
-        return self->dryRun;
-    }
-    else
-    if ( String_Equals( argument, ARGUMENT_OUTPUT_DIR ) )
-    {
-        return (0 != self->outputDir);
-    }
-    else
-    if ( String_Equals( argument, ARGUMENT_TARGET_LANGUAGE ) )
-    {
-        return (0 != self->targetLanguage);
-    }
-    else
-    {
-        return FALSE;
-    }
-}
-```
+    primeQueue( self );
 
-```c/ixcompiler.Arguments.c
-const char* Arguments_getOption( Arguments* self, const char* argument )
-{
-    if ( String_Equals( argument, ARGUMENT_OUTPUT_DIR ) )
+    if ( Queue_getLength( self->queue ) > 0 )
     {
-        return (0 != self->outputDir) ? self->outputDir : "";
-    }
-    else
-    if ( String_Equals( argument, ARGUMENT_TARGET_LANGUAGE ) )
-    {
-        return (0 != self->targetLanguage) ? self->targetLanguage : "";
+        return (Token*) Queue_removeHead( self->queue );
     }
     else
     {
@@ -471,244 +329,253 @@ const char* Arguments_getOption( Arguments* self, const char* argument )
 }
 ```
 
-```c/ixcompiler.Arguments.c
-FilesIterator* Arguments_filesIterator( Arguments* self )
+```c/ixcompiler.Tokenizer.c
+const Token* Tokenizer_peekToken( Tokenizer* self )
 {
-    return FilesIterator_new( self->files );
+    primeQueue( self );
+
+    if ( Queue_getLength( self->queue ) > 0 )
+    {
+        return (const Token*) Queue_getHead( self->queue );
+    }
+    else
+    {
+        return null;
+    }
 }
 ```
 
-### TokenGroup
-
-```!include/ixcompiler.EnumTokenGroup.h
-#ifndef IXCOMPILER_ENUMTOKENGROUP_H
-#define IXCOMPILER_ENUMTOKENGROUP_H
-
-typedef enum _EnumTokenGroup
+```c/ixcompiler.Tokenizer.c
+EnumTokenGroup Tokenizer_peekTokenGroup( Tokenizer* self )
 {
-    GROUPEND,
-    PSEUDOGROUP,
-    UNKNOWN_GROUP,
-    WHITESPACE,
-    OPEN,
-    CLOSE,
-    SYMBOLIC,
-    ESCAPE,
-    ALPHANUMERIC,
-    STRING,
-    COMMENT,
-    CHAR,
-    VALUE,
-    HEX_VALUE
-
-} EnumTokenGroup;
-
-#endif
+    const Token* token = Tokenizer_peekToken( self );
+    if ( !token )
+    {
+        return GROUPEND;
+    }
+    else
+    {
+        return TokenGroup_getGroupType( Token_getTokenGroup( token ) );
+    }
+}
 ```
 
-### Enum Token Type
-
-```!include/ixcompiler.EnumTokenType.h
-#ifndef IXCOMPILER_ENUMTOKENTYPE_H
-#define IXCOMPILER_ENUMTOKENTYPE_H
-
-#include "ixcompiler.h"
-
-typedef enum _EnumTokenType
+```c/ixcompiler.Tokenizer.c
+EnumTokenType Tokenizer_peekTokenType( Tokenizer* self )
 {
-	END,
-	PSEUDO,
-	UNKNOWN_TYPE,
-    UNKNOWN_WHITESPACE,
-    UNKNOWN_OPEN,
-    UNKNOWN_CLOSE,
-
-    //  Whitespace
-    SPACE,
-    TAB,
-    NEWLINE,
-
-    //  Open
-    STARTBLOCK,
-    STARTEXPRESSION,
-    STARTSUBSCRIPT,
-    STARTTAG,
-
-    //  Close
-    ENDBLOCK,
-    ENDEXPRESSION,
-    ENDSUBSCRIPT,
-    ENDTAG,
-
-    //  Symbolic
-    OFTYPE,
-	INSTANCEMEMBER,
-	CLASSMEMBER,
-    OPERATOR,
-    ASSIGNMENTOP,
-    PREFIXOP,
-    INFIXOP,
-	POSTFIXOP,
-    PREINFIXOP,
-    PREPOSTFIXOP,
-    STOP,
-	COMMA,
-    LINECOMMENT,
-    MULTILINECOMMENT,
-
-    //  Words
-	COPYRIGHT,
-	LICENSE,
-
-    //  Composite
-	WORD,
-	FILEPATH,
-	PACKAGE,
-	IMPORT,
-	INCLUDE,
-	CLASS,
-	CLASSNAME,
-	INTERFACE,
-	ENUM,
-	ENUMNAME,
-	GENERIC,
-	ANNOTATION,
-	IMETHOD,
-	METHOD,
-	BLOCK,
-	MEMBER,
-	MEMBERNAME,
-	EXPRESSION,
-	CLAUSE,
-    PARAMETERS,
-	PARAMETER,
-	ARGUMENTS,
-	ARGUMENT,
-	STATEMENT,
-	DECLARATION,
-	JAVADOC,
-	BLANKLINE,
-	TOKEN,
-	SYMBOL,
-	KEYWORD,
-	MODIFIER,
-	PRIMITIVE,
-	TYPE,
-	METHODNAME,
-	VARIABLE,
-	NAME,
-	METHODCALL,
-	CONSTRUCTOR,
-	SELECTOR,
-	FLOAT,
-	INTEGER,
-	NUMBER,
-	HEX,
-	OCTAL,
-	DOUBLEQUOTE,
-	QUOTE,
-	ESCAPED,
-	OTHER
-
-} EnumTokenType;
-
-const char* EnumTokenType_asString( EnumTokenType type );
-
-#endif
+    const Token* token = Tokenizer_peekToken( self );
+    if ( !token )
+    {
+        return END;
+    }
+    else
+    {
+        return Token_getTokenType( token );
+    }
+}
 ```
 
-```!c/ixcompiler.EnumTokenType.c
-#include "ixcompiler.EnumTokenType.h"
+```c/ixcompiler.Tokenizer.c
+#include <stdio.h>
+void Tokenizer_printAll( Tokenizer* self )
+{
+    while( Tokenizer_hasMoreTokens( self ) )
+    {
+        Token* token = Tokenizer_nextToken( self );
+        Token_print( token, stdout );
+        fprintf( stdout, "\n" );
+        Token_free( &token );
+    }
+}
 ```
 
-```c/ixcompiler.EnumTokenType.c
-const char* EnumTokenType_asString( EnumTokenType type )
+```c/ixcompiler.Tokenizer.c
+bool Tokenizer_hasMoreTokens( const Tokenizer* self )
 {
+    return (Queue_getLength( self->queue ) > 0);
+}
+```
+
+```c/ixcompiler.Tokenizer.c
+const File* Tokenizer_getFile( const Tokenizer* self )
+{
+    return self->file;
+}
+```
+
+```c/ixcompiler.Tokenizer.c
+static void addTokenToTail( Tokenizer* self, Token** token )
+{
+    EnumTokenGroup group = Token_getGroupType( *token );
+    EnumTokenType  type  = Token_getTokenType( *token );
+
+    switch ( group )
+    {
+    case WHITESPACE:
+    case COMMENT:
+        break;
+    default:
+        self->lastType = type;
+    }
+
+    //  Disable STOP prediction in primeQueue
+    //  if processing a copyright or license line
+    //  until a newline is encountered.
     switch ( type )
     {
-	case END:                return "END";
-	case PSEUDO:             return "PSEUDO";
-	case UNKNOWN_TYPE:       return "UNKNOWN_TYPE";
-    case UNKNOWN_WHITESPACE: return "UNKNOWN_WHITESPACE";
-    case UNKNOWN_OPEN:       return "UNKNOWN_OPEN";
-    case UNKNOWN_CLOSE:      return "UNKNOWN_CLOSE";
-    case SPACE:              return "SPACE";
-    case TAB:                return "TAB";
-    case NEWLINE:            return "NEWLINE";
-    case STARTBLOCK:         return "STARTBLOCK";
-    case STARTEXPRESSION:    return "STARTEXPRESSION";
-    case STARTSUBSCRIPT:     return "STARTSUBSCRIPT";
-    case STARTTAG:           return "STARTTAG";
-    case ENDBLOCK:           return "ENDBLOCK";
-    case ENDEXPRESSION:      return "ENDEXPRESSION";
-    case ENDSUBSCRIPT:       return "ENDSUBSCRIPT";
-    case ENDTAG:             return "ENDTAG";
-    case OFTYPE:             return "OFTYPE";
-    case INSTANCEMEMBER:     return "INSTANCEMEMBER";
-    case CLASSMEMBER:        return "CLASSMEMBER";
-    case OPERATOR:           return "OPERATOR";
-    case ASSIGNMENTOP:       return "ASSIGNMENTOP";
-    case PREFIXOP:           return "PREFIXOP";
-    case INFIXOP:            return "INFIXOP";
-    case POSTFIXOP:          return "POSTFIXOP";
-    case PREINFIXOP:         return "PREINFIXOP";
-    case PREPOSTFIXOP:       return "PREPOSTFIXOP";
-    case STOP:               return "STOP";
-    case COMMA:              return "COMMA";
-    case LINECOMMENT:        return "LINECOMMENT";
-    case MULTILINECOMMENT:   return "MULTILINECOMMENT";
-	case COPYRIGHT:          return "COPYRIGHT";
-	case LICENSE:            return "LICENSE";
-	case WORD:               return "WORD";
-	case FILEPATH:           return "FILEPATH";
-	case PACKAGE:            return "PACKAGE";
-	case IMPORT:             return "IMPORT";
-	case INCLUDE:            return "INCLUDE";
-	case CLASS:              return "CLASS";
-	case CLASSNAME:          return "CLASSNAME";
-	case INTERFACE:          return "INTERFACE";
-	case ENUM:               return "ENUM";
-	case ENUMNAME:           return "ENUMNAME";
-	case GENERIC:            return "GENERIC";
-	case ANNOTATION:         return "ANNOTATION";
-	case IMETHOD:            return "IMETHOD";
-	case METHOD:             return "METHOD";
-	case BLOCK:              return "BLOCK";
-	case MEMBER:             return "MEMBER";
-	case MEMBERNAME:         return "MEMBERNAME";
-	case EXPRESSION:         return "EXPRESSION";
-	case CLAUSE:             return "CLAUSE";
-    case PARAMETERS:         return "PARAMETERS";
-	case PARAMETER:          return "PARAMETER";
-	case ARGUMENTS:          return "ARGUMENTS";
-	case ARGUMENT:           return "ARGUMENT";
-	case STATEMENT:          return "STATEMENT";
-	case DECLARATION:        return "DECLARATION";
-	case JAVADOC:            return "JAVADOC";
-	case BLANKLINE:          return "BLANKLINE";
-	case TOKEN:              return "TOKEN";
-	case SYMBOL:             return "SYMBOL";
-	case KEYWORD:            return "KEYWORD";
-	case MODIFIER:           return "MODIFIER";
-	case PRIMITIVE:          return "PRIMITIVE";
-	case TYPE:               return "TYPE";
-	case METHODNAME:         return "METHODNAME";
-	case VARIABLE:           return "VARIABLE";
-	case NAME:               return "NAME";
-	case METHODCALL:         return "METHODCALL";
-	case CONSTRUCTOR:        return "CONSTRUCTOR";
-	case SELECTOR:           return "SELECTOR";
-	case FLOAT:              return "FLOAT";
-	case INTEGER:            return "INTEGER";
-	case NUMBER:             return "NUMBER";
-	case HEX:                return "HEX";
-	case OCTAL:              return "OCTAL";
-	case DOUBLEQUOTE:        return "DOUBLEQUOTE";
-	case QUOTE:              return "QUOTE";
-	case ESCAPED:            return "ESCAPED";
-	case OTHER:              return "OTHER";
-    default:                 return "???";
+    case COPYRIGHT:
+    case LICENSE:
+        self->ignoreUntilNewline = TRUE;
+        break;
+    case NEWLINE:
+        self->ignoreUntilNewline = FALSE;
+        break;
     }
+
+    Queue_addTail( self->queue, (void**) token );
+}
+
+static void primeQueue( Tokenizer* self )
+{
+    Token* token = null;
+
+    if ( (token = next( self )) )
+    {
+        if ( !self->ignoreUntilNewline )
+        {
+            if ( Token_ShouldInsertStop( self->lastType, Token_getTokenType( token ) ) )
+            {
+                addTokenToTail( self, (Token**) Give( Token_CreateStopToken( self ) ) );
+            }
+        }
+        addTokenToTail( self, &token );
+    }
+}
+```
+
+```c/ixcompiler.Tokenizer.c
+static Token* next( Tokenizer* self )
+{
+    Token* token = null;
+    int    ch    = 0;
+    int    ch2   = 0;
+
+    if ( (ch = PushbackReader_read( self->reader )) )
+    {
+        StringBuffer*  sb         = StringBuffer_new();
+        TokenGroup*    group      = TokenGroup_new( ch );
+        EnumTokenType  token_type = END;
+        EnumTokenGroup group_type = TokenGroup_getGroupType( group );
+
+        sb = StringBuffer_append_char( sb, ch );
+
+        while ( (ch2 = PushbackReader_read( self->reader )) )
+        {
+            if ( ESCAPE == group_type )
+            {
+                sb  = StringBuffer_append_char( sb, ch2 );
+                ch2 = PushbackReader_read( self->reader );
+                break;
+            }
+            else
+            if ( (SYMBOLIC == group_type) && ('/' == ch) && ('/' == ch2) )
+            {
+                sb = StringBuffer_append_char( sb, ch2 );
+
+                while( (ch2 = PushbackReader_read( self->reader )) )
+                {
+                    if ( '\n' != ch2 )
+                    {
+                        sb = StringBuffer_append_char( sb, ch2 );
+                    }
+                    else goto end;
+                }
+            }
+            else
+            if ( (SYMBOLIC == group_type) && ('#' == ch) )
+            {
+                sb = StringBuffer_append_char( sb, ch2 );
+
+                while( (ch2 = PushbackReader_read( self->reader )) )
+                {
+                    if ( '\n' != ch2 )
+                    {
+                        sb = StringBuffer_append_char( sb, ch2 );
+                    }
+                    else goto end;
+                }
+            }
+            else
+            if ( (SYMBOLIC == group_type) && ('/' == ch) && ('*' == ch2) )
+            {
+                sb = StringBuffer_append_char( sb, ch2 );
+
+                while( (ch2 = PushbackReader_read( self->reader )) )
+                {
+                    sb = StringBuffer_append_char( sb, ch2 );
+
+                    if ( '*' == ch2 )
+                    {
+                        ch2 = PushbackReader_read( self->reader );
+                        sb = StringBuffer_append_char( sb, ch2 );
+
+                        if ( '/' == ch2 )
+                        {
+                            ch2 = 0;
+                            goto end;
+                        }
+                    }
+                }
+            }
+            else
+            if ( TokenGroup_matches( group, ch2 ) )
+            {
+                if ( '\\' == ch2 )
+                {
+                    sb  = StringBuffer_append_char( sb, ch2 );
+                    ch2 = PushbackReader_read( self->reader );
+                    sb  = StringBuffer_append_char( sb, ch2 );
+                }
+                else
+                {
+                    sb  = StringBuffer_append_char( sb, ch2 );
+                }
+            }
+            else
+            if ( STRING == group_type )
+            {
+                sb = StringBuffer_append_char( sb, ch2 );
+                ch2 = PushbackReader_read( self->reader );
+                break;
+            }
+            else
+            if ( CHAR == group_type )
+            {
+                sb = StringBuffer_append_char( sb, ch2 );
+                ch2 = PushbackReader_read( self->reader );
+                break;
+            }
+            else
+            {
+                break;
+            }
+        }
+end:
+
+        if ( ch2 )
+        {
+            PushbackReader_pushback( self->reader );
+        }
+
+        if ( !StringBuffer_isEmpty( sb ) )
+        {
+            token = Token_new( self, StringBuffer_content( sb ), group );
+        }
+
+        StringBuffer_free( &sb );
+        TokenGroup_free( &group );
+    }
+    return token;
 }
 ```
 
@@ -1514,362 +1381,6 @@ TokenGroup* TokenGroup_copy( const TokenGroup* self )
     copy->groupType = self->groupType;
 
     return copy;
-}
-```
-
-### Tokenizer
-
-```!include/ixcompiler.Tokenizer.h
-#ifndef IXCOMPILER_TOKENIZER_H
-#define IXCOMPILER_TOKENIZER_H
-
-#include "ixcompiler.h"
-#include "ixcompiler.EnumTokenType.h"
-#include "ixcompiler.EnumTokenGroup.h"
-
-Tokenizer* Tokenizer_new          ( File**      file );
-
-Tokenizer*     Tokenizer_free          (       Tokenizer** self );
-Token*         Tokenizer_nextToken     (       Tokenizer*  self );
-const Token*   Tokenizer_peekToken     (       Tokenizer*  self );
-EnumTokenGroup Tokenizer_peekTokenGroup(       Tokenizer*  self );
-EnumTokenType  Tokenizer_peekTokenType (       Tokenizer*  self );
-void           Tokenizer_printAll      (       Tokenizer*  self );
-bool           Tokenizer_hasMoreTokens ( const Tokenizer*  self );
-const File*    Tokenizer_getFile       ( const Tokenizer*  self );
-
-#endif
-```
-
-
-```!c/ixcompiler.Tokenizer.c
-#include "ixcompiler.File.h"
-#include "ixcompiler.Platform.h"
-#include "ixcompiler.PushbackReader.h"
-#include "ixcompiler.Queue.h"
-#include "ixcompiler.StringBuffer.h"
-#include "ixcompiler.Token.h"
-#include "ixcompiler.TokenGroup.h"
-#include "ixcompiler.Tokenizer.h"
-
-struct _Tokenizer
-{
-    EnumTokenType   lastType;
-    bool            ignoreUntilNewline;
-    File*           file;
-    PushbackReader* reader;
-    Queue*          queue;
-};
-
-static void primeQueue( Tokenizer* self );
-static Token*     next( Tokenizer* self );
-```
-
-```c/ixcompiler.Tokenizer.c
-Tokenizer* Tokenizer_new( File** file )
-{
-    Tokenizer* self = Platform_Alloc( sizeof( Tokenizer ) );
-
-    if ( self )
-    {
-        self->file   = *file; *file = null;
-        self->reader = PushbackReader_new( File_getFilePath( self->file ) );
-        self->queue  = Queue_new( (Destructor) Token_free );
-
-        primeQueue( self );
-    }
-    return self;
-}
-```
-
-```c/ixcompiler.Tokenizer.c
-Tokenizer* Tokenizer_free( Tokenizer** self )
-{
-    if ( *self )
-    {
-        if ( 1 )
-        {
-            Token* tmp;
-
-            while ( (tmp = Queue_removeHead( (*self)->queue )) )
-            {
-                Token_free( &tmp );
-            }
-        }
-
-        File_free          ( &(*self)->file   );
-        PushbackReader_free( &(*self)->reader );
-        Queue_free         ( &(*self)->queue  );
-
-        Platform_Free( self );
-    }
-    return *self;
-}
-```
-
-```c/ixcompiler.Tokenizer.c
-Token* Tokenizer_nextToken( Tokenizer* self )
-{
-    primeQueue( self );
-
-    if ( Queue_getLength( self->queue ) > 0 )
-    {
-        return (Token*) Queue_removeHead( self->queue );
-    }
-    else
-    {
-        return null;
-    }
-}
-```
-
-```c/ixcompiler.Tokenizer.c
-const Token* Tokenizer_peekToken( Tokenizer* self )
-{
-    primeQueue( self );
-
-    if ( Queue_getLength( self->queue ) > 0 )
-    {
-        return (const Token*) Queue_getHead( self->queue );
-    }
-    else
-    {
-        return null;
-    }
-}
-```
-
-```c/ixcompiler.Tokenizer.c
-EnumTokenGroup Tokenizer_peekTokenGroup( Tokenizer* self )
-{
-    const Token* token = Tokenizer_peekToken( self );
-    if ( !token )
-    {
-        return GROUPEND;
-    }
-    else
-    {
-        return TokenGroup_getGroupType( Token_getTokenGroup( token ) );
-    }
-}
-```
-
-```c/ixcompiler.Tokenizer.c
-EnumTokenType Tokenizer_peekTokenType( Tokenizer* self )
-{
-    const Token* token = Tokenizer_peekToken( self );
-    if ( !token )
-    {
-        return END;
-    }
-    else
-    {
-        return Token_getTokenType( token );
-    }
-}
-```
-
-```c/ixcompiler.Tokenizer.c
-#include <stdio.h>
-void Tokenizer_printAll( Tokenizer* self )
-{
-    while( Tokenizer_hasMoreTokens( self ) )
-    {
-        Token* token = Tokenizer_nextToken( self );
-        Token_print( token, stdout );
-        fprintf( stdout, "\n" );
-        Token_free( &token );
-    }
-}
-```
-
-```c/ixcompiler.Tokenizer.c
-bool Tokenizer_hasMoreTokens( const Tokenizer* self )
-{
-    return (Queue_getLength( self->queue ) > 0);
-}
-```
-
-```c/ixcompiler.Tokenizer.c
-const File* Tokenizer_getFile( const Tokenizer* self )
-{
-    return self->file;
-}
-```
-
-```c/ixcompiler.Tokenizer.c
-static void addTokenToTail( Tokenizer* self, Token** token )
-{
-    EnumTokenGroup group = Token_getGroupType( *token );
-    EnumTokenType  type  = Token_getTokenType( *token );
-
-    switch ( group )
-    {
-    case WHITESPACE:
-    case COMMENT:
-        break;
-    default:
-        self->lastType = type;
-    }
-
-    //  Disable STOP prediction in primeQueue
-    //  if processing a copyright or license line
-    //  until a newline is encountered.
-    switch ( type )
-    {
-    case COPYRIGHT:
-    case LICENSE:
-        self->ignoreUntilNewline = TRUE;
-        break;
-    case NEWLINE:
-        self->ignoreUntilNewline = FALSE;
-        break;
-    }
-
-    Queue_addTail( self->queue, (void**) token );
-}
-
-static void primeQueue( Tokenizer* self )
-{
-    Token* token = null;
-
-    if ( (token = next( self )) )
-    {
-        if ( !self->ignoreUntilNewline )
-        {
-            if ( Token_ShouldInsertStop( self->lastType, Token_getTokenType( token ) ) )
-            {
-                addTokenToTail( self, (Token**) Give( Token_CreateStopToken( self ) ) );
-            }
-        }
-        addTokenToTail( self, &token );
-    }
-}
-```
-
-```c/ixcompiler.Tokenizer.c
-static Token* next( Tokenizer* self )
-{
-    Token* token = null;
-    int    ch    = 0;
-    int    ch2   = 0;
-
-    if ( (ch = PushbackReader_read( self->reader )) )
-    {
-        StringBuffer*  sb         = StringBuffer_new();
-        TokenGroup*    group      = TokenGroup_new( ch );
-        EnumTokenType  token_type = END;
-        EnumTokenGroup group_type = TokenGroup_getGroupType( group );
-
-        sb = StringBuffer_append_char( sb, ch );
-
-        while ( (ch2 = PushbackReader_read( self->reader )) )
-        {
-            if ( ESCAPE == group_type )
-            {
-                sb  = StringBuffer_append_char( sb, ch2 );
-                ch2 = PushbackReader_read( self->reader );
-                break;
-            }
-            else
-            if ( (SYMBOLIC == group_type) && ('/' == ch) && ('/' == ch2) )
-            {
-                sb = StringBuffer_append_char( sb, ch2 );
-
-                while( (ch2 = PushbackReader_read( self->reader )) )
-                {
-                    if ( '\n' != ch2 )
-                    {
-                        sb = StringBuffer_append_char( sb, ch2 );
-                    }
-                    else goto end;
-                }
-            }
-            else
-            if ( (SYMBOLIC == group_type) && ('#' == ch) )
-            {
-                sb = StringBuffer_append_char( sb, ch2 );
-
-                while( (ch2 = PushbackReader_read( self->reader )) )
-                {
-                    if ( '\n' != ch2 )
-                    {
-                        sb = StringBuffer_append_char( sb, ch2 );
-                    }
-                    else goto end;
-                }
-            }
-            else
-            if ( (SYMBOLIC == group_type) && ('/' == ch) && ('*' == ch2) )
-            {
-                sb = StringBuffer_append_char( sb, ch2 );
-
-                while( (ch2 = PushbackReader_read( self->reader )) )
-                {
-                    sb = StringBuffer_append_char( sb, ch2 );
-
-                    if ( '*' == ch2 )
-                    {
-                        ch2 = PushbackReader_read( self->reader );
-                        sb = StringBuffer_append_char( sb, ch2 );
-
-                        if ( '/' == ch2 )
-                        {
-                            ch2 = 0;
-                            goto end;
-                        }
-                    }
-                }
-            }
-            else
-            if ( TokenGroup_matches( group, ch2 ) )
-            {
-                if ( '\\' == ch2 )
-                {
-                    sb  = StringBuffer_append_char( sb, ch2 );
-                    ch2 = PushbackReader_read( self->reader );
-                    sb  = StringBuffer_append_char( sb, ch2 );
-                }
-                else
-                {
-                    sb  = StringBuffer_append_char( sb, ch2 );
-                }
-            }
-            else
-            if ( STRING == group_type )
-            {
-                sb = StringBuffer_append_char( sb, ch2 );
-                ch2 = PushbackReader_read( self->reader );
-                break;
-            }
-            else
-            if ( CHAR == group_type )
-            {
-                sb = StringBuffer_append_char( sb, ch2 );
-                ch2 = PushbackReader_read( self->reader );
-                break;
-            }
-            else
-            {
-                break;
-            }
-        }
-end:
-
-        if ( ch2 )
-        {
-            PushbackReader_pushback( self->reader );
-        }
-
-        if ( !StringBuffer_isEmpty( sb ) )
-        {
-            token = Token_new( self, StringBuffer_content( sb ), group );
-        }
-
-        StringBuffer_free( &sb );
-        TokenGroup_free( &group );
-    }
-    return token;
 }
 ```
 
@@ -7482,6 +6993,496 @@ static String* GenerateSourceFileMethodsForSourceUnitFunctionStatements( const I
 
     return StringBuffer_ConvertToString( &sb );
 }
+```
+
+## Appendices
+### Arguments
+
+```!include/ixcompiler.Arguments.h
+#ifndef IXCOMPILER_ARGUMENTS_H
+#define IXCOMPILER_ARGUMENTS_H
+
+Arguments*     Arguments_new          ( int argc, char** argv );
+Arguments*     Arguments_free         ( Arguments** self );
+bool           Arguments_hasFlag      ( Arguments* self, const char* argument );
+const char*    Arguments_getOption    ( Arguments* self, const char* argument );
+FilesIterator* Arguments_filesIterator( Arguments* self );
+
+#endif
+```
+
+```!c/ixcompiler.Arguments.c
+#include "ixcompiler.h"
+#include "ixcompiler.Arguments.h"
+#include "ixcompiler.Console.h"
+#include "ixcompiler.FilesIterator.h"
+#include "ixcompiler.Platform.h"
+#include "ixcompiler.String.h"
+#include "todo.h"
+
+struct _Arguments
+{
+    bool         dryRun;
+    const char*  executable;
+    const char*  outputDir;
+    const char*  targetLanguage;
+    const char** files;
+};
+```
+
+```c/ixcompiler.Arguments.c
+Arguments* Arguments_new( int argc, char** argv )
+{
+    int index = 0;
+
+    Arguments* self = Platform_Alloc( sizeof( Arguments ) );
+    if ( self )
+    {
+        self->files      = Platform_Array( argc, sizeof( char* ) );
+        self->executable = argv[0];
+
+        for ( int i=1; i < argc; i++ )
+        {
+            if ( String_Equals( argv[i], ARGUMENT_DRY_RUN ) )
+            {
+                self->dryRun = TRUE;
+            }
+            else
+            if ( String_Equals( argv[i], ARGUMENT_OUTPUT_DIR) )
+            {
+                i++;
+                if ( i < argc )
+                {
+                    self->outputDir = argv[i];
+                }
+            }
+            else
+            if ( String_Equals( argv[i], ARGUMENT_TARGET_LANGUAGE) )
+            {
+                i++;
+                if ( i < argc )
+                {
+                    self->targetLanguage = argv[i];
+                }
+            }
+            else
+            {
+                self->files[index++] = argv[i];
+            }
+        }
+    }
+
+    return self;
+}
+```
+
+```c/ixcompiler.Arguments.c
+Arguments* Arguments_free( Arguments** self )
+{
+    Platform_Free( &(*self)->files );
+    Platform_Free(   self          );
+
+    return *self;
+}
+```
+
+```c/ixcompiler.Arguments.c
+bool Arguments_hasFlag( Arguments* self, const char* argument )
+{
+    if ( String_Equals( argument, ARGUMENT_DRY_RUN ) )
+    {
+        return self->dryRun;
+    }
+    else
+    if ( String_Equals( argument, ARGUMENT_OUTPUT_DIR ) )
+    {
+        return (0 != self->outputDir);
+    }
+    else
+    if ( String_Equals( argument, ARGUMENT_TARGET_LANGUAGE ) )
+    {
+        return (0 != self->targetLanguage);
+    }
+    else
+    {
+        return FALSE;
+    }
+}
+```
+
+```c/ixcompiler.Arguments.c
+const char* Arguments_getOption( Arguments* self, const char* argument )
+{
+    if ( String_Equals( argument, ARGUMENT_OUTPUT_DIR ) )
+    {
+        return (0 != self->outputDir) ? self->outputDir : "";
+    }
+    else
+    if ( String_Equals( argument, ARGUMENT_TARGET_LANGUAGE ) )
+    {
+        return (0 != self->targetLanguage) ? self->targetLanguage : "";
+    }
+    else
+    {
+        return null;
+    }
+}
+```
+
+```c/ixcompiler.Arguments.c
+FilesIterator* Arguments_filesIterator( Arguments* self )
+{
+    return FilesIterator_new( self->files );
+}
+```
+
+### TokenGroup
+
+```!include/ixcompiler.EnumTokenGroup.h
+#ifndef IXCOMPILER_ENUMTOKENGROUP_H
+#define IXCOMPILER_ENUMTOKENGROUP_H
+
+typedef enum _EnumTokenGroup
+{
+    GROUPEND,
+    PSEUDOGROUP,
+    UNKNOWN_GROUP,
+    WHITESPACE,
+    OPEN,
+    CLOSE,
+    SYMBOLIC,
+    ESCAPE,
+    ALPHANUMERIC,
+    STRING,
+    COMMENT,
+    CHAR,
+    VALUE,
+    HEX_VALUE
+
+} EnumTokenGroup;
+
+#endif
+```
+
+### Enum Token Type
+
+```!include/ixcompiler.EnumTokenType.h
+#ifndef IXCOMPILER_ENUMTOKENTYPE_H
+#define IXCOMPILER_ENUMTOKENTYPE_H
+
+#include "ixcompiler.h"
+
+typedef enum _EnumTokenType
+{
+	END,
+	PSEUDO,
+	UNKNOWN_TYPE,
+    UNKNOWN_WHITESPACE,
+    UNKNOWN_OPEN,
+    UNKNOWN_CLOSE,
+
+    //  Whitespace
+    SPACE,
+    TAB,
+    NEWLINE,
+
+    //  Open
+    STARTBLOCK,
+    STARTEXPRESSION,
+    STARTSUBSCRIPT,
+    STARTTAG,
+
+    //  Close
+    ENDBLOCK,
+    ENDEXPRESSION,
+    ENDSUBSCRIPT,
+    ENDTAG,
+
+    //  Symbolic
+    OFTYPE,
+	INSTANCEMEMBER,
+	CLASSMEMBER,
+    OPERATOR,
+    ASSIGNMENTOP,
+    PREFIXOP,
+    INFIXOP,
+	POSTFIXOP,
+    PREINFIXOP,
+    PREPOSTFIXOP,
+    STOP,
+	COMMA,
+    LINECOMMENT,
+    MULTILINECOMMENT,
+
+    //  Words
+	COPYRIGHT,
+	LICENSE,
+
+    //  Composite
+	WORD,
+	FILEPATH,
+	PACKAGE,
+	IMPORT,
+	INCLUDE,
+	CLASS,
+	CLASSNAME,
+	INTERFACE,
+	ENUM,
+	ENUMNAME,
+	GENERIC,
+	ANNOTATION,
+	IMETHOD,
+	METHOD,
+	BLOCK,
+	MEMBER,
+	MEMBERNAME,
+	EXPRESSION,
+	CLAUSE,
+    PARAMETERS,
+	PARAMETER,
+	ARGUMENTS,
+	ARGUMENT,
+	STATEMENT,
+	DECLARATION,
+	JAVADOC,
+	BLANKLINE,
+	TOKEN,
+	SYMBOL,
+	KEYWORD,
+	MODIFIER,
+	PRIMITIVE,
+	TYPE,
+	METHODNAME,
+	VARIABLE,
+	NAME,
+	METHODCALL,
+	CONSTRUCTOR,
+	SELECTOR,
+	FLOAT,
+	INTEGER,
+	NUMBER,
+	HEX,
+	OCTAL,
+	DOUBLEQUOTE,
+	QUOTE,
+	ESCAPED,
+	OTHER
+
+} EnumTokenType;
+
+const char* EnumTokenType_asString( EnumTokenType type );
+
+#endif
+```
+
+```!c/ixcompiler.EnumTokenType.c
+#include "ixcompiler.EnumTokenType.h"
+```
+
+```c/ixcompiler.EnumTokenType.c
+const char* EnumTokenType_asString( EnumTokenType type )
+{
+    switch ( type )
+    {
+	case END:                return "END";
+	case PSEUDO:             return "PSEUDO";
+	case UNKNOWN_TYPE:       return "UNKNOWN_TYPE";
+    case UNKNOWN_WHITESPACE: return "UNKNOWN_WHITESPACE";
+    case UNKNOWN_OPEN:       return "UNKNOWN_OPEN";
+    case UNKNOWN_CLOSE:      return "UNKNOWN_CLOSE";
+    case SPACE:              return "SPACE";
+    case TAB:                return "TAB";
+    case NEWLINE:            return "NEWLINE";
+    case STARTBLOCK:         return "STARTBLOCK";
+    case STARTEXPRESSION:    return "STARTEXPRESSION";
+    case STARTSUBSCRIPT:     return "STARTSUBSCRIPT";
+    case STARTTAG:           return "STARTTAG";
+    case ENDBLOCK:           return "ENDBLOCK";
+    case ENDEXPRESSION:      return "ENDEXPRESSION";
+    case ENDSUBSCRIPT:       return "ENDSUBSCRIPT";
+    case ENDTAG:             return "ENDTAG";
+    case OFTYPE:             return "OFTYPE";
+    case INSTANCEMEMBER:     return "INSTANCEMEMBER";
+    case CLASSMEMBER:        return "CLASSMEMBER";
+    case OPERATOR:           return "OPERATOR";
+    case ASSIGNMENTOP:       return "ASSIGNMENTOP";
+    case PREFIXOP:           return "PREFIXOP";
+    case INFIXOP:            return "INFIXOP";
+    case POSTFIXOP:          return "POSTFIXOP";
+    case PREINFIXOP:         return "PREINFIXOP";
+    case PREPOSTFIXOP:       return "PREPOSTFIXOP";
+    case STOP:               return "STOP";
+    case COMMA:              return "COMMA";
+    case LINECOMMENT:        return "LINECOMMENT";
+    case MULTILINECOMMENT:   return "MULTILINECOMMENT";
+	case COPYRIGHT:          return "COPYRIGHT";
+	case LICENSE:            return "LICENSE";
+	case WORD:               return "WORD";
+	case FILEPATH:           return "FILEPATH";
+	case PACKAGE:            return "PACKAGE";
+	case IMPORT:             return "IMPORT";
+	case INCLUDE:            return "INCLUDE";
+	case CLASS:              return "CLASS";
+	case CLASSNAME:          return "CLASSNAME";
+	case INTERFACE:          return "INTERFACE";
+	case ENUM:               return "ENUM";
+	case ENUMNAME:           return "ENUMNAME";
+	case GENERIC:            return "GENERIC";
+	case ANNOTATION:         return "ANNOTATION";
+	case IMETHOD:            return "IMETHOD";
+	case METHOD:             return "METHOD";
+	case BLOCK:              return "BLOCK";
+	case MEMBER:             return "MEMBER";
+	case MEMBERNAME:         return "MEMBERNAME";
+	case EXPRESSION:         return "EXPRESSION";
+	case CLAUSE:             return "CLAUSE";
+    case PARAMETERS:         return "PARAMETERS";
+	case PARAMETER:          return "PARAMETER";
+	case ARGUMENTS:          return "ARGUMENTS";
+	case ARGUMENT:           return "ARGUMENT";
+	case STATEMENT:          return "STATEMENT";
+	case DECLARATION:        return "DECLARATION";
+	case JAVADOC:            return "JAVADOC";
+	case BLANKLINE:          return "BLANKLINE";
+	case TOKEN:              return "TOKEN";
+	case SYMBOL:             return "SYMBOL";
+	case KEYWORD:            return "KEYWORD";
+	case MODIFIER:           return "MODIFIER";
+	case PRIMITIVE:          return "PRIMITIVE";
+	case TYPE:               return "TYPE";
+	case METHODNAME:         return "METHODNAME";
+	case VARIABLE:           return "VARIABLE";
+	case NAME:               return "NAME";
+	case METHODCALL:         return "METHODCALL";
+	case CONSTRUCTOR:        return "CONSTRUCTOR";
+	case SELECTOR:           return "SELECTOR";
+	case FLOAT:              return "FLOAT";
+	case INTEGER:            return "INTEGER";
+	case NUMBER:             return "NUMBER";
+	case HEX:                return "HEX";
+	case OCTAL:              return "OCTAL";
+	case DOUBLEQUOTE:        return "DOUBLEQUOTE";
+	case QUOTE:              return "QUOTE";
+	case ESCAPED:            return "ESCAPED";
+	case OTHER:              return "OTHER";
+    default:                 return "???";
+    }
+}
+```
+### Includes
+
+```!include/ixcompiler.h
+//
+// Copyright 2021 Daniel Robert Bradley
+//
+
+#ifndef IXCOMPILER_H
+#define IXCOMPILER_H
+
+#define ABORT_DIRECTORY_DOES_NOT_EXIST      "Aborting, output directory does not exist - %s\n"
+#define ABORT_DIRECTORY_IS_NOT_WRITABLE     "Aborting, cannot write to output directory - %s\n"
+#define ABORT_FILE_CANNOT_BE_READ           "Aborting, speciifed file cannot be read - %s\n"
+#define ABORT_FILE_DOES_NOT_EXIST           "Aborting, specified file does not exist - %s\n"
+#define ABORT_NO_OUTPUT_DIR                 "Aborting, no output directory specified (--output-dir)\n"
+#define ABORT_NO_SOURCE_FILES               "Aborting, no source files specified\n"
+#define ABORT_TARGET_LANGUAGE_NOT_SPECIFIED "Aborting, target language not specified (--target-language)\n"
+#define ABORT_TARGET_LANGUAGE_NOT_SUPPORTED "Aborting, could not find generator for target language - %s\n"
+
+#define ARGUMENT_DRY_RUN         "--dry-run"
+#define ARGUMENT_OUTPUT_DIR      "--output-dir"
+#define ARGUMENT_TARGET_LANGUAGE "--target-language"
+
+#define LANG_C "C"
+
+#ifndef bool
+#define bool int
+#endif
+
+#ifndef null
+#define null 0
+#endif
+
+#ifndef TRUE
+#define TRUE 1
+#endif
+
+#ifndef FALSE
+#define FALSE 0
+#endif
+
+#ifndef SUCCESS
+#define SUCCESS 1
+#endif
+
+#ifndef FAILED
+#define FAILED 0
+#endif
+
+#ifndef ANY
+#define ANY void*
+#endif
+
+#ifndef ANY_STRING
+#define ANY_STRING void*
+#endif
+
+typedef struct _Arguments                       Arguments;
+typedef struct _Array                           Array;
+typedef struct _ArrayOfIxSourceFunction         ArrayOfIxSourceFunction;
+typedef struct _ArrayOfIxSourceMember           ArrayOfIxSourceMember;
+typedef struct _ArrayOfIxSourceMethod           ArrayOfIxSourceMethod;
+typedef struct _ArrayOfIxSourceParameter        ArrayOfIxSourceParameter;
+typedef struct _ArrayOfIxSourceStatement        ArrayOfIxSourceStatement;
+typedef struct _ArrayOfString                   ArrayOfString;
+typedef struct _AST                             AST;
+typedef struct _ASTCollection                   ASTCollection;
+typedef struct _CSignature                      CSignature;
+typedef struct _CStatement                      CStatement;
+typedef struct _Dictionary                      Dictionary;
+typedef struct _Entry                           Entry;
+typedef struct _File                            File;
+typedef struct _FilesIterator                   FilesIterator;
+typedef struct _Generator                       Generator;
+typedef struct _IxParser                        IxParser;
+typedef struct _IxSourceBlock                   IxSourceBlock;
+typedef struct _IxSourceClass                   IxSourceClass;
+typedef struct _IxSourceComment                 IxSourceComment;
+typedef struct _IxSourceConditional             IxSourceConditional;
+typedef struct _IxSourceDeclaration             IxSourceDeclaration;
+typedef struct _IxSourceExpression              IxSourceExpression;
+typedef struct _IxSourceFunction                IxSourceFunction;
+typedef struct _IxSourceHeader                  IxSourceHeader;
+typedef struct _IxSourceInterface               IxSourceInterface;
+typedef struct _IxSourceMember                  IxSourceMember;
+typedef struct _IxSourceMethod                  IxSourceMethod;
+typedef struct _IxSourceParameter               IxSourceParameter;
+typedef struct _IxSourceSignature               IxSourceSignature;
+typedef struct _IxSourceStatement               IxSourceStatement;
+typedef struct _IxSourceSubExpression           IxSourceSubExpression;
+typedef struct _IxSourceType                    IxSourceType;
+typedef struct _IxSourceUnit                    IxSourceUnit;
+typedef struct _IxSourceUnitCollection          IxSourceUnitCollection;
+typedef struct _Node                            Node;
+typedef struct _NodeIterator                    NodeIterator;
+typedef struct _Object                          Object;
+typedef struct _Path                            Path;
+typedef struct _PushbackReader                  PushbackReader;
+typedef struct _Queue                           Queue;
+typedef struct _String                          String;
+typedef struct _StringBuffer                    StringBuffer;
+typedef struct _Token                           Token;
+typedef struct _TokenGroup                      TokenGroup;
+typedef struct _Tokenizer                       Tokenizer;
+typedef struct _Tree                            Tree;
+
+typedef void* (*Destructor )( void**                                     );
+typedef int   (*GeneratorFn)( const IxSourceUnitCollection*, const Path* );
+
+void** Give  ( void* pointer );
+void*  Take  ( void* giver   );
+void   Swap  ( ANY one, ANY two );
+
+#endif
 ```
 
 ### Array

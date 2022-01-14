@@ -23,6 +23,7 @@ const File* AST_getTokenizerFile( const AST*  self );
 #include "ixcompiler.IxParser.h"
 #include "ixcompiler.Node.h"
 #include "ixcompiler.Platform.h"
+#include "ixcompiler.String.h"
 #include "ixcompiler.Token.h"
 #include "ixcompiler.TokenGroup.h"
 #include "ixcompiler.Tokenizer.h"
@@ -34,17 +35,29 @@ struct _AST
     Tree* tree;
 };
 
-static void Parse          ( AST* self );
+static Node* AST_Inject               ( Node* parent, const char* tag );
+static void  AST_Expect               ( Node* parent, Tokenizer* tokenizer, EnumTokenType expected[] );
 
-static void ParseRoot      ( Node* parent, Tokenizer* tokenizer );
-static void ParseComplex   ( Node* parent, Tokenizer* tokenizer );
-static void ParseClass     ( Node* parent, Tokenizer* tokenizer );
-static void ParseMethod    ( Node* parent, Tokenizer* tokenizer );
-static void ParseStatement ( Node* parent, Tokenizer* tokenizer, bool one_liner );
-static void ParseBlock     ( Node* parent, Tokenizer* tokenizer );
-static void ParseParameters( Node* parent, Tokenizer* tokenizer );
-static bool ParseParameter ( Node* parent, Tokenizer* tokenizer );
-static void ParseExpression( Node* parent, Tokenizer* tokenizer );
+static void AST_Parse( AST* self );
+
+static void AST_ParseRoot             ( Node* parent, Tokenizer* tokenizer );
+static void AST_ParseWhitespace       ( Node* parent, Tokenizer* tokenizer );
+static void AST_ParseLine             ( Node* parent, Tokenizer* tokenizer );
+static void AST_ParseComplex          ( Node* parent, Tokenizer* tokenizer );
+static void AST_ParseClass            ( Node* parent, Tokenizer* tokenizer );
+static void AST_ParseMemberUntilStop  ( Node* parent, Tokenizer* tokenizer );
+static void AST_ParseUntilStop        ( Node* parent, Tokenizer* tokenizer );
+static void AST_ParseClassBlock       ( Node* parent, Tokenizer* tokenizer );
+static void AST_ParseClassBlockMember ( Node* parent, Tokenizer* tokenizer );
+static void AST_ParseMemberType       ( Node* parent, Tokenizer* tokenizer );
+static void AST_ParseMethod           ( Node* parent, Tokenizer* tokenizer );
+static void AST_ParseMethodType       ( Node* parent, Tokenizer* tokenizer );
+static void AST_ParseParameters       ( Node* parent, Tokenizer* tokenizer );
+static bool AST_ParseParameter        ( Node* parent, Tokenizer* tokenizer );
+static void AST_ParseParameterType    ( Node* parent, Tokenizer* tokenizer );
+static void AST_ParseBlock            ( Node* parent, Tokenizer* tokenizer );
+static void AST_ParseStatement        ( Node* parent, Tokenizer* tokenizer, bool one_liner );
+static void AST_ParseExpression       ( Node* parent, Tokenizer* tokenizer );
 ~
 
 ~c/ixcompiler.AST.c~
@@ -57,7 +70,7 @@ AST* AST_new( Tokenizer** tokenizer )
         self->tree      = Tree_new();
     }
 
-    Parse( self );
+    AST_Parse( self );
 
     return self;
 }
@@ -91,50 +104,127 @@ const File* AST_getTokenizerFile( const AST* self )
 ~
 
 ~c/ixcompiler.AST.c~
-static void Parse( AST* self )
+static Node* AST_Inject( Node* parent, const char* tag )
+{
+    Node* injected = null;
+
+    TokenGroup* group = TokenGroup_new( '\0' );
+    {
+        //
+        //  NODE[parent]
+        //     |
+        //  NODE[injected][tag]  -----TOKEN[empty] --> GROUP[group]
+        //     |
+        //  NODE[???]            -----TOKEN[token] --> GROUP[???]
+
+        Token* empty = Token_new( null, "\0", group );
+        Node_addChild( parent, &empty );
+        injected = Node_getLastChild( parent );
+        if ( tag ) Node_setTag( injected, tag );
+    }
+    TokenGroup_free( &group );
+
+    return injected;
+}
+~
+
+~c/ixcompiler.AST.c~
+static void AST_Expect( Node* parent, Tokenizer* tokenizer, EnumTokenType expected[] )
+{
+    const Token* peek     = null;
+    Token*       token    = null;
+    Node*        injected = null;
+
+    while ( (peek = Tokenizer_peekToken( tokenizer )) )
+    {
+        if ( Token_isAmongTypes( peek, expected ) )
+        {
+            break;
+        }
+        else
+        if ( Token_getTokenType( peek ) == END )
+        {
+            break;
+        }
+        else
+        {
+            if( !injected )
+            {
+                injected = AST_Inject( parent, "unexpected" );
+            }
+            Node_addChild( injected, (Token**) Give( Tokenizer_nextToken( tokenizer ) ) );
+        }
+    }
+}
+~
+
+~c/ixcompiler.AST.c~
+static void AST_Parse( AST* self )
 {
     Token* t    = null;
     Node*  root = Node_new( &t );
-    ParseRoot( root, self->tokenizer );
+    AST_ParseRoot( root, self->tokenizer );
     Tree_setRoot( self->tree, &root );
 }
 ~
 
 ~c/ixcompiler.AST.c~
-static void ParseRoot( Node* parent, Tokenizer* tokenizer )
+static void AST_ParseRoot( Node* parent, Tokenizer* tokenizer )
 {
-    while ( Tokenizer_hasMoreTokens( tokenizer ) )
+    EnumTokenType  expected1[4] = { COPYRIGHT, LICENSE, MODIFIER, END };
+    EnumTokenType  expected2[4] = {            LICENSE, MODIFIER, END };
+    EnumTokenType  expected3[4] = {                     MODIFIER, END };
+    EnumTokenType* expected = expected1;
+
+    bool loop = TRUE;
+    while ( loop && Tokenizer_hasMoreTokens( tokenizer ) )
     {
-        Token*         token       = Tokenizer_nextToken( tokenizer );
-        EnumTokenGroup token_group = TokenGroup_getGroupType( Token_getTokenGroup( token ) );
-        EnumTokenType  token_type  = Token_getTokenType( token );
+        EnumTokenGroup token_group = Tokenizer_peekTokenGroup( tokenizer );
+        EnumTokenType  token_type  = Tokenizer_peekTokenType ( tokenizer );
 
-        Node_addChild( parent, &token );
-
-        if ( token_group == ALPHANUMERIC )
+        Node* child = null;
+        if ( token_type == END )
         {
-            Node* last = null;
+            loop = FALSE;
+        }
+        else
+        if ( token_group == WHITESPACE )
+        {
+            child = Node_addChild( parent, (Token**) Give( Tokenizer_nextToken( tokenizer ) ) );
+            Node_setTag( child, "whitespace" );
+            AST_ParseWhitespace( child, tokenizer );
+        }
+        else
+        if ( token_group == COMMENT )
+        {
+            Node_addChild( parent, (Token**) Give( Tokenizer_nextToken( tokenizer ) ) );
+        }
+        else
+        {
+            AST_Expect( parent, tokenizer, expected );
+
+            token_type  = Tokenizer_peekTokenType ( tokenizer );
 
             switch ( token_type )
             {
             case COPYRIGHT:
-                last = Node_getLastChild( parent );
-                Node_setTag( last, "copyright" );
-                ParseStatement( last, tokenizer, TRUE );
+                child = Node_addChild( parent, (Token**) Give( Tokenizer_nextToken( tokenizer ) ) );
+                Node_setTag( child, "copyright" );
+                AST_ParseLine( child, tokenizer );
                 break;
 
             case LICENSE:
-                last = Node_getLastChild( parent );
-                Node_setTag( last, "license" );
-                ParseStatement( last, tokenizer, TRUE );
+                child = Node_addChild( parent, (Token**) Give( Tokenizer_nextToken( tokenizer ) ) );
+                Node_setTag( child, "license" );
+                AST_ParseLine( child, tokenizer );
+                expected = expected2;
                 break;
 
             case MODIFIER:
-                ParseComplex( Node_getLastChild( parent ), tokenizer );
+                child = Node_addChild( parent, (Token**) Give( Tokenizer_nextToken( tokenizer ) ) );
+                AST_ParseComplex( child, tokenizer );
+                expected = expected3;
                 break;
-
-            default:
-                continue;
             }
         }
     }
@@ -142,113 +232,860 @@ static void ParseRoot( Node* parent, Tokenizer* tokenizer )
 ~
 
 ~c/ixcompiler.AST.c~
-static void ParseComplex( Node* parent, Tokenizer* tokenizer )
+static void AST_ParseWhitespace( Node* parent, Tokenizer* tokenizer )
 {
     while ( Tokenizer_hasMoreTokens( tokenizer ) )
     {
-        Token*         token       = Tokenizer_nextToken( tokenizer );
-        EnumTokenGroup token_group = TokenGroup_getGroupType( Token_getTokenGroup( token ) );
-        EnumTokenType  token_type  = Token_getTokenType( token );
-        const char*    content     = Token_getContent( token );
-        int            ch          = content[0];
-
-        Node_addChild( parent, &token );
-
-        if ( (token_group == CLOSE)        && (token_type == ENDBLOCK) ) break;
-        else
-        if ( (token_group == ALPHANUMERIC) && (token_type == CLASS) )
+        if ( Tokenizer_peekTokenGroup( tokenizer ) == WHITESPACE )
         {
-            Node_setTag( parent, "class" );
-            ParseClass( Node_getLastChild( parent ), tokenizer );
-            break;
-        }
-        else
-        if ( (token_group == ALPHANUMERIC) && (token_type == WORD) )
-        {
-            Node_setTag( parent, "method" );
-            ParseMethod( Node_getLastChild( parent ), tokenizer );
-            break;
-        }
-        else
-        if ( (token_group == OPEN)         && (token_type == STARTBLOCK) )
-        {
-            ParseBlock( Node_getLastChild( parent ), tokenizer );
-            break;
+            Node_addChild( parent, (Token**) Give( Tokenizer_nextToken( tokenizer ) ) );
         }
         else
         {
-            continue;
+            break;
         }
     }
 }
 ~
 
 ~c/ixcompiler.AST.c~
-static void ParseClass( Node* parent, Tokenizer* tokenizer )
+static void AST_ParseLine( Node* parent, Tokenizer* tokenizer )
 {
     while ( Tokenizer_hasMoreTokens( tokenizer ) )
     {
-        Token*         token       = Tokenizer_nextToken( tokenizer );
-        EnumTokenGroup token_group = TokenGroup_getGroupType( Token_getTokenGroup( token ) );
-        EnumTokenType  token_type  = Token_getTokenType( token );
-        const char*    content     = Token_getContent( token );
-        int            ch          = content[0];
+        EnumTokenType type = Tokenizer_peekTokenType( tokenizer );
+        Node_addChild( parent, (Token**) Give( Tokenizer_nextToken( tokenizer ) ) );
 
-        Node_addChild( parent, &token );
-
-        if ( (token_group == CLOSE)        && (token_type == ENDBLOCK) ) break;
-        else
-        if ( (token_group == OPEN) && (token_type == STARTBLOCK) )
+        if ( NEWLINE == type )
         {
-            ParseBlock( Node_getLastChild( parent ), tokenizer );
             break;
-        }
-        else
-        {
-            continue;
         }
     }
 }
 ~
 
 ~c/ixcompiler.AST.c~
-static void ParseMethod( Node* parent, Tokenizer* tokenizer )
+static void AST_ParseComplex( Node* parent, Tokenizer* tokenizer )
 {
+    EnumTokenType  expected1[4] = { KEYWORD, CLASS, WORD, END };
+    EnumTokenType  expected2[4] = {          CLASS, WORD, END };
+    EnumTokenType* expected     = expected1;
+
     while ( Tokenizer_hasMoreTokens( tokenizer ) )
     {
-        Token*         token       = Tokenizer_nextToken( tokenizer );
-        EnumTokenGroup token_group = TokenGroup_getGroupType( Token_getTokenGroup( token ) );
-        EnumTokenType  token_type  = Token_getTokenType( token );
-        const char*    content     = Token_getContent( token );
-        int            ch          = content[0];
+        EnumTokenGroup token_group = Tokenizer_peekTokenGroup( tokenizer );
+        EnumTokenType  token_type  = Tokenizer_peekTokenType ( tokenizer );
 
-        Node_addChild( parent, &token );
-
-        if ( (token_group == CLOSE)        && (token_type == ENDBLOCK) ) break;
-        else
-        if ( (token_group == OPEN) && (token_type == STARTEXPRESSION) )
+        Node* child = null;
+        if ( token_group == WHITESPACE )
         {
-            ParseParameters( Node_getLastChild( parent ), tokenizer );
+            child = Node_addChild( parent, (Token**) Give( Tokenizer_nextToken( tokenizer ) ) );
+            Node_setTag( child, "whitespace" );
+            AST_ParseWhitespace( child, tokenizer );
         }
         else
-        if ( (token_group == OPEN) && (token_type == STARTBLOCK) )
+        if ( token_group == COMMENT )
         {
-            ParseBlock( Node_getLastChild( parent ), tokenizer );
+            Node_addChild( parent, (Token**) Give( Tokenizer_nextToken( tokenizer ) ) );
+        }
+        else
+        {
+            AST_Expect( parent, tokenizer, expected );
+
+            token_type = Tokenizer_peekTokenType( tokenizer );
+
+            switch ( token_type )
+            {
+            case KEYWORD:
+                const Token* peek = Tokenizer_peekToken( tokenizer );
+                if ( String_Equals( "new", Token_getContent( peek ) ) )
+                {
+                    //  new
+                    Node_setTag( parent, "method" );
+                    AST_ParseMethod( parent, tokenizer );
+                    goto exit;
+                }
+                else
+                {
+                    //  const
+                    Node_addChild( parent, (Token**) Give( Tokenizer_nextToken( tokenizer ) ) );
+                    expected = expected2;
+                }
+                break;
+
+            case CLASS:
+                Node_setTag( parent, "class" );
+                child = Node_addChild( parent, (Token**) Give( Tokenizer_nextToken( tokenizer ) ) );
+                AST_ParseClass( child, tokenizer );
+                goto exit;
+                break;
+
+            case WORD:
+                Node_setTag( parent, "method" );
+                AST_ParseMethod( parent, tokenizer );
+                goto exit;
+                break;
+            }
+        }
+    }
+exit:
+}
+~
+
+~c/ixcompiler.AST.c~
+static void AST_ParseClass( Node* parent, Tokenizer* tokenizer )
+{
+    EnumTokenType expected1[3] = {  KEYWORD, STARTBLOCK, END };
+    EnumTokenType expected2[3] = {           STARTBLOCK, END };
+
+    EnumTokenType* expected = expected1;
+
+    while ( Tokenizer_hasMoreTokens( tokenizer ) )
+    {
+        EnumTokenGroup token_group = Tokenizer_peekTokenGroup( tokenizer );
+        EnumTokenType  token_type  = Tokenizer_peekTokenType ( tokenizer );
+
+        Node* child = null;
+        if ( token_type == END )
+        {
+            goto exit;
+        }
+        else
+        if ( token_group == WHITESPACE )
+        {
+            child = Node_addChild( parent, (Token**) Give( Tokenizer_nextToken( tokenizer ) ) );
+            Node_setTag( child, "whitespace" );
+            AST_ParseWhitespace( child, tokenizer );
+        }
+        else
+        if ( token_group == COMMENT )
+        {
+            Node_addChild( parent, (Token**) Give( Tokenizer_nextToken( tokenizer ) ) );
+        }
+        else
+        {
+            AST_Expect( parent, tokenizer, expected );
+
+            token_type  = Tokenizer_peekTokenType ( tokenizer );
+
+            switch( token_type )
+            {
+            case KEYWORD:
+                child = Node_addChild( parent, (Token**) Give( Tokenizer_nextToken( tokenizer ) ) );
+                AST_ParseUntilStop( child, tokenizer );
+                expected = expected2;
+                break;
+
+            case STARTBLOCK:
+                child = Node_addChild( parent, (Token**) Give( Tokenizer_nextToken( tokenizer ) ) );
+                AST_ParseClassBlock( child, tokenizer );
+                goto exit;
+            }
+        }
+    }
+exit:
+}
+~
+
+~c/ixcompiler.AST.c~
+static void AST_ParseMemberUntilStop( Node* parent, Tokenizer* tokenizer )
+{
+    bool loop = TRUE;
+    while( loop && Tokenizer_hasMoreTokens( tokenizer ) )
+    {
+        const Token*  token = Tokenizer_peekToken( tokenizer );
+        const char*   value = Token_getContent( token );
+        EnumTokenType type  = Token_getTokenType( token );
+
+        if ( STARTBLOCK == type )
+        {
+            loop = FALSE;
+        }
+        else
+        if ( (INFIXOP == type) && (('*' == value[0]) || ('&' == value[0])) )
+        {
+            Node_addChild( parent, (Token**) Give( Tokenizer_nextToken( tokenizer ) ) );
+            loop = FALSE;
+        }
+        else
+        if ( COMMA == type )
+        {
+            Node_addChild( parent, (Token**) Give( Tokenizer_nextToken( tokenizer ) ) );
+            loop = FALSE;
+        }
+        else
+        if ( STOP == type )
+        {
+            Node_addChild( parent, (Token**) Give( Tokenizer_nextToken( tokenizer ) ) );
+            loop = FALSE;
+        }
+        else
+        if ( OFTYPE == type )
+        {
+            Node* child = Node_addChild( parent, (Token**) Give( Tokenizer_nextToken( tokenizer ) ) );
+            AST_ParseMemberUntilStop( child, tokenizer );
             break;
         }
         else
         {
-            continue;
+            Node_addChild( parent, (Token**) Give( Tokenizer_nextToken( tokenizer ) ) );
         }
     }
 }
 ~
 
 ~c/ixcompiler.AST.c~
-static void ParseStatement( Node* parent, Tokenizer* tokenizer, bool one_liner )
+static void AST_ParseUntilStop( Node* parent, Tokenizer* tokenizer )
+{
+    bool loop = TRUE;
+    while( loop && Tokenizer_hasMoreTokens( tokenizer ) )
+    {
+        const Token*  token = Tokenizer_peekToken( tokenizer );
+        EnumTokenType type  = Token_getTokenType( token );
+
+        if ( STARTBLOCK == type )
+        {
+            loop = FALSE;
+        }
+        else
+        if ( COMMA == type )
+        {
+            Node_addChild( parent, (Token**) Give( Tokenizer_nextToken( tokenizer ) ) );
+            loop = FALSE;
+        }
+        else
+        if ( STOP == type )
+        {
+            Node_addChild( parent, (Token**) Give( Tokenizer_nextToken( tokenizer ) ) );
+            loop = FALSE;
+        }
+        else
+        if ( OFTYPE == type )
+        {
+            Node* child = Node_addChild( parent, (Token**) Give( Tokenizer_nextToken( tokenizer ) ) );
+            AST_ParseUntilStop( child, tokenizer );
+            break;
+        }
+        else
+        {
+            Node_addChild( parent, (Token**) Give( Tokenizer_nextToken( tokenizer ) ) );
+        }
+    }
+}
+~
+
+~c/ixcompiler.AST.c~
+static void AST_ParseClassBlock( Node* parent, Tokenizer* tokenizer )
+{
+    EnumTokenType  expected1[4] = { INSTANCEMEMBER, CLASSMEMBER, ENDBLOCK, END };
+    EnumTokenType* expected = expected1;
+
+    bool loop = TRUE;
+    while ( loop && Tokenizer_hasMoreTokens( tokenizer ) )
+    {
+        EnumTokenGroup token_group = Tokenizer_peekTokenGroup( tokenizer );
+        EnumTokenType  token_type  = Tokenizer_peekTokenType ( tokenizer );
+
+        Node* child = null;
+        if ( token_type == END )
+        {
+            loop = FALSE;
+        }
+        else
+        if ( token_group == WHITESPACE )
+        {
+            child = Node_addChild( parent, (Token**) Give( Tokenizer_nextToken( tokenizer ) ) );
+            Node_setTag( child, "whitespace" );
+            AST_ParseWhitespace( child, tokenizer );
+        }
+        else
+        if ( token_group == COMMENT )
+        {
+            Node_addChild( parent, (Token**) Give( Tokenizer_nextToken( tokenizer ) ) );
+        }
+        else
+        {
+            AST_Expect( parent, tokenizer, expected );
+
+            token_type  = Tokenizer_peekTokenType( tokenizer );
+
+            switch( token_type )
+            {
+            case INSTANCEMEMBER:
+            case CLASSMEMBER:
+                child = Node_addChild( parent, (Token**) Give( Tokenizer_nextToken( tokenizer ) ) );
+                AST_ParseClassBlockMember( child, tokenizer );
+                break;
+
+            case ENDBLOCK:
+                Node_addChild( parent, (Token**) Give( Tokenizer_nextToken( tokenizer ) ) );
+                loop = FALSE;
+                break;
+            }
+        }
+    }
+}
+~
+
+~c/ixcompiler.AST.c~
+static void AST_ParseClassBlockMember( Node* parent, Tokenizer* tokenizer )
+{
+    EnumTokenType  expected[4] = {   WORD, END };
+
+    bool loop = TRUE;
+    while ( loop && Tokenizer_hasMoreTokens( tokenizer ) )
+    {
+        EnumTokenGroup token_group = Tokenizer_peekTokenGroup( tokenizer );
+        EnumTokenType  token_type  = Tokenizer_peekTokenType ( tokenizer );
+
+        Node* child = null;
+        if ( token_type == END )
+        {
+            loop = FALSE;
+        }
+        else
+        if ( token_group == WHITESPACE )
+        {
+            child = Node_addChild( parent, (Token**) Give( Tokenizer_nextToken( tokenizer ) ) );
+            Node_setTag( child, "whitespace" );
+            AST_ParseWhitespace( child, tokenizer );
+        }
+        else
+        if ( token_group == COMMENT )
+        {
+            Node_addChild( parent, (Token**) Give( Tokenizer_nextToken( tokenizer ) ) );
+        }
+        else
+        {
+            AST_Expect( parent, tokenizer, expected );
+
+            token_type  = Tokenizer_peekTokenType( tokenizer );
+
+            switch ( token_type )
+            {
+            case WORD:
+                child = Node_addChild( parent, (Token**) Give( Tokenizer_nextToken( tokenizer ) ) );
+                AST_ParseMemberUntilStop( child, tokenizer );
+                loop = FALSE;
+                break;
+            }
+        }
+    }
+}
+~
+
+~
+static void AST_ParseMemberType( Node* parent, Tokenizer* tokenizer )
+{
+    EnumTokenType  expected1[7] = {                                      PRIMITIVE,       WORD, END };
+    EnumTokenType  expected2[7] = {           STARTSUBSCRIPT, INFIXOP, COMMA, STOP,   ENDBLOCK, END };
+    EnumTokenType  expected3[7] = { SELECTOR, STARTSUBSCRIPT, INFIXOP, COMMA, STOP,   ENDBLOCK, END };
+    EnumTokenType  expected4[7] = {                                                       WORD, END };
+    EnumTokenType  expected5[7] = {                                               ENDSUBSCRIPT, END };
+    EnumTokenType  expected6[7] = {                             INFIXOP, COMMA, STOP, ENDBLOCK, END };
+    EnumTokenType  expected7[7] = {                                      COMMA, STOP, ENDBLOCK, END };
+    EnumTokenType* expected = expected1;
+
+    while ( Tokenizer_hasMoreTokens( tokenizer ) )
+    {
+        EnumTokenGroup token_group = Tokenizer_peekTokenGroup( tokenizer );
+        EnumTokenType  token_type  = Tokenizer_peekTokenType ( tokenizer );
+
+        Node* child = null;
+        if ( token_type == END )
+        {
+            goto exit;
+        }
+        else
+        if ( token_group == WHITESPACE )
+        {
+            child = Node_addChild( parent, (Token**) Give( Tokenizer_nextToken( tokenizer ) ) );
+            Node_setTag( child, "whitespace" );
+            AST_ParseWhitespace( child, tokenizer );
+        }
+        else
+        if ( token_group == COMMENT )
+        {
+            Node_addChild( parent, (Token**) Give( Tokenizer_nextToken( tokenizer ) ) );
+        }
+        else
+        {
+            AST_Expect( parent, tokenizer, expected );
+
+            token_type  = Tokenizer_peekTokenType( tokenizer );
+
+            switch ( token_type )
+            {
+            case PRIMITIVE:
+                Node_addChild( parent, (Token**) Give( Tokenizer_nextToken( tokenizer ) ) );
+                expected = expected2;
+                break;
+
+            case WORD:
+                Node_addChild( parent, (Token**) Give( Tokenizer_nextToken( tokenizer ) ) );
+                expected = expected3;
+                break;
+
+            case SELECTOR:
+                Node_addChild( parent, (Token**) Give( Tokenizer_nextToken( tokenizer ) ) );
+                expected = expected4;
+                break;
+
+            case STARTSUBSCRIPT:
+                Node_addChild( parent, (Token**) Give( Tokenizer_nextToken( tokenizer ) ) );
+                expected = expected5;
+                break;
+
+            case ENDSUBSCRIPT:
+                Node_addChild( parent, (Token**) Give( Tokenizer_nextToken( tokenizer ) ) );
+                expected = expected6;
+                break;
+
+            case INFIXOP:
+                Node_addChild( parent, (Token**) Give( Tokenizer_nextToken( tokenizer ) ) );
+                expected = expected7;
+                break;
+
+            case COMMA:
+                goto exit;
+                break;
+
+            case STOP:
+                Node_addChild( parent, (Token**) Give( Tokenizer_nextToken( tokenizer ) ) );
+                goto exit;
+                break;
+
+            case STARTBLOCK:
+            case ENDBLOCK:
+            case ENDEXPRESSION:
+                goto exit;
+                break;
+            }
+        }
+    }
+exit:
+}
+~
+
+~c/ixcompiler.AST.c~
+static void AST_ParseMethod( Node* parent, Tokenizer* tokenizer )
+{
+    EnumTokenType  expected1[3] = {           KEYWORD, WORD, END };
+    EnumTokenType  expected2[3] = {                    WORD, END };
+    EnumTokenType  expected3[3] = {         STARTEXPRESSION, END };
+    EnumTokenType  expected4[3] = { OFTYPE,      STARTBLOCK, END };
+    EnumTokenType  expected5[3] = {              STARTBLOCK, END };
+    EnumTokenType* expected     = expected1;
+
+    while ( Tokenizer_hasMoreTokens( tokenizer ) )
+    {
+        EnumTokenGroup token_group = Tokenizer_peekTokenGroup( tokenizer );
+        EnumTokenType  token_type  = Tokenizer_peekTokenType ( tokenizer );
+
+        Node* child = null;
+        if ( token_type == END )
+        {
+            goto exit;
+        }
+        else
+        if ( token_group == WHITESPACE )
+        {
+            child = Node_addChild( parent, (Token**) Give( Tokenizer_nextToken( tokenizer ) ) );
+            Node_setTag( child, "whitespace" );
+            AST_ParseWhitespace( child, tokenizer );
+        }
+        else
+        if ( token_group == COMMENT )
+        {
+            Node_addChild( parent, (Token**) Give( Tokenizer_nextToken( tokenizer ) ) );
+        }
+        else
+        {
+            AST_Expect( parent, tokenizer, expected );
+            token_type  = Tokenizer_peekTokenType ( tokenizer );
+
+            switch( token_type )
+            {
+            case KEYWORD:    // public [const] methodname 
+                child = Node_addChild( parent, (Token**) Give( Tokenizer_nextToken( tokenizer ) ) );
+                if ( String_Equals( "new", Token_getContent( Node_getToken( child ) ) ) )
+                {
+                    expected = expected3;   // new
+                }
+                else
+                {
+                    expected = expected2;   // const
+                }
+                break;
+
+            case WORD:       // public const [methodname]
+                Node* child = Node_addChild( parent, (Token**) Give( Tokenizer_nextToken( tokenizer ) ) );
+                expected = expected3;
+                break;
+
+            case STARTEXPRESSION:
+                child = Node_addChild( parent, (Token**) Give( Tokenizer_nextToken( tokenizer ) ) );
+                AST_ParseParameters( child, tokenizer );
+                expected = expected4;
+                break;
+
+            case OFTYPE:    // public const [methodname]
+                child = Node_addChild( parent, (Token**) Give( Tokenizer_nextToken( tokenizer ) ) );
+                AST_ParseUntilStop( child, tokenizer );
+                expected = expected5;
+                break;
+
+            case STARTBLOCK:
+                child = Node_addChild( parent, (Token**) Give( Tokenizer_nextToken( tokenizer ) ) );
+                AST_ParseBlock( child, tokenizer );
+                goto exit;
+                break;
+            }
+        }
+    }
+exit:
+}
+~
+
+~
+static void AST_ParseMethodType( Node* parent, Tokenizer* tokenizer )
+{
+    EnumTokenType  expected1[7] = {                                      PRIMITIVE,       WORD, END };
+    EnumTokenType  expected2[7] = {           STARTSUBSCRIPT, INFIXOP, COMMA, STOP, STARTBLOCK, END };
+    EnumTokenType  expected3[7] = { SELECTOR, STARTSUBSCRIPT, INFIXOP, COMMA, STOP, STARTBLOCK, END };
+    EnumTokenType  expected4[7] = {                                                       WORD, END };
+    EnumTokenType  expected5[7] = {                                               ENDSUBSCRIPT, END };
+    EnumTokenType  expected6[7] = {                           INFIXOP, COMMA, STOP, STARTBLOCK, END };
+    EnumTokenType  expected7[7] = {                                    COMMA, STOP, STARTBLOCK, END };
+    EnumTokenType* expected = expected1;
+
+    while ( Tokenizer_hasMoreTokens( tokenizer ) )
+    {
+        EnumTokenGroup token_group = Tokenizer_peekTokenGroup( tokenizer );
+        EnumTokenType  token_type  = Tokenizer_peekTokenType ( tokenizer );
+
+        Node* child = null;
+        if ( token_type == END )
+        {
+            goto exit;
+        }
+        else
+        if ( token_group == WHITESPACE )
+        {
+            child = Node_addChild( parent, (Token**) Give( Tokenizer_nextToken( tokenizer ) ) );
+            Node_setTag( child, "whitespace" );
+            AST_ParseWhitespace( child, tokenizer );
+        }
+        else
+        if ( token_group == COMMENT )
+        {
+            Node_addChild( parent, (Token**) Give( Tokenizer_nextToken( tokenizer ) ) );
+        }
+        else
+        {
+            AST_Expect( parent, tokenizer, expected );
+
+            token_type  = Tokenizer_peekTokenType( tokenizer );
+
+            switch ( token_type )
+            {
+            case PRIMITIVE:
+                Node_addChild( parent, (Token**) Give( Tokenizer_nextToken( tokenizer ) ) );
+                expected = expected2;
+                break;
+
+            case WORD:
+                Node_addChild( parent, (Token**) Give( Tokenizer_nextToken( tokenizer ) ) );
+                expected = expected3;
+                break;
+
+            case SELECTOR:
+                Node_addChild( parent, (Token**) Give( Tokenizer_nextToken( tokenizer ) ) );
+                expected = expected4;
+                break;
+
+            case STARTSUBSCRIPT:
+                Node_addChild( parent, (Token**) Give( Tokenizer_nextToken( tokenizer ) ) );
+                expected = expected5;
+                break;
+
+            case ENDSUBSCRIPT:
+                Node_addChild( parent, (Token**) Give( Tokenizer_nextToken( tokenizer ) ) );
+                expected = expected6;
+                break;
+
+            case INFIXOP:
+                Node_addChild( parent, (Token**) Give( Tokenizer_nextToken( tokenizer ) ) );
+                expected = expected7;
+                break;
+
+            case COMMA:
+                goto exit;
+                break;
+
+            case STOP:
+                Node_addChild( parent, (Token**) Give( Tokenizer_nextToken( tokenizer ) ) );
+                goto exit;
+                break;
+
+            case STARTBLOCK:
+            case ENDBLOCK:
+            case ENDEXPRESSION:
+                goto exit;
+                break;
+            }
+        }
+    }
+exit:
+}
+~
+
+~c/ixcompiler.AST.c~
+static void AST_ParseParameters( Node* parent, Tokenizer* tokenizer )
+{
+    //  name1: type, name2: type )
+
+    EnumTokenType  expected1[3] = { WORD,  ENDEXPRESSION, END };
+    EnumTokenType* expected     = expected1;
+
+    while ( Tokenizer_hasMoreTokens( tokenizer ) )
+    {
+        EnumTokenGroup token_group = Tokenizer_peekTokenGroup( tokenizer );
+        EnumTokenType  token_type  = Tokenizer_peekTokenType ( tokenizer );
+
+        Node* child = null;
+        if ( token_type == END )
+        {
+            goto exit;
+        }
+        else
+        if ( token_group == WHITESPACE )
+        {
+            child = Node_addChild( parent, (Token**) Give( Tokenizer_nextToken( tokenizer ) ) );
+            Node_setTag( child, "whitespace" );
+            AST_ParseWhitespace( child, tokenizer );
+        }
+        else
+        if ( token_group == COMMENT )
+        {
+            Node_addChild( parent, (Token**) Give( Tokenizer_nextToken( tokenizer ) ) );
+        }
+        else
+        {
+            AST_Expect( parent, tokenizer, expected );
+            token_type  = Tokenizer_peekTokenType ( tokenizer );
+
+            switch( token_type )
+            {
+            case WORD:
+                child = Node_addChild( parent, (Token**) Give( Tokenizer_nextToken( tokenizer ) ) );
+                AST_ParseParameter( child, tokenizer );
+                break;
+
+            case ENDEXPRESSION:
+                Node_addChild( parent, (Token**) Give( Tokenizer_nextToken( tokenizer ) ) );
+                goto exit;
+                break;
+            }
+        }
+    }
+exit:
+}
+~
+
+~c/ixcompiler.AST.c~
+//  Returns true if last parameter and endexpression encountered
+static bool AST_ParseParameter( Node* parent, Tokenizer* tokenizer )
+{
+    EnumTokenType  expected1[3] = {               OFTYPE, END };
+    EnumTokenType* expected     = expected1;
+
+    while ( Tokenizer_hasMoreTokens( tokenizer ) )
+    {
+        EnumTokenGroup token_group = Tokenizer_peekTokenGroup( tokenizer );
+        EnumTokenType  token_type  = Tokenizer_peekTokenType ( tokenizer );
+
+        Node* child = null;
+        if ( token_type == END )
+        {
+            goto exit;
+        }
+        else
+        if ( token_group == WHITESPACE )
+        {
+            child = Node_addChild( parent, (Token**) Give( Tokenizer_nextToken( tokenizer ) ) );
+            Node_setTag( child, "whitespace" );
+            AST_ParseWhitespace( child, tokenizer );
+        }
+        else
+        if ( token_group == COMMENT )
+        {
+            Node_addChild( parent, (Token**) Give( Tokenizer_nextToken( tokenizer ) ) );
+        }
+        else
+        {
+            AST_Expect( parent, tokenizer, expected );
+            token_type  = Tokenizer_peekTokenType ( tokenizer );
+
+            switch( token_type )
+            {
+            case OFTYPE:
+                child = Node_addChild( parent, (Token**) Give( Tokenizer_nextToken( tokenizer ) ) );
+                AST_ParseUntilStop( child, tokenizer );
+                goto exit;
+                break;
+            }
+        }
+    }
+exit:
+}
+~
+
+~
+static void AST_ParseParameterType( Node* parent, Tokenizer* tokenizer )
+{
+    EnumTokenType  expected1[7] = {                                         PRIMITIVE,       WORD, END };
+    EnumTokenType  expected2[7] = {           STARTSUBSCRIPT, INFIXOP, COMMA, STOP, ENDEXPRESSION, END };
+    EnumTokenType  expected3[7] = { SELECTOR, STARTSUBSCRIPT, INFIXOP, COMMA, STOP, ENDEXPRESSION, END };
+    EnumTokenType  expected4[7] = {                                                          WORD, END };
+    EnumTokenType  expected5[7] = {                                                  ENDSUBSCRIPT, END };
+    EnumTokenType  expected6[7] = {                           INFIXOP, COMMA, STOP, ENDEXPRESSION, END };
+    EnumTokenType  expected7[7] = {                                    COMMA, STOP, ENDEXPRESSION, END };
+    EnumTokenType* expected = expected1;
+
+    while ( Tokenizer_hasMoreTokens( tokenizer ) )
+    {
+        EnumTokenGroup token_group = Tokenizer_peekTokenGroup( tokenizer );
+        EnumTokenType  token_type  = Tokenizer_peekTokenType ( tokenizer );
+
+        Node* child = null;
+        if ( token_type == END )
+        {
+            goto exit;
+        }
+        else
+        if ( token_group == WHITESPACE )
+        {
+            child = Node_addChild( parent, (Token**) Give( Tokenizer_nextToken( tokenizer ) ) );
+            Node_setTag( child, "whitespace" );
+            AST_ParseWhitespace( child, tokenizer );
+        }
+        else
+        if ( token_group == COMMENT )
+        {
+            Node_addChild( parent, (Token**) Give( Tokenizer_nextToken( tokenizer ) ) );
+        }
+        else
+        {
+            AST_Expect( parent, tokenizer, expected );
+
+            token_type  = Tokenizer_peekTokenType( tokenizer );
+
+            switch ( token_type )
+            {
+            case PRIMITIVE:
+                Node_addChild( parent, (Token**) Give( Tokenizer_nextToken( tokenizer ) ) );
+                expected = expected2;
+                break;
+
+            case WORD:
+                Node_addChild( parent, (Token**) Give( Tokenizer_nextToken( tokenizer ) ) );
+                expected = expected3;
+                break;
+
+            case SELECTOR:
+                Node_addChild( parent, (Token**) Give( Tokenizer_nextToken( tokenizer ) ) );
+                expected = expected4;
+                break;
+
+            case STARTSUBSCRIPT:
+                Node_addChild( parent, (Token**) Give( Tokenizer_nextToken( tokenizer ) ) );
+                expected = expected5;
+                break;
+
+            case ENDSUBSCRIPT:
+                Node_addChild( parent, (Token**) Give( Tokenizer_nextToken( tokenizer ) ) );
+                expected = expected6;
+                break;
+
+            case INFIXOP:
+                Node_addChild( parent, (Token**) Give( Tokenizer_nextToken( tokenizer ) ) );
+                expected = expected7;
+                break;
+
+            case COMMA:
+                goto exit;
+                break;
+
+            case STOP:
+                Node_addChild( parent, (Token**) Give( Tokenizer_nextToken( tokenizer ) ) );
+                goto exit;
+                break;
+
+            case STARTBLOCK:
+            case ENDBLOCK:
+            case ENDEXPRESSION:
+                goto exit;
+                break;
+            }
+        }
+    }
+exit:
+}
+~
+
+
+~c/ixcompiler.AST.c~
+static void AST_ParseBlock( Node* parent, Tokenizer* tokenizer )
 {
     while ( Tokenizer_hasMoreTokens( tokenizer ) )
     {
+        EnumTokenGroup token_group = Tokenizer_peekTokenGroup( tokenizer );
+        EnumTokenType  token_type  = Tokenizer_peekTokenType ( tokenizer );
+
+        Node* child = null;
+        if ( token_type == END )
+        {
+            goto exit;
+        }
+        else
+        if ( token_group == WHITESPACE )
+        {
+            child = Node_addChild( parent, (Token**) Give( Tokenizer_nextToken( tokenizer ) ) );
+            Node_setTag( child, "whitespace" );
+            AST_ParseWhitespace( child, tokenizer );
+        }
+        else
+        if ( token_group == COMMENT )
+        {
+            Node_addChild( parent, (Token**) Give( Tokenizer_nextToken( tokenizer ) ) );
+        }
+        else
+        if ( token_type == ENDBLOCK )
+        {
+            Node_addChild( parent, (Token**) Give( Tokenizer_nextToken( tokenizer ) ) );
+            goto exit;
+        }
+        else
+        {
+            Node* child = AST_Inject( parent, "statement" );
+            AST_ParseStatement( child, tokenizer, FALSE );
+        }
+    }
+exit:
+}
+~
+
+~c/ixcompiler.AST.c~
+static void AST_ParseStatement( Node* parent, Tokenizer* tokenizer, bool one_liner )
+{
+    while ( Tokenizer_hasMoreTokens( tokenizer ) )
+    {
+        if ( Token_getTokenType( Tokenizer_peekToken( tokenizer ) ) == ENDBLOCK )
+        {
+            break;
+        }
+
         Token*         token       = Tokenizer_nextToken( tokenizer );
         EnumTokenGroup token_group = TokenGroup_getGroupType( Token_getTokenGroup( token ) );
         EnumTokenType  token_type  = Token_getTokenType( token );
@@ -260,19 +1097,42 @@ static void ParseStatement( Node* parent, Tokenizer* tokenizer, bool one_liner )
             break;
         }
         else
+        if ( token_type == ENDBLOCK )
+        {
+            break;
+        }
+        else
         if ( one_liner && (token_type == NEWLINE) )
         {
             break;
         }
         else
+        if ( token_group == WHITESPACE )
+        {
+            continue;
+        }
+        else
+        if ( (token_type == INSTANCEMEMBER) || (token_type == CLASSMEMBER) )
+        {
+            Node* last = Node_getLastChild( parent );
+            AST_ParseStatement( last, tokenizer, FALSE );
+            break;
+        }
+        else
+        if ( (token_group == SYMBOLIC) && ((token_type == ASSIGNMENTOP) || (token_type == INSTANCEMEMBER) || (token_type == CLASSMEMBER) || (token_type == PREFIXOP) || (token_type == INFIXOP)) )
+        {
+            AST_ParseStatement( Node_getLastChild( parent ), tokenizer, FALSE );
+            break;
+        }
+        else
         if ( (token_group == OPEN) && (token_type == STARTEXPRESSION) )
         {
-            ParseExpression( Node_getLastChild( parent ), tokenizer );
+            AST_ParseExpression( Node_getLastChild( parent ), tokenizer );
         }
         else
         if ( (token_group == OPEN) && (token_type == STARTBLOCK) )
         {
-            ParseBlock( Node_getLastChild( parent ), tokenizer );
+            AST_ParseBlock( Node_getLastChild( parent ), tokenizer );
             break;
         }
     }
@@ -280,10 +1140,15 @@ static void ParseStatement( Node* parent, Tokenizer* tokenizer, bool one_liner )
 ~
 
 ~c/ixcompiler.AST.c~
-static void ParseBlock( Node* parent, Tokenizer* tokenizer )
+static void AST_ParseExpression( Node* parent, Tokenizer* tokenizer )
 {
     while ( Tokenizer_hasMoreTokens( tokenizer ) )
     {
+        if ( Token_getTokenType( Tokenizer_peekToken( tokenizer ) ) == ENDBLOCK )
+        {
+            break;
+        }
+
         Token*         token       = Tokenizer_nextToken( tokenizer );
         EnumTokenGroup token_group = TokenGroup_getGroupType( Token_getTokenGroup( token ) );
         EnumTokenType  token_type  = Token_getTokenType( token );
@@ -292,111 +1157,25 @@ static void ParseBlock( Node* parent, Tokenizer* tokenizer )
 
         Node_addChild( parent, &token );
 
-        if ( (token_group == CLOSE)    && (token_type == ENDBLOCK) ) break;
-        else
-        if ( (token_group == SYMBOLIC) && ((token_type == SYMBOL) || (token_type == INFIXOP)) )
+        if ( token_type == STOP )
         {
-            switch ( ch )
-            {
-            case '@':
-            case '%':
-                ParseStatement( Node_getLastChild( parent ), tokenizer, TRUE );
-                break;
-            }
+            break;
         }
         else
-        if ( (token_group == ALPHANUMERIC) && (token_type == KEYWORD) )
-        {
-            ParseStatement( Node_getLastChild( parent ), tokenizer, FALSE );
-        }
-        else
-        if ( (token_group == ALPHANUMERIC) )
-        {
-            ParseStatement( Node_getLastChild( parent ), tokenizer, FALSE );
-        }
-    }
-}
-~
-
-~c/ixcompiler.AST.c~
-static void ParseParameters( Node* parent, Tokenizer* tokenizer )
-{
-    while ( Tokenizer_hasMoreTokens( tokenizer ) )
-    {
-        Token*         token       = Tokenizer_nextToken( tokenizer );
-        EnumTokenGroup token_group = TokenGroup_getGroupType( Token_getTokenGroup( token ) );
-        EnumTokenType  token_type  = Token_getTokenType( token );
-        const char*    content     = Token_getContent( token );
-        int            ch          = content[0];
-
-        Node_addChild( parent, &token );
-
-        if ( (token_group == CLOSE)    && (token_type == ENDEXPRESSION) ) break;
-        else
-        if ( token_type == WORD )
-        {
-            if ( ParseParameter( Node_getLastChild( parent ), tokenizer ) )
-            {
-                break;
-            }
-        }
-        else
-        {
-            continue;
-        }
-    }
-}
-~
-
-~c/ixcompiler.AST.c~
-//  Returns true if last parameter and endexpression encountered
-static bool ParseParameter( Node* parent, Tokenizer* tokenizer )
-{
-    while ( Tokenizer_hasMoreTokens( tokenizer ) )
-    {
-        Token*         token       = Tokenizer_nextToken( tokenizer );
-        EnumTokenGroup token_group = TokenGroup_getGroupType( Token_getTokenGroup( token ) );
-        EnumTokenType  token_type  = Token_getTokenType( token );
-        const char*    content     = Token_getContent( token );
-        int            ch          = content[0];
-
-        Node_addChild( parent, &token );
-
         if ( token_type == ENDEXPRESSION )
         {
-            return TRUE;
+            break;
         }
-        else
-        if ( (token_type == SYMBOL) && (',' == content[0]) )
-        {
-            return FALSE;
-        }
-        else
-        {
-            continue;
-        }
-    }
-}
-~
-
-~c/ixcompiler.AST.c~
-static void ParseExpression( Node* parent, Tokenizer* tokenizer )
-{
-    while ( Tokenizer_hasMoreTokens( tokenizer ) )
-    {
-        Token*         token       = Tokenizer_nextToken( tokenizer );
-        EnumTokenGroup token_group = TokenGroup_getGroupType( Token_getTokenGroup( token ) );
-        EnumTokenType  token_type  = Token_getTokenType( token );
-        const char*    content     = Token_getContent( token );
-        int            ch          = content[0];
-
-        Node_addChild( parent, &token );
-
-        if ( (token_group == CLOSE)    && (token_type == ENDEXPRESSION) ) break;
         else
         if ( (token_group == OPEN) && (token_type == STARTEXPRESSION) )
         {
-            ParseExpression( Node_getLastChild( parent ), tokenizer );
+            AST_ParseExpression( Node_getLastChild( parent ), tokenizer );
+        }
+        else
+        if ( (token_group == SYMBOLIC) && ((token_type == ASSIGNMENTOP) || (token_type == INFIXOP)) )
+        {
+            AST_ParseExpression( Node_getLastChild( parent ), tokenizer );
+            break;
         }
         else
         {
@@ -405,3 +1184,4 @@ static void ParseExpression( Node* parent, Tokenizer* tokenizer )
     }
 }
 ~
+

@@ -7,8 +7,7 @@
 
 #include "ixcompiler.h"
 
-Array* Array_new           ();
-Array* Array_new_destructor( Destructor destructor );
+Array* Array_new           ( Destructor destructor );
 Array* Array_free          ( Array** self );
 Array* Array_push          ( Array*  self, void** object );
 void*  Array_pop           ( Array*  self );
@@ -66,33 +65,17 @@ static void Array_expand( Array* self )
 ~
 
 ~c/ixcompiler.Array.c~
-Array* Array_new()
+Array* Array_new( Destructor destructor )
 {
     Array* self = Platform_Alloc( sizeof( Array ) );
 
     if ( self )
     {
         self->super.free = (Destructor) Array_free;
-        self->destroy    = 0;
+        self->destroy    = destructor;
         self->objects    = 0;
         self->length     = 0;
         self->size       = 0;
-    }
-    return self;
-}
-~
-
-~c/ixcompiler.Array.c~
-Array* Array_new_destructor( Destructor destructor )
-{
-    Array* self = Platform_Alloc( sizeof( Array ) );
-
-    if ( self )
-    {
-        self->destroy = destructor;
-        self->objects = 0;
-        self->length  = 0;
-        self->size    = 0;
     }
     return self;
 }
@@ -194,7 +177,7 @@ Array* Array_unshift( Array* self, void** object )
 ~c/ixcompiler.Array.c~
 int Array_getLength( const Array* self )
 {
-    return self->length;
+    return self ? self->length : 0;
 }
 ~
 

@@ -12,7 +12,7 @@ Node* Node_free( Node**  self  );
 
 void  Node_setParent   ( Node* self, const Node* parent );
 void  Node_setTag      ( Node* self, const char* tag );
-void  Node_addChild    ( Node* self, Token** token );
+Node* Node_addChild    ( Node* self, Token** token );
 Node* Node_getLastChild( Node* self );
 
 const Token*  Node_getToken    ( const Node* self );
@@ -21,6 +21,7 @@ const String* Node_getTag      ( const Node* self );
 bool          Node_hasChildren ( const Node* self );
 NodeIterator* Node_iterator    ( const Node* self );
 String*       Node_export      ( const Node* self );
+String*       Node_tokenString ( const Node* self );
 
 #endif
 ~
@@ -53,7 +54,7 @@ Node* Node_new( Token** token )
     if ( self )
     {
         self->token    = *token; *token = null;
-        self->children = Array_new();
+        self->children = Array_new( (Destructor) Node_free );
     }
     return self;
 }
@@ -96,11 +97,14 @@ void Node_setTag( Node* self, const char* tag )
 ~
 
 ~c/ixcompiler.Node.c~
-void Node_addChild( Node* self, Token** token )
+Node* Node_addChild( Node* self, Token** token )
 {
     Node* child = Node_new( token );
+    Node* ref   = child;
 
     Array_push( self->children, (void**) &child );
+
+    return ref;
 }
 ~
 
@@ -161,5 +165,12 @@ String* Node_export( const Node* self )
         StringBuffer_free( &sb );
     }
     return ret;
+}
+~
+
+~c/ixcompiler.Node.c~
+String* Node_tokenString ( const Node* self )
+{
+    return String_new( Token_getContent( Node_getToken( self ) ) );
 }
 ~

@@ -7,8 +7,7 @@
 
 #include "ixcompiler.h"
 
-Dictionary* Dictionary_new           ( bool is_map );
-Dictionary* Dictionary_new_destructor( bool is_map, Destructor destructor );
+Dictionary* Dictionary_new( bool is_map, Destructor destructor );
 
 Dictionary* Dictionary_free( Dictionary** self );
 
@@ -39,27 +38,14 @@ static const Entry* Dictionary_find( const Dictionary* self, const String* key )
 ~
 
 ~c/ixcompiler.Dictionary.c~
-Dictionary* Dictionary_new( bool is_map )
-{
-    Dictionary* self = Platform_Alloc( sizeof( Dictionary ) );
-    if ( self )
-    {
-        self->isMap = is_map;
-        self->entries = Array_new();
-    }
-    return self;
-}
-~
-
-~c/ixcompiler.Dictionary.c~
-Dictionary* Dictionary_new_destructor( bool is_map, Destructor destructor )
+Dictionary* Dictionary_new( bool is_map, Destructor destructor )
 {
     Dictionary* self = Platform_Alloc( sizeof( Dictionary ) );
     if ( self )
     {
         self->destroy = destructor;
         self->isMap   = is_map;
-        self->entries = Array_new();
+        self->entries = Array_new( destructor );
     }
     return self;
 }

@@ -34,3 +34,35 @@ I've realised that I don't actually need all of the ArrayOf<Class> types explici
 The main reason I had them was so that I could easily deallocate the array and its contents by calling its "free" function.
 However, I realised last night while reading through the code, that all I needed to do was pass a destructor function for the held type to the array when creating it.
 The arrray can then use that destructor to deallocate each of the held objects.
+
+.. 2022-01-09 (Sunday)
+
+Been implementing function generation.
+Have decided to alter tokenisation and parsing in following ways:
+The '@' and '%' are now the INSTANCEMEMBER and CLASSMEMBER tokens respectively.
+This means that '%' will no longer be treated as an infixop (for mod).
+When parsing statements, a statement that does not begin with a key word will have
+a empty token representing a STATEMENT added and following tokens will be added as children to that node,
+and when an infixop is encountered any following tokens will be added as children to that node.
+
+.. 2022-01-14 (Friday)
+
+I've made some fairly major changes to how the tokenizer, AST parser, and Ix parsing work.
+I added a mechinism that allows the AST parser to tidy unexpected tokens into separate branches of the parse tree.
+I suspected this was a bit overkill and I wanted a less rigid way of forming the parse tree.
+However, I was having a problem with not expecting STOP tokens at the end of statements.
+So, I've now modified the tokenizer to do auto insertion of STOP tokens where they are required.
+For example, a word should not be followed by anonther word etc. See Token_ShouldInsertStop for details.
+This has allowed some simplification of the AST parser, which was a getting a bit complicated,
+as I can now rely on coming across STOP tokens.
+
+I'm quite happy with the form of the parse tree now, i.e.
+
+1.  a class node only has one child node for each member.
+2.  a parameters node only has one child node for each parameter.
+3.  a statement block only has one child for each statement.
+4.  fully qualified types are now separated onto a separate branch.
+5.  infix operators separate subexpressions onto their own branch.
+
+The above should make the transformation from the parse tree into the Ix Source object data structure much simpler.
+

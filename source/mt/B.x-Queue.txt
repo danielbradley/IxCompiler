@@ -4,12 +4,14 @@
 #ifndef IXCOMPILER_QUEUE_H
 #define IXCOMPILER_QUEUE_H
 
-Queue* Queue_new       ();
-Queue* Queue_free      ( Queue** self );
-Queue* Queue_addHead   ( Queue* self, void** object );
-Queue* Queue_addTail   ( Queue* self, void** object );
-void*  Queue_removeHead( Queue* self );
-int    Queue_getLength ( Queue* self );
+Queue*      Queue_new       ( Destructor destroy );
+Queue*      Queue_free      ( Queue** self );
+Queue*      Queue_addHead   ( Queue* self, void** object );
+Queue*      Queue_addTail   ( Queue* self, void** object );
+void*       Queue_removeHead( Queue* self );
+const void* Queue_getHead   ( Queue* self );
+const void* Queue_getTail   ( Queue* self );
+int         Queue_getLength ( Queue* self );
 
 #endif
 ~
@@ -28,13 +30,13 @@ struct _Queue
 ~
 
 ~c/ixcompiler.Queue.c~
-Queue* Queue_new()
+Queue* Queue_new( Destructor destroy )
 {
     Queue* self = Platform_Alloc( sizeof( Queue ) );
 
     if ( self )
     {
-        self->inner = Array_new();
+        self->inner = Array_new( destroy );
     }
     return self;
 }
@@ -72,6 +74,28 @@ Queue* Queue_addTail( Queue* self, void** object )
 void* Queue_removeHead( Queue* self )
 {
     return Array_shift( self->inner );
+}
+~
+
+~c/ixcompiler.Queue.c~
+const void* Queue_getHead( Queue* self )
+{
+    return Array_getObject( self->inner, 0 );
+}
+~
+
+~c/ixcompiler.Queue.c~
+const void* Queue_getTail( Queue* self )
+{
+    int last = Array_getLength( self->inner );
+    if ( last > 0 )
+    {
+        return Array_getObject( self->inner, --last );
+    }
+    else
+    {
+        return null;
+    }
 }
 ~
 

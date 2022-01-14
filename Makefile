@@ -1,12 +1,16 @@
 
-VERSION=014
+VERSION=015
 
 PLATFORM=posix
 CC=cc
 MAX2MARKDOWN=libexec/Max2Markdown/bin/max2markdown.sh
 QUASI=libexec/quasi/_bin/quasi
+#TESTFILES=testdata/ix.base/StringBuffer.ix
+TESTFILES=testdata/Test.ix
 
-all: quasi ixc doco
+default: quasi ixc doco
+
+all: default test show
 
 quasi: $(QUASI)
 	mkdir -p _gen
@@ -23,7 +27,15 @@ doco: $(MAX2MARKDOWN)
 
 test:
 	mkdir -p _output
-	_bin/ixc --output-dir _output --target-language C testdata/ix.base/*.ix
+	_bin/ixc --output-dir _output --target-language C $(TESTFILES)
+
+show: showh showc
+
+showh:
+	cat _output/include/ix.base.h
+
+showc:
+	cat _output/c/ix.base.c
 
 testcompile:
 	mkdir -p _output/bin
@@ -31,7 +43,8 @@ testcompile:
 
 debug:
 	mkdir -p _output
-	gdb --args _bin/ixc --output-dir _output --target-language C testdata/ix.base/*.ix
+#	gdb --args _bin/ixc --output-dir _output --target-language C testdata/ix.base/*.ix
+	gdb --args _bin/ixc --output-dir _output --target-language C $(TESTFILES)
 
 clean:
 	make -C libexec/quasi clean

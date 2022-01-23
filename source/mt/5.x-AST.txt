@@ -460,11 +460,23 @@ static void AST_ParseUntilStop( Node* parent, Tokenizer* tokenizer )
             loop = FALSE;
         }
         else
-        if ( OFTYPE == type )
+        if ( ENDEXPRESSION == type )
+        {
+            Node_addChild( parent, (Token**) Give( Tokenizer_nextToken( tokenizer ) ) );
+            loop = FALSE;
+        }
+        else
+        if ( (OFTYPE == type) || (INFIXOP == type) || (ASSIGNMENTOP == type) )
         {
             Node* child = Node_addChild( parent, (Token**) Give( Tokenizer_nextToken( tokenizer ) ) );
             AST_ParseUntilStop( child, tokenizer );
-            break;
+            loop = FALSE;
+        }
+        else
+        if ( STARTEXPRESSION == type )
+        {
+            Node* child = Node_addChild( parent, (Token**) Give( Tokenizer_nextToken( tokenizer ) ) );
+            AST_ParseUntilStop( child, tokenizer );
         }
         else
         {
@@ -931,7 +943,7 @@ static bool AST_ParseParameter( Node* parent, Tokenizer* tokenizer )
             {
             case OFTYPE:
                 child = Node_addChild( parent, (Token**) Give( Tokenizer_nextToken( tokenizer ) ) );
-                AST_ParseUntilStop( child, tokenizer );
+                AST_ParseMemberUntilStop( child, tokenizer );
                 goto exit;
                 break;
             }
@@ -1110,6 +1122,12 @@ static void AST_ParseStatement( Node* parent, Tokenizer* tokenizer, bool one_lin
         if ( token_group == WHITESPACE )
         {
             continue;
+        }
+        else
+        if ( token_type == OFTYPE )
+        {
+            AST_ParseUntilStop( Node_getLastChild( parent ), tokenizer );
+            break;
         }
         else
         if ( (token_type == INSTANCEMEMBER) || (token_type == CLASSMEMBER) )

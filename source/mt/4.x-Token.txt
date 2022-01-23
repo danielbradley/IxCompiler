@@ -379,6 +379,7 @@ EnumTokenType Token_DetermineAlphanumericType( const char* content )
     else if ( String_Equals( content, "public"     ) ) return MODIFIER;
     else if ( String_Equals( content, "protected"  ) ) return MODIFIER;
     else if ( String_Equals( content, "private"    ) ) return MODIFIER;
+    else if ( String_Equals( content, "function"   ) ) return MODIFIER;
 
     else if ( String_Equals( content, "bool"       ) ) return PRIMITIVE;
     else if ( String_Equals( content, "boolean"    ) ) return PRIMITIVE;
@@ -498,7 +499,6 @@ bool Token_ShouldInsertStop( EnumTokenType lastType, EnumTokenType nextType )
     case PREPOSTFIXOP:
         switch( nextType )
         {
-        case ENDEXPRESSION:
         case ENDBLOCK:
         case PREFIXOP:
         case WORD:

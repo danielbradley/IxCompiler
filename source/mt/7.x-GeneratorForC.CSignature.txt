@@ -20,16 +20,12 @@ const String* CSignature_getParameters          ( const CSignature*  self );
 ~
 
 ~!c/ixcompiler.CSignature.c~
-#include "ixcompiler.Array.h"
+#include "ix.h"
 #include "ixcompiler.CSignature.h"
-#include "ixcompiler.Dictionary.h"
 #include "ixcompiler.IxSourceSignature.h"
 #include "ixcompiler.IxSourceParameter.h"
 #include "ixcompiler.IxSourceType.h"
 #include "ixcompiler.IxSourceUnit.h"
-#include "ixcompiler.Platform.h"
-#include "ixcompiler.String.h"
-#include "ixcompiler.StringBuffer.h"
 
 struct _CSignature
 {

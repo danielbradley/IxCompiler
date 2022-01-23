@@ -1,12 +1,11 @@
 
 .. NodeIterator
 
-~!include/ixcompiler.NodeIterator.h~
-#ifndef IXCOMPILER_NODEITERATOR_H
-#define IXCOMPILER_NODEITERATOR_H
+~!include/ix/NodeIterator.h~
+#ifndef IX_NODEITERATOR_H
+#define IX_NODEITERATOR_H
 
-#include "ixcompiler.h"
-#include "ixcompiler.EnumTokenType.h"
+#include "ix.h"
 
 NodeIterator* NodeIterator_new                   ( const Array*  nodes );
 NodeIterator* NodeIterator_free                  ( NodeIterator** self );
@@ -21,14 +20,11 @@ String*       NodeIterator_nextTokenString       ( NodeIterator*  self );
 #endif
 ~
 
-~!c/ixcompiler.NodeIterator.c~
+~!c/ix/NodeIterator.c~
+#include "ix.h"
 #include "ixcompiler.h"
-#include "ixcompiler.Array.h"
 #include "ixcompiler.EnumTokenType.h"
 #include "ixcompiler.EnumTokenGroup.h"
-#include "ixcompiler.Node.h"
-#include "ixcompiler.NodeIterator.h"
-#include "ixcompiler.Platform.h"
 #include "ixcompiler.Token.h"
 #include "ixcompiler.TokenGroup.h"
 
@@ -39,7 +35,7 @@ struct _NodeIterator
 };
 ~
 
-~c/ixcompiler.NodeIterator.c~
+~c/ix/NodeIterator.c~
 NodeIterator* NodeIterator_new( const Array* nodes )
 {
     NodeIterator* self = Platform_Alloc( sizeof( NodeIterator ) );
@@ -52,7 +48,7 @@ NodeIterator* NodeIterator_new( const Array* nodes )
 }
 ~
 
-~c/ixcompiler.NodeIterator.c~
+~c/ix/NodeIterator.c~
 NodeIterator* NodeIterator_free( NodeIterator** self )
 {
     if ( *self )
@@ -66,14 +62,14 @@ NodeIterator* NodeIterator_free( NodeIterator** self )
 }
 ~
 
-~c/ixcompiler.NodeIterator.c~
+~c/ix/NodeIterator.c~
 bool NodeIterator_hasNext( NodeIterator* self )
 {
     return (self->next < Array_getLength( self->nodes ));
 }
 ~
 
-~c/ixcompiler.NodeIterator.c~
+~c/ix/NodeIterator.c~
 bool NodeIterator_hasNonWhitespace( NodeIterator* self )
 {
     bool has_next_nws = FALSE;
@@ -112,7 +108,7 @@ bool NodeIterator_hasNonWhitespace( NodeIterator* self )
 }
 ~
 
-~c/ixcompiler.NodeIterator.c~
+~c/ix/NodeIterator.c~
 bool NodeIterator_hasNonWhitespaceOfType( NodeIterator* self, EnumTokenType type )
 {
     bool has = FALSE;
@@ -126,21 +122,21 @@ bool NodeIterator_hasNonWhitespaceOfType( NodeIterator* self, EnumTokenType type
 }
 ~
 
-~c/ixcompiler.NodeIterator.c~
+~c/ix/NodeIterator.c~
 const Node* NodeIterator_next( NodeIterator* self )
 {
     return (const void*) Array_getObject( self->nodes, self->next++ );
 }
 ~
 
-~c/ixcompiler.NodeIterator.c~
+~c/ix/NodeIterator.c~
 const Node* NodeIterator_peek( NodeIterator* self )
 {
     return (const void*) Array_getObject( self->nodes, self->next );
 }
 ~
 
-~c/ixcompiler.NodeIterator.c~
+~c/ix/NodeIterator.c~
 String* NodeIterator_nextTokenString( NodeIterator* self )
 {
     return Node_tokenString( NodeIterator_next( self ) );

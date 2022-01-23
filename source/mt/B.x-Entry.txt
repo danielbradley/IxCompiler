@@ -1,11 +1,11 @@
 
 .. Entry
 
-~!include/ixcompiler.Entry.h~
-#ifndef IXCOMPILER_ENTRY_H
-#define IXCOMPILER_ENTRY_H
+~!include/ix/Entry.h~
+#ifndef IX_ENTRY_H
+#define IX_ENTRY_H
 
-#include "ixcompiler.h"
+#include "ix.h"
 
 Entry* Entry_new           ( String** key, void** val );
 Entry* Entry_new_destructor( String** key, void** val, Destructor destructor );
@@ -17,10 +17,8 @@ const void*   Entry_getValue( const Entry*  self );
 #endif
 ~
 
-~!c/ixcompiler.Entry.c~
-#include "ixcompiler.Entry.h"
-#include "ixcompiler.Platform.h"
-#include "ixcompiler.String.h"
+~!c/ix/Entry.c~
+#include "ix.h"
 
 struct _Entry
 {
@@ -31,7 +29,7 @@ struct _Entry
 };
 ~
 
-~c/ixcompiler.Entry.c~
+~c/ix/Entry.c~
 Entry* Entry_new( String** key, void** val )
 {
     Entry* self = Platform_Alloc( sizeof( Entry ) );
@@ -44,7 +42,7 @@ Entry* Entry_new( String** key, void** val )
 }
 ~
 
-~c/ixcompiler.Entry.c~
+~c/ix/Entry.c~
 Entry* Entry_new_destructor( String** key, void** val, Destructor destructor )
 {
     Entry* self = Platform_Alloc( sizeof( Entry ) );
@@ -58,7 +56,7 @@ Entry* Entry_new_destructor( String** key, void** val, Destructor destructor )
 }
 ~
 
-~c/ixcompiler.Entry.c~
+~c/ix/Entry.c~
 Entry* Entry_free( Entry** self )
 {
     if ( *self )
@@ -75,14 +73,14 @@ Entry* Entry_free( Entry** self )
 }
 ~
 
-~c/ixcompiler.Entry.c~
+~c/ix/Entry.c~
 const String* Entry_getKey( const Entry* self )
 {
     return self->key;
 }
 ~
 
-~c/ixcompiler.Entry.c~
+~c/ix/Entry.c~
 const void* Entry_getValue( const Entry* self )
 {
     return self->val;

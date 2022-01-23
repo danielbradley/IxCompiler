@@ -2,7 +2,7 @@
 .. Take
 
 ~!c/ixcompiler.Take.c~
-#include "ixcompiler.h"
+#include "ix.h"
 
 static void* stash[100];
 ~

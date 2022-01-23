@@ -3,6 +3,7 @@
 #ifndef IXCOMPILER_IXPARSER_H
 #define IXCOMPILER_IXPARSER_H
 
+#include "ix.h"
 #include "ixcompiler.h"
 
 IxParser*      IxParser_new           ( Tokenizer* tokenizer )                ;
@@ -17,12 +18,9 @@ AST*           IxParser_parse         ( IxParser* self )                      ;
 #include "ixcompiler.EnumTokenGroup.h"
 #include "ixcompiler.EnumTokenType.h"
 #include "ixcompiler.IxParser.h"
-#include "ixcompiler.Node.h"
-#include "ixcompiler.Platform.h"
 #include "ixcompiler.Token.h"
 #include "ixcompiler.TokenGroup.h"
 #include "ixcompiler.Tokenizer.h"
-#include "ixcompiler.Tree.h"
 
 struct _IxParser
 {

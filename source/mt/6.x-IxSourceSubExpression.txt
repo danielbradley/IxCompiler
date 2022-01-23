@@ -16,7 +16,6 @@ IxSourceExpression*    IxSourceSubExpression_getExpression( const IxSourceSubExp
 ~!c/ixcompiler.IxSourceSubExpression.c~
 #include "ixcompiler.IxSourceExpression.h"
 #include "ixcompiler.IxSourceSubExpression.h"
-#include "ixcompiler.Platform.h"
 
 struct _IxSourceSubExpression
 {

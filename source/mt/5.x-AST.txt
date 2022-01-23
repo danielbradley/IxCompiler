@@ -5,6 +5,7 @@
 #ifndef IXCOMPILER_AST_H
 #define IXCOMPILER_AST_H
 
+#include "ix.h"
 #include "ixcompiler.h"
 
 AST*        AST_new             ( Tokenizer** tokenizer );
@@ -21,13 +22,9 @@ const File* AST_getTokenizerFile( const AST*  self );
 #include "ixcompiler.EnumTokenGroup.h"
 #include "ixcompiler.EnumTokenType.h"
 #include "ixcompiler.IxParser.h"
-#include "ixcompiler.Node.h"
-#include "ixcompiler.Platform.h"
-#include "ixcompiler.String.h"
 #include "ixcompiler.Token.h"
 #include "ixcompiler.TokenGroup.h"
 #include "ixcompiler.Tokenizer.h"
-#include "ixcompiler.Tree.h"
 
 struct _AST
 {

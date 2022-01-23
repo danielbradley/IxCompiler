@@ -5,6 +5,7 @@
 #ifndef IXCOMPILER_TOKENGROUP_H
 #define IXCOMPILER_TOKENGROUP_H
 
+#include "ix.h"
 #include "ixcompiler.h"
 #include "ixcompiler.EnumTokenType.h"
 #include "ixcompiler.EnumTokenGroup.h"
@@ -23,7 +24,6 @@ EnumTokenGroup TokenGroup_DetermineType( char ch );
 
 ~!c/ixcompiler.TokenGroup.c~
 #include "ixcompiler.TokenGroup.h"
-#include "ixcompiler.Platform.h"
 
 struct _TokenGroup
 {

@@ -1,11 +1,11 @@
 
 .. Dictionary
 
-~!include/ixcompiler.Dictionary.h~
-#ifndef IXCOMPILER_DICTIONARY_H
-#define IXCOMPILER_DICTIONARY_H
+~!include/ix/Dictionary.h~
+#ifndef IX_DICTIONARY_H
+#define IX_DICTIONARY_H
 
-#include "ixcompiler.h"
+#include "ix.h"
 
 Dictionary* Dictionary_new( bool is_map, Destructor destructor );
 
@@ -20,12 +20,8 @@ const Array* Dictionary_getEntries   ( const Dictionary* self );
 #endif
 ~
 
-~!c/ixcompiler.Dictionary.c~
-#include "ixcompiler.Array.h"
-#include "ixcompiler.Dictionary.h"
-#include "ixcompiler.Entry.h"
-#include "ixcompiler.Platform.h"
-#include "ixcompiler.String.h"
+~!c/ix/Dictionary.c~
+#include "ix.h"
 
 struct _Dictionary
 {
@@ -37,7 +33,7 @@ struct _Dictionary
 static const Entry* Dictionary_find( const Dictionary* self, const String* key );
 ~
 
-~c/ixcompiler.Dictionary.c~
+~c/ix/Dictionary.c~
 Dictionary* Dictionary_new( bool is_map, Destructor destructor )
 {
     Dictionary* self = Platform_Alloc( sizeof( Dictionary ) );
@@ -51,7 +47,7 @@ Dictionary* Dictionary_new( bool is_map, Destructor destructor )
 }
 ~
 
-~c/ixcompiler.Dictionary.c~
+~c/ix/Dictionary.c~
 Dictionary* Dictionary_free( Dictionary** self )
 {
     if ( *self )
@@ -70,7 +66,7 @@ Dictionary* Dictionary_free( Dictionary** self )
 }
 ~
 
-~c/ixcompiler.Dictionary.c~
+~c/ix/Dictionary.c~
 bool Dictionary_put( Dictionary* self, String** key, void** value )
 {
     if ( self->isMap && Dictionary_has( self, *key ) )
@@ -90,7 +86,7 @@ bool Dictionary_put( Dictionary* self, String** key, void** value )
 }
 ~
 
-~c/ixcompiler.Dictionary.c~
+~c/ix/Dictionary.c~
 bool Dictionary_put_reference( Dictionary* self, String** key, const void* reference )
 {
     if ( self->isMap && Dictionary_has( self, *key ) )
@@ -107,14 +103,14 @@ bool Dictionary_put_reference( Dictionary* self, String** key, const void* refer
 }
 ~
 
-~c/ixcompiler.Dictionary.c~
+~c/ix/Dictionary.c~
 bool Dictionary_has( const Dictionary* self, const String* key )
 {
     return (null != Dictionary_find( self, key ));
 }
 ~
 
-~c/ixcompiler.Dictionary.c~
+~c/ix/Dictionary.c~
 const void* Dictionary_get( const Dictionary* self, const String* key )
 {
     const Entry* tmp = Dictionary_find( self, key );
@@ -123,14 +119,14 @@ const void* Dictionary_get( const Dictionary* self, const String* key )
 }
 ~
 
-~c/ixcompiler.Dictionary.c~
+~c/ix/Dictionary.c~
 const Array* Dictionary_getEntries( const Dictionary* self )
 {
     return self->entries;
 }
 ~
 
-~c/ixcompiler.Dictionary.c~
+~c/ix/Dictionary.c~
 static const Entry* Dictionary_find( const Dictionary* self, const String* key )
 {
     int n = Array_getLength( self->entries );

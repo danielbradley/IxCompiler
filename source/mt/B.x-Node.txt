@@ -1,11 +1,9 @@
 
 .. Node
 
-~!include/ixcompiler.Node.h~
-#ifndef IXCOMPILER_NODE_H
-#define IXCOMPILER_NODE_H
-
-#include "ixcompiler.h"
+~!include/ix/Node.h~
+#ifndef IX_NODE_H
+#define IX_NODE_H
 
 Node* Node_new ( Token** token );
 Node* Node_free( Node**  self  );
@@ -26,16 +24,9 @@ String*       Node_tokenString ( const Node* self );
 #endif
 ~
 
-~!c/ixcompiler.Node.c~
-#include "ixcompiler.h"
-#include "ixcompiler.Array.h"
-#include "ixcompiler.EnumTokenType.h"
-#include "ixcompiler.Node.h"
-#include "ixcompiler.NodeIterator.h"
+~!c/ix/Node.c~
+#include "ix.h"
 #include "ixcompiler.Token.h"
-#include "ixcompiler.Platform.h"
-#include "ixcompiler.String.h"
-#include "ixcompiler.StringBuffer.h"
 
 struct _Node
 {
@@ -46,7 +37,7 @@ struct _Node
 };
 ~
 
-~c/ixcompiler.Node.c~
+~c/ix/Node.c~
 Node* Node_new( Token** token )
 {
     Node* self = Platform_Alloc( sizeof( Node ) );
@@ -60,7 +51,7 @@ Node* Node_new( Token** token )
 }
 ~
 
-~c/ixcompiler.Node.c~
+~c/ix/Node.c~
 Node* Node_free( Node** self )
 {
     if ( *self )
@@ -82,21 +73,21 @@ Node* Node_free( Node** self )
 }
 ~
 
-~c/ixcompiler.Node.c~
+~c/ix/Node.c~
 void Node_setParent( Node* self, const Node* parent )
 {
     self->parent = parent;
 }
 ~
 
-~c/ixcompiler.Node.c~
+~c/ix/Node.c~
 void Node_setTag( Node* self, const char* tag )
 {
     self->tag = String_new( tag );
 }
 ~
 
-~c/ixcompiler.Node.c~
+~c/ix/Node.c~
 Node* Node_addChild( Node* self, Token** token )
 {
     Node* child = Node_new( token );
@@ -108,7 +99,7 @@ Node* Node_addChild( Node* self, Token** token )
 }
 ~
 
-~c/ixcompiler.Node.c~
+~c/ix/Node.c~
 Node* Node_getLastChild( Node* self )
 {
     int last = Array_getLength( self->children ) - 1;
@@ -117,35 +108,35 @@ Node* Node_getLastChild( Node* self )
 }
 ~
 
-~c/ixcompiler.Node.c~
+~c/ix/Node.c~
 const Token* Node_getToken( const Node* self )
 {
     return self->token;
 }
 ~
 
-~c/ixcompiler.Node.c~
+~c/ix/Node.c~
 const String* Node_getTag( const Node* self )
 {
     return self->tag;
 }
 ~
 
-~c/ixcompiler.Node.c~
+~c/ix/Node.c~
 bool Node_hasChildren( const Node* self )
 {
     return (0 < Array_getLength( self->children ));
 }
 ~
 
-~c/ixcompiler.Node.c~
+~c/ix/Node.c~
 NodeIterator* Node_iterator( const Node* self )
 {
     return NodeIterator_new( self->children );
 }
 ~
 
-~c/ixcompiler.Node.c~
+~c/ix/Node.c~
 String* Node_export( const Node* self )
 {
     String* ret = null;
@@ -168,7 +159,7 @@ String* Node_export( const Node* self )
 }
 ~
 
-~c/ixcompiler.Node.c~
+~c/ix/Node.c~
 String* Node_tokenString ( const Node* self )
 {
     return String_new( Token_getContent( Node_getToken( self ) ) );

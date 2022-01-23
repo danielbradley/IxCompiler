@@ -5,6 +5,8 @@
 #ifndef IXCOMPILER_ARGUMENTS_H
 #define IXCOMPILER_ARGUMENTS_H
 
+#include "ixcompiler.h"
+
 Arguments*     Arguments_new          ( int argc, char** argv );
 Arguments*     Arguments_free         ( Arguments** self );
 bool           Arguments_hasFlag      ( Arguments* self, const char* argument );
@@ -15,12 +17,7 @@ FilesIterator* Arguments_filesIterator( Arguments* self );
 ~
 
 ~!c/ixcompiler.Arguments.c~
-#include "ixcompiler.h"
 #include "ixcompiler.Arguments.h"
-#include "ixcompiler.Console.h"
-#include "ixcompiler.FilesIterator.h"
-#include "ixcompiler.Platform.h"
-#include "ixcompiler.String.h"
 #include "todo.h"
 
 struct _Arguments

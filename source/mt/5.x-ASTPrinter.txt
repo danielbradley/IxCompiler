@@ -5,6 +5,8 @@
 #ifndef IXCOMPILER_ASTPRINTER_H
 #define IXCOMPILER_ASTPRINTER_H
 
+#include "ix.h"
+
 void ASTPrinter_Print( const AST* ast );
 
 #endif
@@ -16,11 +18,6 @@ void ASTPrinter_Print( const AST* ast );
 #include "ixcompiler.AST.h"
 #include "ixcompiler.EnumTokenGroup.h"
 #include "ixcompiler.Generator.h"
-#include "ixcompiler.Node.h"
-#include "ixcompiler.NodeIterator.h"
-#include "ixcompiler.Platform.h"
-#include "ixcompiler.String.h"
-#include "ixcompiler.Tree.h"
 #include "ixcompiler.Token.h"
 #include "ixcompiler.TokenGroup.h"
 

@@ -1,8 +1,8 @@
 .. StringBuffer
 
-~!include/ixcompiler.StringBuffer.h~
-#ifndef IXCOMPILER_STRINGBUFFER_H
-#define IXCOMPILER_STRINGBUFFER_H
+~!include/ix/StringBuffer.h~
+#ifndef IX_STRINGBUFFER_H
+#define IX_STRINGBUFFER_H
 
 StringBuffer* StringBuffer_new                       ();
 StringBuffer* StringBuffer_free                      ( StringBuffer** self                                                );
@@ -19,11 +19,8 @@ String*       StringBuffer_ConvertToString( StringBuffer** sb );
 #endif
 ~
 
-~!c/ixcompiler.StringBuffer.c~
-#include "ixcompiler.h"
-#include "ixcompiler.Platform.h"
-#include "ixcompiler.String.h"
-#include "ixcompiler.StringBuffer.h"
+~!c/ix/StringBuffer.c~
+#include "ix.h"
 
 struct _StringBuffer
 {
@@ -35,7 +32,7 @@ struct _StringBuffer
 String* StringBuffer_nullString = null;
 ~
 
-~c/ixcompiler.StringBuffer.c~
+~c/ix/StringBuffer.c~
 StringBuffer* StringBuffer_new()
 {
     StringBuffer* self = Platform_Alloc( sizeof( StringBuffer ) );
@@ -49,7 +46,7 @@ StringBuffer* StringBuffer_new()
 }
 ~
 
-~c/ixcompiler.StringBuffer.c~
+~c/ix/StringBuffer.c~
 StringBuffer* StringBuffer_free( StringBuffer** self )
 {
     if ( *self )
@@ -62,7 +59,7 @@ StringBuffer* StringBuffer_free( StringBuffer** self )
 }
 ~
 
-~c/ixcompiler.StringBuffer.c~
+~c/ix/StringBuffer.c~
 StringBuffer* StringBuffer_append_char( StringBuffer* self, char ch )
 {
     char suffix[2] = { ch , '\0' };
@@ -71,7 +68,7 @@ StringBuffer* StringBuffer_append_char( StringBuffer* self, char ch )
 }
 ~
 
-~c/ixcompiler.StringBuffer.c~
+~c/ix/StringBuffer.c~
 StringBuffer* StringBuffer_append( StringBuffer* self, const const char* suffix )
 {
     self->length += String_Length( suffix );
@@ -84,7 +81,7 @@ StringBuffer* StringBuffer_append( StringBuffer* self, const const char* suffix 
 }
 ~
 
-~c/ixcompiler.StringBuffer.c~
+~c/ix/StringBuffer.c~
 StringBuffer* StringBuffer_appendLine_prefix_optional( StringBuffer* self, const char* prefix, String** optional )
 {
     if ( prefix && String_Length( prefix ) )
@@ -102,28 +99,28 @@ StringBuffer* StringBuffer_appendLine_prefix_optional( StringBuffer* self, const
 }
 ~
 
-~c/ixcompiler.StringBuffer.c~
+~c/ix/StringBuffer.c~
 const char* StringBuffer_content( const StringBuffer* self )
 {
     return self->content;
 }
 ~
 
-~c/ixcompiler.StringBuffer.c~
+~c/ix/StringBuffer.c~
 bool StringBuffer_isEmpty( const StringBuffer* self )
 {
     return (0 == String_Length( self->content ));
 }
 ~
 
-~c/ixcompiler.StringBuffer.c~
+~c/ix/StringBuffer.c~
 String* StringBuffer_toString( const StringBuffer* self )
 {
     return String_new( StringBuffer_content( self ) );
 }
 ~
 
-~c/ixcompiler.StringBuffer.c~
+~c/ix/StringBuffer.c~
 String* StringBuffer_ConvertToString( StringBuffer** sb )
 {
     String* ret = String_new( (*sb)->content );

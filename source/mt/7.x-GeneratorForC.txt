@@ -5,6 +5,7 @@
 #ifndef IXCOMPILER_GENERATORFORC_H
 #define IXCOMPILER_GENERATORFORC_H
 
+#include "ix.h"
 #include "ixcompiler.h"
 
 int Generator_FunctionForC( const IxSourceUnitCollection* source_units, const Path* output_path );
@@ -14,14 +15,9 @@ int Generator_FunctionForC( const IxSourceUnitCollection* source_units, const Pa
 
 ~!c/ixcompiler.GeneratorForC.c~
 #include <stdio.h>
-#include "ixcompiler.Array.h"
-#include "ixcompiler.ArrayOfString.h"
-#include "ixcompiler.Console.h"
+#include "ix.h"
 #include "ixcompiler.CSignature.h"
 #include "ixcompiler.CStatement.h"
-#include "ixcompiler.Dictionary.h"
-#include "ixcompiler.Entry.h"
-#include "ixcompiler.File.h"
 #include "ixcompiler.GeneratorForC.h"
 #include "ixcompiler.IxSourceClass.h"
 #include "ixcompiler.IxSourceMember.h"
@@ -32,10 +28,6 @@ int Generator_FunctionForC( const IxSourceUnitCollection* source_units, const Pa
 #include "ixcompiler.IxSourceType.h"
 #include "ixcompiler.IxSourceUnit.h"
 #include "ixcompiler.IxSourceUnitCollection.h"
-#include "ixcompiler.Path.h"
-#include "ixcompiler.Platform.h"
-#include "ixcompiler.String.h"
-#include "ixcompiler.StringBuffer.h"
 
 #define TARGET_HEADER_NAME "/include/"
 #define TARGET_SOURCE_NAME "/c/"

@@ -25,15 +25,10 @@ const Dictionary*       IxSourceUnitCollection_getSignatures    ( const IxSource
 ~
 
 ~!c/ixcompiler.IxSourceUnitCollection.c~
-#include "ixcompiler.Array.h"
-#include "ixcompiler.ArrayOfString.h"
-#include "ixcompiler.Dictionary.h"
 #include "ixcompiler.IxSourceMethod.h"
 #include "ixcompiler.IxSourceSignature.h"
 #include "ixcompiler.IxSourceUnit.h"
 #include "ixcompiler.IxSourceUnitCollection.h"
-#include "ixcompiler.Platform.h"
-#include "ixcompiler.String.h"
 
 struct _IxSourceUnitCollection
 {

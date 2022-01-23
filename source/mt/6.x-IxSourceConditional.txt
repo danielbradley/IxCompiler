@@ -17,6 +17,7 @@ foreach ( <variable name> in <iterator name> )
 #ifndef IXCOMPILER_IXSOURCECONDITIONAL_H
 #define IXCOMPILER_IXSOURCECONDITIONAL_H
 
+#include "ix.h"
 #include "ixcompiler.h"
 
 typedef enum _EnumConditionalType
@@ -48,12 +49,7 @@ String*              IxSourceConditional_toString( const IxSourceConditional*  s
 #include "ixcompiler.EnumTokenType.h"
 #include "ixcompiler.IxSourceConditional.h"
 #include "ixcompiler.IxSourceExpression.h"
-#include "ixcompiler.Node.h"
-#include "ixcompiler.NodeIterator.h"
-#include "ixcompiler.Platform.h"
 #include "ixcompiler.Token.h"
-#include "ixcompiler.String.h"
-#include "ixcompiler.StringBuffer.h"
 
 struct _IxSourceConditional
 {

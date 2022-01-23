@@ -1,9 +1,9 @@
 
 .. Path
 
-~!include/ixcompiler.Path.h~
-#ifndef IXCOMPILER_PATH_H
-#define IXCOMPILER_PATH_H
+~!include/ix/Path.h~
+#ifndef IX_PATH_H
+#define IX_PATH_H
 
 Path* Path_new( const char* target );
 
@@ -16,12 +16,9 @@ Path*       Path_getParent  ( const Path*  self );
 #endif
 ~
 
-~!c/ixcompiler.Path.c~
+~!c/ix/Path.c~
 #include <stdlib.h>
-#include "ixcompiler.h"
-#include "ixcompiler.Path.h"
-#include "ixcompiler.Platform.h"
-#include "ixcompiler.String.h"
+#include "ix.h"
 
 struct _Path
 {
@@ -31,7 +28,7 @@ struct _Path
 };
 ~
 
-~c/ixcompiler.Path.c~
+~c/ix/Path.c~
 Path* Path_new( const char* target )
 {
     Path* self = calloc( 1, sizeof( Path ) );
@@ -46,7 +43,7 @@ Path* Path_new( const char* target )
 }
 ~
 
-~c/ixcompiler.Path.c~
+~c/ix/Path.c~
 Path* Path_free( Path** self )
 {
     free( (*self)->path );
@@ -56,28 +53,28 @@ Path* Path_free( Path** self )
 }
 ~
 
-~c/ixcompiler.Path.c~
+~c/ix/Path.c~
 bool Path_exists( const Path* self )
 {
     return self->exists;
 }
 ~
 
-~c/ixcompiler.Path.c~
+~c/ix/Path.c~
 bool Path_canWrite( const Path* self )
 {
     return self->canWrite;
 }
 ~
 
-~c/ixcompiler.Path.c~
+~c/ix/Path.c~
 const char* Path_getFullPath( const Path* self )
 {
     return self->path;
 }
 ~
 
-~c/ixcompiler.Path.c~
+~c/ix/Path.c~
 Path* Path_getParent( const Path* self )
 {
     Path* ret  = null;

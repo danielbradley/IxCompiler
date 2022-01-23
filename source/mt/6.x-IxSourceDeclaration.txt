@@ -5,6 +5,7 @@
 #ifndef IXCOMPILER_IXSOURCEDECLARATION_H
 #define IXCOMPILER_IXSOURCEDECLARATION_H
 
+#include "ix.h"
 #include "ixcompiler.h"
 
 IxSourceDeclaration* IxSourceDeclaration_new( const Node* varNode );
@@ -22,10 +23,6 @@ bool                      IxSourceDeclaration_hasExpression( const IxSourceDecla
 #include "ixcompiler.IxSourceDeclaration.h"
 #include "ixcompiler.IxSourceExpression.h"
 #include "ixcompiler.IxSourceType.h"
-#include "ixcompiler.Node.h"
-#include "ixcompiler.NodeIterator.h"
-#include "ixcompiler.Platform.h"
-#include "ixcompiler.String.h"
 #include "ixcompiler.Token.h"
 
 struct _IxSourceDeclaration

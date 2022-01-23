@@ -1,9 +1,9 @@
 
 .. Files Iterator
 
-~!include/ixcompiler.FilesIterator.h~
-#ifndef IXCOMPILER_FILESITERATOR_H
-#define IXCOMPILER_FILESITERATOR_H
+~!include/ix/FilesIterator.h~
+#ifndef IX_FILESITERATOR_H
+#define IX_FILESITERATOR_H
 
 FilesIterator* FilesIterator_new      ( const char** filepaths );
 FilesIterator* FilesIterator_free     ( FilesIterator** self   );
@@ -13,12 +13,9 @@ File*          FilesIterator_next     ( FilesIterator*  self   );
 #endif
 ~
 
-~!c/ixcompiler.FilesIterator.c~
+~!c/ix/FilesIterator.c~
 #include <stdlib.h>
-#include "ixcompiler.h"
-#include "ixcompiler.Console.h"
-#include "ixcompiler.File.h"
-#include "ixcompiler.FilesIterator.h"
+#include "ix.h"
 #include "todo.h"
 
 struct _FilesIterator
@@ -28,7 +25,7 @@ struct _FilesIterator
 };
 ~
 
-~c/ixcompiler.FilesIterator.c~
+~c/ix/FilesIterator.c~
 FilesIterator* FilesIterator_new( const char** filepaths )
 {
     FilesIterator* self = calloc( 1, sizeof( FilesIterator ) );
@@ -41,7 +38,7 @@ FilesIterator* FilesIterator_new( const char** filepaths )
 }
 ~
 
-~c/ixcompiler.FilesIterator.c~
+~c/ix/FilesIterator.c~
 FilesIterator* FilesIterator_free( FilesIterator** self )
 {
     free( *self ); *self = 0;
@@ -50,7 +47,7 @@ FilesIterator* FilesIterator_free( FilesIterator** self )
 }
 ~
 
-~c/ixcompiler.FilesIterator.c~
+~c/ix/FilesIterator.c~
 bool FilesIterator_hasNext( FilesIterator* self )
 {
     if ( null != self->filepaths[self->next] )
@@ -64,7 +61,7 @@ bool FilesIterator_hasNext( FilesIterator* self )
 }
 ~
 
-~c/ixcompiler.FilesIterator.c~
+~c/ix/FilesIterator.c~
 File* FilesIterator_next( FilesIterator* self )
 {
     if ( FilesIterator_hasNext( self ) )

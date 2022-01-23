@@ -5,6 +5,7 @@
 #ifndef IXCOMPILER_GENERATOR_H
 #define IXCOMPILER_GENERATOR_H
 
+#include "ix.h"
 #include "ixcompiler.h"
 
 GeneratorFn Generator_FunctionFor( const char* target_language );
@@ -16,7 +17,6 @@ GeneratorFn Generator_FunctionFor( const char* target_language );
 #include <stdio.h>
 #include "ixcompiler.Generator.h"
 #include "ixcompiler.GeneratorForC.h"
-#include "ixcompiler.String.h"
 ~
 
 ~c/ixcompiler.Generator.c~

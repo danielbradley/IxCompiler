@@ -1,11 +1,11 @@
 
 .. Object
 
-~!include/ixcompiler.Object.h~
-#ifndef IXCOMPILER_OBJECT_H
-#define IXCOMPILER_OBJECT_H
+~!include/ix/Object.h~
+#ifndef IX_OBJECT_H
+#define IX_OBJECT_H
 
-#include "ixcompiler.h"
+#include "ix.h"
 
 struct _Object
 {
@@ -17,11 +17,11 @@ int Object_Sizeof();
 #endif
 ~
 
-~!c/ixcompiler.Object.c~
-#include "ixcompiler.Object.h"
+~!c/ix/Object.c~
+#include "ix.h"
 ~
 
-~c/ixcompiler.Object.c~
+~c/ix/Object.c~
 int Object_Sizeof()
 {
     return sizeof(Object);

@@ -29,8 +29,6 @@ bool          IxSourceType_isReference( const IxSourceType*  self );
 
 ~!c/ixcompiler.IxSourceType.c~
 #include "ixcompiler.IxSourceType.h"
-#include "ixcompiler.Platform.h"
-#include "ixcompiler.String.h"
 
 struct _IxSourceType
 {

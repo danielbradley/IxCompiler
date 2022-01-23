@@ -5,6 +5,7 @@
 #ifndef IXCOMPILER_TOKEN_H
 #define IXCOMPILER_TOKEN_H
 
+#include "ix.h"
 #include "ixcompiler.h"
 #include "ixcompiler.EnumTokenType.h"
 #include "ixcompiler.EnumTokenGroup.h"
@@ -29,9 +30,6 @@ bool              Token_ShouldInsertStop         ( EnumTokenType lastType, EnumT
 #include "ixcompiler.Token.h"
 #include "ixcompiler.EnumTokenType.h"
 #include "ixcompiler.EnumTokenGroup.h"
-#include "ixcompiler.Platform.h"
-#include "ixcompiler.String.h"
-#include "ixcompiler.Term.h"
 #include "ixcompiler.TokenGroup.h"
 
 struct _Token

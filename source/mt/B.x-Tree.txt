@@ -1,11 +1,9 @@
 
 .. Tree
 
-~!include/ixcompiler.Tree.h~
-#ifndef IXCOMPILER_TREE_H
-#define IXCOMPILER_TREE_H
-
-#include "ixcompiler.h"
+~!include/ix/Tree.h~
+#ifndef IX_TREE_H
+#define IX_TREE_H
 
 Tree* Tree_new();
 Tree* Tree_free   ( Tree** self );
@@ -16,11 +14,8 @@ const Node* Tree_getRoot( const Tree* self );
 #endif
 ~
 
-~!c/ixcompiler.Tree.c~
-#include "ixcompiler.h"
-#include "ixcompiler.Node.h"
-#include "ixcompiler.Platform.h"
-#include "ixcompiler.Tree.h"
+~!c/ix/Tree.c~
+#include "ix.h"
 
 struct _Tree
 {
@@ -28,7 +23,7 @@ struct _Tree
 };
 ~
 
-~c/ixcompiler.Tree.c~
+~c/ix/Tree.c~
 Tree* Tree_new()
 {
     Tree* self = Platform_Alloc( sizeof( Tree ) );
@@ -36,7 +31,7 @@ Tree* Tree_new()
 }
 ~
 
-~c/ixcompiler.Tree.c~
+~c/ix/Tree.c~
 Tree* Tree_free( Tree** self )
 {
     if ( *self )
@@ -48,14 +43,14 @@ Tree* Tree_free( Tree** self )
 }
 ~
 
-~c/ixcompiler.Tree.c~
+~c/ix/Tree.c~
 void Tree_setRoot( Tree* self, Node** node )
 {
     self->root = *node; *node = null;
 }
 ~
 
-~c/ixcompiler.Tree.c~
+~c/ix/Tree.c~
 const Node* Tree_getRoot( const Tree* self )
 {
     return self->root;

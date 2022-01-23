@@ -5,6 +5,8 @@
 #ifndef IXCOMPILER_ASTCOLLECTION_H
 #define IXCOMPILER_ASTCOLLECTION_H
 
+#include "ix.h"
+
 ASTCollection* ASTCollection_new();
 ASTCollection* ASTCollection_free( ASTCollection** self            );
 void           ASTCollection_add ( ASTCollection*  self, AST** ast );
@@ -18,8 +20,6 @@ const AST*     ASTCollection_get      ( const ASTCollection* self, int index );
 ~!c/ixcompiler.ASTCollection.c~
 #include "ixcompiler.h"
 #include "ixcompiler.AST.h"
-#include "ixcompiler.Array.h"
-#include "ixcompiler.Platform.h"
 
 struct _ASTCollection
 {

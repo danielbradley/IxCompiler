@@ -15,7 +15,6 @@ IxSourceFunction* IxSourceFunction_free( IxSourceFunction** self );
 
 ~!c/ixcompiler.IxSourceFunction.c~
 #include "ixcompiler.IxSourceFunction.h"
-#include "ixcompiler.Platform.h"
 
 struct _IxSourceFunction
 {

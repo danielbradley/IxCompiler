@@ -1,11 +1,11 @@
 
 .. Array
 
-~!include/ixcompiler.Array.h~
-#ifndef IXCOMPILER_ARRAY_H
-#define IXCOMPILER_ARRAY_H
+~!include/ix/Array.h~
+#ifndef IX_ARRAY_H
+#define IX_ARRAY_H
 
-#include "ixcompiler.h"
+#include "ix.h"
 
 Array* Array_new           ( Destructor destructor );
 Array* Array_free          ( Array** self );
@@ -22,10 +22,8 @@ int Array_Sizeof();
 #endif
 ~
 
-~!c/ixcompiler.Array.c~
-#include "ixcompiler.Array.h"
-#include "ixcompiler.Object.h"
-#include "ixcompiler.Platform.h"
+~!c/ix/Array.c~
+#include "ix.h"
 
 struct _Array
 {
@@ -37,7 +35,7 @@ struct _Array
 };
 ~
 
-~c/ixcompiler.Array.c~
+~c/ix/Array.c~
 static void Array_expand( Array* self )
 {
     if ( 0 == self->size )
@@ -64,7 +62,7 @@ static void Array_expand( Array* self )
 }
 ~
 
-~c/ixcompiler.Array.c~
+~c/ix/Array.c~
 Array* Array_new( Destructor destructor )
 {
     Array* self = Platform_Alloc( sizeof( Array ) );
@@ -81,7 +79,7 @@ Array* Array_new( Destructor destructor )
 }
 ~
 
-~c/ixcompiler.Array.c~
+~c/ix/Array.c~
 Array* Array_free( Array** self )
 {
     if ( *self )
@@ -102,7 +100,7 @@ Array* Array_free( Array** self )
 }
 ~
 
-~c/ixcompiler.Array.c~
+~c/ix/Array.c~
 Array* Array_push( Array* self, void** object )
 {
     if ( self->length == self->size )
@@ -117,7 +115,7 @@ Array* Array_push( Array* self, void** object )
 }
 ~
 
-~c/ixcompiler.Array.c~
+~c/ix/Array.c~
 void* Array_pop( Array* self )
 {
     void* ret = null;
@@ -131,7 +129,7 @@ void* Array_pop( Array* self )
 }
 ~
 
-~c/ixcompiler.Array.c~
+~c/ix/Array.c~
 void* Array_shift( Array* self )
 {
     if ( self->length )
@@ -153,7 +151,7 @@ void* Array_shift( Array* self )
 }
 ~
 
-~c/ixcompiler.Array.c~
+~c/ix/Array.c~
 Array* Array_unshift( Array* self, void** object )
 {
     if ( self->length == self->size )
@@ -174,14 +172,14 @@ Array* Array_unshift( Array* self, void** object )
 }
 ~
 
-~c/ixcompiler.Array.c~
+~c/ix/Array.c~
 int Array_getLength( const Array* self )
 {
     return self ? self->length : 0;
 }
 ~
 
-~c/ixcompiler.Array.c~
+~c/ix/Array.c~
 const void* Array_getObject( const Array* self, int index )
 {
     if ( index < self->length )

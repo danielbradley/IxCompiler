@@ -14,8 +14,6 @@ IxSourceInterface* IxSourceInterface_free( IxSourceInterface** self );
 
 ~!c/ixcompiler.IxSourceInterface.c~
 #include "ixcompiler.IxSourceInterface.h"
-#include "ixcompiler.Platform.h"
-#include "ixcompiler.String.h"
 
 struct _IxSourceInterface
 {

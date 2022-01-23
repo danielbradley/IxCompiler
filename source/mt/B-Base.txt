@@ -1,0 +1,90 @@
+
+. Base
+
+~!include/ix.h~
+#ifndef IX_H
+#define IX_H
+
+#ifndef bool
+#define bool int
+#endif
+
+#ifndef null
+#define null 0
+#endif
+
+#ifndef TRUE
+#define TRUE 1
+#endif
+
+#ifndef FALSE
+#define FALSE 0
+#endif
+
+#ifndef SUCCESS
+#define SUCCESS 1
+#endif
+
+#ifndef FAILED
+#define FAILED 0
+#endif
+
+#ifndef ANY
+#define ANY void*
+#endif
+
+#ifndef ANY_STRING
+#define ANY_STRING void*
+#endif
+
+#ifndef ANY_STRING
+#define ANY_STRING void*
+#endif
+
+typedef void* (*Destructor )( void** );
+
+typedef struct _Array           Array;
+typedef struct _ArrayOfString   ArrayOfString;
+typedef struct _Dictionary      Dictionary;
+typedef struct _Entry           Entry;
+typedef struct _File            File;
+typedef struct _FilesIterator   FilesIterator;
+typedef struct _Node            Node;
+typedef struct _NodeIterator    NodeIterator;
+typedef struct _Object          Object;
+typedef struct _Path            Path;
+typedef struct _PushbackReader  PushbackReader;
+typedef struct _Queue           Queue;
+typedef struct _String          String;
+typedef struct _StringBuffer    StringBuffer;
+typedef struct _Tree            Tree;
+
+typedef struct _Token         Token;
+typedef enum   _EnumTokenType EnumTokenType;
+
+void** Give  ( void* pointer );
+void*  Take  ( void* giver   );
+void   Swap  ( ANY one, ANY two );
+
+#include "ix/Array.h"
+#include "ix/ArrayOfString.h"
+#include "ix/Console.h"
+#include "ix/Object.h"
+
+#include "ix/Dictionary.h"
+#include "ix/Entry.h"
+#include "ix/File.h"
+#include "ix/FilesIterator.h"
+#include "ix/Node.h"
+#include "ix/NodeIterator.h"
+#include "ix/Path.h"
+#include "ix/PushbackReader.h"
+#include "ix/Platform.h"
+#include "ix/Queue.h"
+#include "ix/String.h"
+#include "ix/StringBuffer.h"
+#include "ix/Term.h"
+#include "ix/Tree.h"
+
+#endif
+~

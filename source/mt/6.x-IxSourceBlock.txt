@@ -5,6 +5,7 @@
 #ifndef IXCOMPILER_IXSOURCEBLOCK_H
 #define IXCOMPILER_IXSOURCEBLOCK_H
 
+#include "ix.h"
 #include "ixcompiler.h"
 
 IxSourceBlock* IxSourceBlock_new( const Node* startBlockNode );
@@ -16,13 +17,10 @@ const Array*   IxSourceBlock_getStatements( const IxSourceBlock*  self );
 ~
 
 ~!c/ixcompiler.IxSourceBlock.c~
-#include "ixcompiler.Array.h"
+#include "ix.h"
 #include "ixcompiler.EnumTokenType.h"
 #include "ixcompiler.IxSourceBlock.h"
 #include "ixcompiler.IxSourceStatement.h"
-#include "ixcompiler.Node.h"
-#include "ixcompiler.NodeIterator.h"
-#include "ixcompiler.Platform.h"
 #include "ixcompiler.Token.h"
 
 struct _IxSourceBlock

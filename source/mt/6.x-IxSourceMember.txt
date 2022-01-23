@@ -23,11 +23,6 @@ const String*       IxSourceMember_getDefaultValue( const IxSourceMember*  self 
 #include "ixcompiler.EnumTokenType.h"
 #include "ixcompiler.IxSourceMember.h"
 #include "ixcompiler.IxSourceType.h"
-#include "ixcompiler.Node.h"
-#include "ixcompiler.NodeIterator.h"
-#include "ixcompiler.Platform.h"
-#include "ixcompiler.String.h"
-#include "ixcompiler.StringBuffer.h"
 #include "ixcompiler.Token.h"
 
 struct _IxSourceMember

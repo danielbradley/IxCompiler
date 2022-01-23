@@ -1,11 +1,11 @@
 
 .. File
 
-~!include/ixcompiler.File.h~
-#ifndef IXCOMPILER_FILE_H
-#define IXCOMPILER_FILE_H
+~!include/ix/File.h~
+#ifndef IX_FILE_H
+#define IX_FILE_H
 
-#include "ixcompiler.h"
+#include "ix.h"
 
 File*       File_new        ( const char* filepath );
 
@@ -17,7 +17,7 @@ bool        File_exists     ( const File*  self );
 #endif
 ~
 
-~!c/ixcompiler.File.c~
+~!c/ix/File.c~
 #include <stdlib.h>
 #include <stdio.h>
 #include <unistd.h>
@@ -25,8 +25,7 @@ bool        File_exists     ( const File*  self );
 #include <sys/stat.h>
 #include <unistd.h>
 #include <fcntl.h>
-#include "ixcompiler.h"
-#include "ixcompiler.File.h"
+#include "ix.h"
 
 struct _File
 {
@@ -39,7 +38,7 @@ static bool File_IsReadable   ( const char* filepath );
 static bool File_IsRegularFile( const char* filepath );
 ~
 
-~c/ixcompiler.File.c~
+~c/ix/File.c~
 File* File_new( const char* filepath )
 {
     File* self = calloc( 1, sizeof( File ) );
@@ -53,7 +52,7 @@ File* File_new( const char* filepath )
 }
 ~
 
-~c/ixcompiler.File.c~
+~c/ix/File.c~
 File* File_free( File** self )
 {
     free( *self ); *self = 0;
@@ -62,35 +61,35 @@ File* File_free( File** self )
 }
 ~
 
-~c/ixcompiler.File.c~
+~c/ix/File.c~
 bool File_canRead( const File* self )
 {
     return self->canRead;
 }
 ~
 
-~c/ixcompiler.File.c~
+~c/ix/File.c~
 const char* File_getFilePath( const File* self )
 {
     return self->filepath;
 }
 ~
 
-~c/ixcompiler.File.c~
+~c/ix/File.c~
 bool File_exists( const File* self )
 {
     return self->exists;
 }
 ~
 
-~c/ixcompiler.File.c~
+~c/ix/File.c~
 bool File_IsReadable( const char* filepath )
 {
     return (F_OK == access( filepath, R_OK ));
 }
 ~
 
-~c/ixcompiler.File.c~
+~c/ix/File.c~
 bool File_IsRegularFile( const char* filepath )
 {
     struct stat sb;

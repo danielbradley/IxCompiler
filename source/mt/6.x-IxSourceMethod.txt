@@ -24,8 +24,7 @@ const Array*             IxSourceMethod_getStatements    ( const IxSourceMethod*
 ~
 
 ~!c/ixcompiler.IxSourceMethod.c~
-#include "ixcompiler.Array.h"
-#include "ixcompiler.Console.h"
+#include "ix.h"
 #include "ixcompiler.EnumTokenType.h"
 #include "ixcompiler.IxSourceBlock.h"
 #include "ixcompiler.IxSourceMethod.h"
@@ -33,10 +32,6 @@ const Array*             IxSourceMethod_getStatements    ( const IxSourceMethod*
 #include "ixcompiler.IxSourceSignature.h"
 #include "ixcompiler.IxSourceType.h"
 #include "ixcompiler.IxSourceUnit.h"
-#include "ixcompiler.Node.h"
-#include "ixcompiler.NodeIterator.h"
-#include "ixcompiler.Platform.h"
-#include "ixcompiler.String.h"
 #include "ixcompiler.Token.h"
 
 struct _IxSourceMethod

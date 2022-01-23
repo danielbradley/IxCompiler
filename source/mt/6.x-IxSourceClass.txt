@@ -5,6 +5,7 @@
 #ifndef IXCOMPILER_IXSOURCECLASS_H
 #define IXCOMPILER_IXSOURCECLASS_H
 
+#include "ix.h"
 #include "ixcompiler.h"
 
 IxSourceClass* IxSourceClass_new( const Node* classNode );
@@ -18,16 +19,10 @@ const Array* IxSourceClass_getMembers( const IxSourceClass* self );
 
 ~!c/ixcompiler.IxSourceClass.c~
 #include <stdio.h>
-#include "ixcompiler.Array.h"
-#include "ixcompiler.ArrayOfString.h"
-#include "ixcompiler.Console.h"
+#include "ix.h"
 #include "ixcompiler.EnumTokenType.h"
 #include "ixcompiler.IxSourceClass.h"
 #include "ixcompiler.IxSourceMember.h"
-#include "ixcompiler.Node.h"
-#include "ixcompiler.NodeIterator.h"
-#include "ixcompiler.Platform.h"
-#include "ixcompiler.String.h"
 #include "ixcompiler.Token.h"
 
 struct _IxSourceClass

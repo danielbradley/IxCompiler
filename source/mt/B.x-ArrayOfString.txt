@@ -1,11 +1,9 @@
 
 .. ArrayOfString
 
-~!include/ixcompiler.ArrayOfString.h~
-#ifndef IXCOMPILER_ARRAYOFSTRING_H
-#define IXCOMPILER_ARRAYOFSTRING_H
-
-#include "ixcompiler.h"
+~!include/ix/ArrayOfString.h~
+#ifndef IX_ARRAYOFSTRING_H
+#define IX_ARRAYOFSTRING_H
 
 ArrayOfString* ArrayOfString_new();
 
@@ -25,12 +23,8 @@ const String*  ArrayOfString_getObject ( const ArrayOfString*  self, int index )
 #endif
 ~
 
-~!c/ixcompiler.ArrayOfString.c~
-#include "ixcompiler.h"
-#include "ixcompiler.Array.h"
-#include "ixcompiler.ArrayOfString.h"
-#include "ixcompiler.Platform.h"
-#include "ixcompiler.String.h"
+~!c/ix/ArrayOfString.c~
+#include "ix.h"
 
 struct _ArrayOfString
 {
@@ -39,7 +33,7 @@ struct _ArrayOfString
 };
 ~
 
-~c/ixcompiler.ArrayOfString.c~
+~c/ix/ArrayOfString.c~
 ArrayOfString* ArrayOfString_new()
 {
     ArrayOfString* self = Platform_Alloc( sizeof( ArrayOfString ) );
@@ -53,7 +47,7 @@ ArrayOfString* ArrayOfString_new()
 }
 ~
 
-~c/ixcompiler.ArrayOfString.c~
+~c/ix/ArrayOfString.c~
 ArrayOfString* ArrayOfString_free( ArrayOfString** self )
 {
     if ( *self )
@@ -66,7 +60,7 @@ ArrayOfString* ArrayOfString_free( ArrayOfString** self )
 }
 ~
 
-~c/ixcompiler.ArrayOfString.c~
+~c/ix/ArrayOfString.c~
 void ArrayOfString_push( ArrayOfString* self, ANY_STRING _object )
 {
     String** object = (String**) _object;
@@ -81,28 +75,28 @@ void ArrayOfString_push( ArrayOfString* self, ANY_STRING _object )
 }
 ~
 
-~c/ixcompiler.ArrayOfString.c~
+~c/ix/ArrayOfString.c~
 String* ArrayOfString_pop( ArrayOfString* self )
 {
     return (String*) Array_pop( self->array );
 }
 ~
 
-~c/ixcompiler.ArrayOfString.c~
+~c/ix/ArrayOfString.c~
 String* ArrayOfString_shift( ArrayOfString* self )
 {
     return (String*) Array_shift( self->array );
 }
 ~
 
-~c/ixcompiler.ArrayOfString.c~
+~c/ix/ArrayOfString.c~
 void ArrayOfString_unshift( ArrayOfString* self, String** object )
 {
     Array_unshift( self->array, (void**) object );
 }
 ~
 
-~c/ixcompiler.ArrayOfString.c~
+~c/ix/ArrayOfString.c~
 bool ArrayOfString_contains( const ArrayOfString* self, const String* str )
 {
     int n = Array_getLength( self->array );
@@ -117,28 +111,28 @@ bool ArrayOfString_contains( const ArrayOfString* self, const String* str )
 }
 ~
 
-~c/ixcompiler.ArrayOfString.c~
+~c/ix/ArrayOfString.c~
 int ArrayOfString_getLength( const ArrayOfString* self )
 {
     return Array_getLength( self->array );
 }
 ~
 
-~c/ixcompiler.ArrayOfString.c~
+~c/ix/ArrayOfString.c~
 int ArrayOfString_getLongest( const ArrayOfString* self )
 {
     return self->longest;
 }
 ~
 
-~c/ixcompiler.ArrayOfString.c~
+~c/ix/ArrayOfString.c~
 const String* ArrayOfString_getObject( const ArrayOfString* self, int index )
 {
     return (const String*) Array_getObject( self->array, index );
 }
 ~
 
-~c/ixcompiler.ArrayOfString.c~
+~c/ix/ArrayOfString.c~
 void ArrayOfString_append( ArrayOfString* self, const ArrayOfString* other )
 {
     int n = ArrayOfString_getLength( other );
@@ -152,7 +146,7 @@ void ArrayOfString_append( ArrayOfString* self, const ArrayOfString* other )
 }
 ~
 
-~c/ixcompiler.ArrayOfString.c~
+~c/ix/ArrayOfString.c~
 void ArrayOfString_union( ArrayOfString* self, const ArrayOfString* other )
 {
     int n = ArrayOfString_getLength( other );

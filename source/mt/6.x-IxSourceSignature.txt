@@ -25,17 +25,12 @@ const IxSourceUnit*   IxSourceSignature_getSourceUnit    ( const IxSourceSignatu
 ~
 
 ~!c/ixcompiler.IxSourceSignature.c~
-#include "ixcompiler.Array.h"
+#include "ix.h"
 #include "ixcompiler.EnumTokenType.h"
 #include "ixcompiler.IxSourceParameter.h"
 #include "ixcompiler.IxSourceSignature.h"
 #include "ixcompiler.IxSourceType.h"
 #include "ixcompiler.IxSourceUnit.h"
-#include "ixcompiler.Node.h"
-#include "ixcompiler.NodeIterator.h"
-#include "ixcompiler.Platform.h"
-#include "ixcompiler.String.h"
-#include "ixcompiler.StringBuffer.h"
 #include "ixcompiler.Token.h"
 
 struct _IxSourceSignature

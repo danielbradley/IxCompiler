@@ -1,7 +1,7 @@
 
-~!include/ixcompiler.Platform.h~
-#ifndef IXCOMPILER_PLATFORM_H
-#define IXCOMPILER_PLATFORM_H
+~!include/ix/Platform.h~
+#ifndef IX_PLATFORM_H
+#define IX_PLATFORM_H
 
 void* Platform_Alloc                 ( int size_of );
 void* Platform_Array                 ( int num, int size_of );
@@ -24,7 +24,7 @@ bool  Platform_Path_Create           ( const Path* path     );
 #endif
 ~
 
-~!c/posix/ixcompiler.Platform.c~
+~!c/ix/posix/Platform.c~
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
@@ -34,27 +34,24 @@ bool  Platform_Path_Create           ( const Path* path     );
 #include <fcntl.h>
 #include <linux/limits.h>
 
-#include "ixcompiler.h"
-#include "ixcompiler.Platform.h"
-#include "ixcompiler.Path.h"
-#include "ixcompiler.String.h"
+#include "ix.h"
 ~
 
-~c/posix/ixcompiler.Platform.c~
+~c/ix/posix/Platform.c~
 void* Platform_Alloc( int size_of )
 {
     return calloc( 1, size_of );
 }
 ~
 
-~c/posix/ixcompiler.Platform.c~
+~c/ix/posix/Platform.c~
 void* Platform_Array( int num, int size_of )
 {
     return calloc( num, size_of );
 }
 ~
 
-~c/posix/ixcompiler.Platform.c~
+~c/ix/posix/Platform.c~
 void* Platform_Free( void* mem )
 {
     void** obj = (void**) mem;
@@ -65,14 +62,14 @@ void* Platform_Free( void* mem )
 }
 ~
 
-~c/posix/ixcompiler.Platform.c~
+~c/ix/posix/Platform.c~
 void Platform_Exit( int status )
 {
     exit( status );
 }
 ~
 
-~c/posix/ixcompiler.Platform.c~
+~c/ix/posix/Platform.c~
 bool Platform_File_WriteContents( const char* location, const char* content, bool force )
 {
     bool success = FALSE;
@@ -90,7 +87,7 @@ bool Platform_File_WriteContents( const char* location, const char* content, boo
 }
 ~
 
-~c/posix/ixcompiler.Platform.c~
+~c/ix/posix/Platform.c~
 char* Platform_File_GetContents( const char* location )
 {
     char* content = null;
@@ -113,7 +110,7 @@ char* Platform_File_GetContents( const char* location )
 }
 ~
 
-~c/posix/ixcompiler.Platform.c~
+~c/ix/posix/Platform.c~
 bool Platform_Location_Exists( const char* location )
 {
     struct stat sb;
@@ -122,7 +119,7 @@ bool Platform_Location_Exists( const char* location )
 }
 ~
 
-~c/posix/ixcompiler.Platform.c~
+~c/ix/posix/Platform.c~
 char* Platform_Location_FullPath( const char* location )
 {
     char* ret = calloc( PATH_MAX, sizeof( char ) );
@@ -146,7 +143,7 @@ char* Platform_Location_FullPath( const char* location )
 }
 ~
 
-~c/posix/ixcompiler.Platform.c~
+~c/ix/posix/Platform.c~
 bool Platform_Location_IsDirectory( const char* location )
 {
     struct stat sb;
@@ -164,14 +161,14 @@ bool Platform_Location_IsDirectory( const char* location )
 }
 ~
 
-~c/posix/ixcompiler.Platform.c~
+~c/ix/posix/Platform.c~
 bool Platform_Location_IsReadable( const char* location )
 {
     return (F_OK == access( location, R_OK ));
 }
 ~
 
-~c/posix/ixcompiler.Platform.c~
+~c/ix/posix/Platform.c~
 bool Platform_Location_IsRegularFile( const char* location )
 {
     struct stat sb;
@@ -189,14 +186,14 @@ bool Platform_Location_IsRegularFile( const char* location )
 }
 ~
 
-~c/posix/ixcompiler.Platform.c~
+~c/ix/posix/Platform.c~
 bool Platform_Location_IsWritable( const char* location )
 {
     return (F_OK == access( location, W_OK ));
 }
 ~
 
-~c/posix/ixcompiler.Platform.c~
+~c/ix/posix/Platform.c~
 bool Platform_Path_Create( const Path* path )
 {
     bool success = FALSE;

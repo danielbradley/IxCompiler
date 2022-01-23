@@ -19,8 +19,6 @@ const char*     IxSourceHeader_getText   ( const IxSourceHeader*  self );
 
 ~!c/ixcompiler.IxSourceHeader.c~
 #include "ixcompiler.IxSourceHeader.h"
-#include "ixcompiler.Platform.h"
-#include "ixcompiler.String.h"
 
 struct _IxSourceHeader
 {

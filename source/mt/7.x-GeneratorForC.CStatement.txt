@@ -5,6 +5,7 @@
 #ifndef IXCOMPILER_CSTATEMENT_H
 #define IXCOMPILER_CSTATEMENT_H
 
+#include "ix.h"
 #include "ixcompiler.h"
 
 CStatement* CStatement_new ( const IxSourceUnit* unit, const IxSourceStatement* anIxStatement, const Dictionary* resolvedTypes );
@@ -16,16 +17,13 @@ String*     CStatement_toString( const CStatement*  self );
 ~
 
 ~!c/ixcompiler.CStatement.c~
-#include "ixcompiler.Array.h"
+#include "ix.h"
 #include "ixcompiler.CStatement.h"
 #include "ixcompiler.IxSourceDeclaration.h"
 #include "ixcompiler.IxSourceMethod.h"
 #include "ixcompiler.IxSourceStatement.h"
 #include "ixcompiler.IxSourceType.h"
 #include "ixcompiler.IxSourceUnit.h"
-#include "ixcompiler.Platform.h"
-#include "ixcompiler.String.h"
-#include "ixcompiler.StringBuffer.h"
 #include "ixcompiler.Token.h"
 
 struct _CStatement

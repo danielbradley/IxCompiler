@@ -25,23 +25,13 @@ const Array*                 IxSourceUnit_getMethods       ( const IxSourceUnit*
 ~
 
 ~!c/ixcompiler.IxSourceUnit.c~
-#include "ixcompiler.Array.h"
-#include "ixcompiler.ArrayOfString.h"
 #include "ixcompiler.AST.h"
-#include "ixcompiler.Console.h"
 #include "ixcompiler.EnumTokenGroup.h"
 #include "ixcompiler.EnumTokenType.h"
-#include "ixcompiler.File.h"
 #include "ixcompiler.IxSourceClass.h"
 #include "ixcompiler.IxSourceInterface.h"
 #include "ixcompiler.IxSourceMethod.h"
 #include "ixcompiler.IxSourceUnit.h"
-#include "ixcompiler.Node.h"
-#include "ixcompiler.NodeIterator.h"
-#include "ixcompiler.Platform.h"
-#include "ixcompiler.String.h"
-#include "ixcompiler.StringBuffer.h"
-#include "ixcompiler.Tree.h"
 #include "ixcompiler.Token.h"
 #include "ixcompiler.TokenGroup.h"
 

@@ -5,6 +5,7 @@
 #ifndef IXCOMPILER_TOKENIZER_H
 #define IXCOMPILER_TOKENIZER_H
 
+#include "ix.h"
 #include "ixcompiler.h"
 #include "ixcompiler.EnumTokenType.h"
 #include "ixcompiler.EnumTokenGroup.h"
@@ -25,11 +26,6 @@ const File*    Tokenizer_getFile       ( const Tokenizer*  self );
 
 
 ~!c/ixcompiler.Tokenizer.c~
-#include "ixcompiler.File.h"
-#include "ixcompiler.Platform.h"
-#include "ixcompiler.PushbackReader.h"
-#include "ixcompiler.Queue.h"
-#include "ixcompiler.StringBuffer.h"
 #include "ixcompiler.Token.h"
 #include "ixcompiler.TokenGroup.h"
 #include "ixcompiler.Tokenizer.h"

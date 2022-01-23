@@ -27,6 +27,7 @@ div()
 #ifndef IXCOMPILER_IXSOURCEEXPRESSION_H
 #define IXCOMPILER_IXSOURCEEXPRESSION_H
 
+#include "ix.h"
 #include "ixcompiler.h"
 
 IxSourceExpression* IxSourceExpression_new( const Node* firstNode );
@@ -48,11 +49,6 @@ const String*             IxSourceExpression_getPostfixOperator( const IxSourceE
 
 ~!c/ixcompiler.IxExpression.c~
 #include "ixcompiler.IxSourceExpression.h"
-#include "ixcompiler.Node.h"
-#include "ixcompiler.NodeIterator.h"
-#include "ixcompiler.Platform.h"
-#include "ixcompiler.String.h"
-#include "ixcompiler.StringBuffer.h"
 #include "ixcompiler.Token.h"
 
 struct _IxSourceExpression

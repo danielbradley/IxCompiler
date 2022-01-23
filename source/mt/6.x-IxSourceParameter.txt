@@ -21,10 +21,6 @@ const String*       IxSourceParameter_getDefaultValue( const IxSourceParameter* 
 #include "ixcompiler.EnumTokenType.h"
 #include "ixcompiler.IxSourceParameter.h"
 #include "ixcompiler.IxSourceType.h"
-#include "ixcompiler.Node.h"
-#include "ixcompiler.NodeIterator.h"
-#include "ixcompiler.Platform.h"
-#include "ixcompiler.String.h"
 #include "ixcompiler.Token.h"
 
 struct _IxSourceParameter

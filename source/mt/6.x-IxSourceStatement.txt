@@ -22,18 +22,13 @@ bool                       IxSourceStatement_isExpression  ( const IxSourceState
 ~
 
 ~!c/ixcompiler.IxSourceStatement.c~
-#include "ixcompiler.Array.h"
+#include "ix.h"
 #include "ixcompiler.EnumTokenType.h"
 #include "ixcompiler.IxSourceBlock.h"
 #include "ixcompiler.IxSourceConditional.h"
 #include "ixcompiler.IxSourceDeclaration.h"
 #include "ixcompiler.IxSourceExpression.h"
 #include "ixcompiler.IxSourceStatement.h"
-#include "ixcompiler.Node.h"
-#include "ixcompiler.NodeIterator.h"
-#include "ixcompiler.Platform.h"
-#include "ixcompiler.String.h"
-#include "ixcompiler.StringBuffer.h"
 #include "ixcompiler.Token.h"
 
 struct _IxSourceStatement

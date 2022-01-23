@@ -1,7 +1,7 @@
 
-~!include/ixcompiler.Term.h~
-#ifndef IXCOMPILER_TERM_H
-#define IXCOMPILER_TERM_H
+~!include/ix/Term.h~
+#ifndef IX_TERM_H
+#define IX_TERM_H
 
 #define COLOR_NORMAL   "\033[00m"
 #define COLOR_BOLD     "\033[01m"
@@ -19,9 +19,9 @@ void Term_Colour( void* stream, const char* color );
 #endif
 ~
 
-~!c/ixcompiler.Term.c~
+~!c/ix/Term.c~
 #include <stdio.h>
-#include "ixcompiler.Term.h"
+#include "ix.h"
 
 void Term_Colour( void* stream, const char* color )
 {

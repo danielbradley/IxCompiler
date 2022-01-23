@@ -1,9 +1,9 @@
 
 .. String
 
-~!include/ixcompiler.String.h~
-#ifndef IXCOMPILER_STRING_H
-#define IXCOMPILER_STRING_H
+~!include/ix/String.h~
+#ifndef IX_STRING_H
+#define IX_STRING_H
 
 String*        String_new           ( const char* content );
 String*        String_free          (       String** self );
@@ -29,13 +29,9 @@ char*          String_Convert( String** string );
 #endif
 ~
 
-~!c/ixcompiler.String.c~
+~!c/ix/String.c~
 #include <string.h>
-#include "ixcompiler.h"
-#include "ixcompiler.ArrayOfString.h"
-#include "ixcompiler.Platform.h"
-#include "ixcompiler.String.h"
-#include "ixcompiler.StringBuffer.h"
+#include "ix.h"
 
 struct _String
 {
@@ -46,7 +42,7 @@ struct _String
 String* String_new_keep( char** keep );
 ~
 
-~c/ixcompiler.String.c~
+~c/ix/String.c~
 String* String_new( const char* content )
 {
     String* self = Platform_Alloc( sizeof(String) );
@@ -59,7 +55,7 @@ String* String_new( const char* content )
 }
 ~
 
-~c/ixcompiler.String.c~
+~c/ix/String.c~
 String* String_new_keep( char** keep )
 {
     String* self = Platform_Alloc( sizeof(String) );
@@ -72,7 +68,7 @@ String* String_new_keep( char** keep )
 }
 ~
 
-~c/ixcompiler.String.c~
+~c/ix/String.c~
 String* String_free( String** self )
 {
     if ( *self )
@@ -84,49 +80,49 @@ String* String_free( String** self )
 }
 ~
 
-~c/ixcompiler.String.c~
+~c/ix/String.c~
 const char* String_content( const String* self )
 {
     return self->content;
 }
 ~
 
-~c/ixcompiler.String.c~
+~c/ix/String.c~
 int String_getLength( const String* self )
 {
     return self->length;
 }
 ~
 
-~c/ixcompiler.String.c~
+~c/ix/String.c~
 String* String_copy( const String* self )
 {
     return String_new( self->content );
 }
 ~
 
-~c/ixcompiler.String.c~
+~c/ix/String.c~
 String* String_cat( const String* self, const String* other )
 {
     return String_cat_chars( self, other->content );
 }
 ~
 
-~c/ixcompiler.String.c~
+~c/ix/String.c~
 String* String_cat_chars( const String* self, const char* chars )
 {
     return String_Cat( self->content, chars );
 }
 ~
 
-~c/ixcompiler.String.c~
+~c/ix/String.c~
 bool String_equals( const String* self, const String* other )
 {
     return String_Equals( self->content, other->content );
 }
 ~
 
-~c/ixcompiler.String.c~
+~c/ix/String.c~
 bool String_equals_chars( const String* self, const char* chars )
 {
     if ( self && chars )
@@ -141,21 +137,21 @@ bool String_equals_chars( const String* self, const char* chars )
 }
 ~
 
-~c/ixcompiler.String.c~
+~c/ix/String.c~
 bool String_contains( const String* self, const String* other )
 {
     return String_contains_chars( self, String_content( other ) );
 }
 ~
 
-~c/ixcompiler.String.c~
+~c/ix/String.c~
 bool String_contains_chars( const String* self, const char* chars )
 {
     return (NULL != strstr( String_content( self ), chars ));
 }
 ~
 
-~c/ixcompiler.String.c~
+~c/ix/String.c~
 ArrayOfString* String_split( const String* self, char separator )
 {
     ArrayOfString* strings = ArrayOfString_new();
@@ -193,7 +189,7 @@ ArrayOfString* String_split( const String* self, char separator )
 }
 ~
 
-~c/ixcompiler.String.c~
+~c/ix/String.c~
 String* String_toUpperCase( const String* self )
 {
     String* ret = null;
@@ -218,7 +214,7 @@ String* String_toUpperCase( const String* self )
 }
 ~
 
-~c/ixcompiler.String.c~
+~c/ix/String.c~
 String* String_replace( const String* self, char ch, char with )
 {
     String* ret = null;
@@ -237,7 +233,7 @@ String* String_replace( const String* self, char ch, char with )
 }
 ~
 
-~c/ixcompiler.String.c~
+~c/ix/String.c~
 String* String_Cat( const char* s1, const char* s2 )
 {
     int len1 = String_Length( s1 );
@@ -264,7 +260,7 @@ String* String_Cat( const char* s1, const char* s2 )
 }
 ~
 
-~c/ixcompiler.String.c~
+~c/ix/String.c~
 char* String_Copy( const char* s )
 {
     int   len  = String_Length( s ) + 2;
@@ -274,7 +270,7 @@ char* String_Copy( const char* s )
 }
 ~
 
-~c/ixcompiler.String.c~
+~c/ix/String.c~
 bool String_Equals( const char* string1, const char* string2 )
 {
     if ( (NULL == string1) || (NULL == string2) )
@@ -288,14 +284,14 @@ bool String_Equals( const char* string1, const char* string2 )
 }
 ~
 
-~c/ixcompiler.String.c~
+~c/ix/String.c~
 int String_Length( const char* s )
 {
     return strlen( s );
 }
 ~
 
-~c/ixcompiler.String.c~
+~c/ix/String.c~
 char* String_Convert( String** string )
 {
     char* tmp = (*string)->content; (*string)->content = null;

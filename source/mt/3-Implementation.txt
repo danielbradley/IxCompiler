@@ -125,7 +125,7 @@ int main( int argc, char** argv )
             IxSourceUnitCollection_add( source_units, &source_unit );
         }
 
-        if ( !dry_run )
+        if ( FALSE )//!dry_run )
         {
 
             if ( generator )

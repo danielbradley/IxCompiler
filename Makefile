@@ -1,5 +1,5 @@
 
-VERSION=016
+VERSION=017
 
 PLATFORM=posix
 CC=cc
@@ -29,6 +29,11 @@ test:
 	mkdir -p _output
 	_bin/ixc --output-dir _output --target-language C $(TESTFILES)
 
+alttest:
+	mkdir -p _output
+	_bin/ixc --output-dir _output --target-language C source/ix/ix.compiler/*.ix
+
+
 show: showh showc
 
 showh:
@@ -44,7 +49,8 @@ testcompile:
 debug:
 	mkdir -p _output
 #	gdb --args _bin/ixc --output-dir _output --target-language C testdata/ix.base/*.ix
-	gdb --args _bin/ixc --output-dir _output --target-language C $(TESTFILES)
+#	gdb --args _bin/ixc --output-dir _output --target-language C $(TESTFILES)
+	gdb --args _bin/ixc --output-dir _output --target-language C source/ix/ix.compiler/*.ix
 
 clean:
 	make -C libexec/quasi clean

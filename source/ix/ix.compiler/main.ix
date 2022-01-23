@@ -1,0 +1,102 @@
+
+Copyright 2022 Daniel Robert Bradley. All rights reserved.
+
+License: None
+
+function main( arguments: string[] )
+{
+    var status:      int          = 1
+    var args:        Arguments*   = Arguments.New ( arguments )
+    var dry_run:     bool         = args.hasFlag  ( ARGUMENT_DRY_RUN )
+    var target_lang: const string = args.getOption( ARGUMENS_TARGET_LANGUAGE )
+    var output_dir:  const string = args.getOption( ARGUMENT_OUTPUT_DIR )
+    var files:       Iterator*    = args.filesIterator()
+    var output_path: Path*        = Path.New( output_dir )
+    var generator:   GeneratorFn  = Generator.FunctionFor( target_lang )
+
+    if ( !args.hasFlag( ARGUMENT_OUTPUT_DIR ) )
+    {
+        Console.Write( ABORT_OUTPUT_DIR )
+        System.Exit( -1 )
+    }
+    or ( !args.hasFlag( ARGUMENT_TARGET_LANGUAGE ) )
+    {
+        Console.Write( ABORT_TARGET_LANGUAGE_NOT_SPECIFIED )
+        System.Exit( -1 )
+    }
+    or ( !output_path.exists() )
+    {
+        Console.Write( ABORT_DIRECTORY_DOES_NOT_EXIST, output_dir )
+        System.Exit( -1 )
+    }
+    or ( !output_path.canWrite() )
+    {
+        Console.Write( ABORT_DIRECTORY_IS_NOT_WRITABLE, output_dir )
+        System.Exit( -1 )
+    }
+    or ( !generator )
+    {
+        Console.Write( ABORT_TARGET_LANGUAGE_NOT_SUPPORTED, target_lang )
+        System.Exit( -1 )
+    }
+    or ( !files.hasNext() )
+    {
+        Console.Write( ABORT_NO_SOURCE_FILES )
+        System.Exit( -1 )
+    }
+    else
+    {
+        var ast_collection: ASTCollection*          = ASTCollection.New()
+        var source_units:   IxSourceUnitCollection* = IxSourceUnitCollection.New()
+
+        while ( files.hasNext() )
+        {
+            var file: File* = files.next()
+
+            if ( !file.exists() )
+            {
+                Console.Write( ABORT_FILE_DOES_NOT_EXIST, file.getFilePath() )
+                System.Exit( -1 )
+            }
+            or ( !file.canRead() )
+            {
+                Console.Write( ABORT_FILE_CANNOT_BE_READ, file.getFilePath() )
+                System.Exit( -1 )
+            }
+            else
+            {
+                var tokenizer: Tokenizer.New( file )
+                if ( false )
+                {
+                    tokenizer.printAll()
+                }
+                else
+                {
+                    var ast: AST = AST.New( tokenizer )
+
+                    ASTPrinter.Print( ast )
+
+                    ast_collection.add( ast )
+                }
+            }
+        }
+
+        forindex ( i of ast_collection )
+        {
+            let ast:         const AST     = ast_collection.get( i )
+            var source_unit: IxSourceUnit* = IxSourceUnit.New( ast )
+
+            source_units.add( source_unit )
+        }
+
+        if ( !dry_run )
+        {
+            if ( generator )
+            {
+                status = generator( source_units, output_path )
+            }
+        }
+    }
+
+    return !status
+}

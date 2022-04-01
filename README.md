@@ -95,14 +95,10 @@ ixc --output-dir _gen/c --target-language C [--dry-run]
 #include "ixcompiler.AST.h"
 #include "ixcompiler.ASTCollection.h"
 #include "ixcompiler.ASTPrinter.h"
-#include "ixcompiler.Console.h"
-#include "ixcompiler.File.h"
-#include "ixcompiler.FilesIterator.h"
 #include "ixcompiler.Generator.h"
 #include "ixcompiler.IxParser.h"
 #include "ixcompiler.IxSourceUnit.h"
 #include "ixcompiler.IxSourceUnitCollection.h"
-#include "ixcompiler.Path.h"
 #include "ixcompiler.Token.h"
 #include "ixcompiler.Tokenizer.h"
 #include "todo.h"
@@ -229,6 +225,7 @@ int main( int argc, char** argv )
 #ifndef IXCOMPILER_TOKENIZER_H
 #define IXCOMPILER_TOKENIZER_H
 
+#include "ix.h"
 #include "ixcompiler.h"
 #include "ixcompiler.EnumTokenType.h"
 #include "ixcompiler.EnumTokenGroup.h"
@@ -249,11 +246,6 @@ const File*    Tokenizer_getFile       ( const Tokenizer*  self );
 
 
 ```!c/ixcompiler.Tokenizer.c
-#include "ixcompiler.File.h"
-#include "ixcompiler.Platform.h"
-#include "ixcompiler.PushbackReader.h"
-#include "ixcompiler.Queue.h"
-#include "ixcompiler.StringBuffer.h"
 #include "ixcompiler.Token.h"
 #include "ixcompiler.TokenGroup.h"
 #include "ixcompiler.Tokenizer.h"
@@ -585,6 +577,7 @@ end:
 #ifndef IXCOMPILER_TOKEN_H
 #define IXCOMPILER_TOKEN_H
 
+#include "ix.h"
 #include "ixcompiler.h"
 #include "ixcompiler.EnumTokenType.h"
 #include "ixcompiler.EnumTokenGroup.h"
@@ -609,9 +602,6 @@ bool              Token_ShouldInsertStop         ( EnumTokenType lastType, EnumT
 #include "ixcompiler.Token.h"
 #include "ixcompiler.EnumTokenType.h"
 #include "ixcompiler.EnumTokenGroup.h"
-#include "ixcompiler.Platform.h"
-#include "ixcompiler.String.h"
-#include "ixcompiler.Term.h"
 #include "ixcompiler.TokenGroup.h"
 
 struct _Token
@@ -1099,6 +1089,7 @@ bool Token_ShouldInsertStop( EnumTokenType lastType, EnumTokenType nextType )
 #ifndef IXCOMPILER_TOKENGROUP_H
 #define IXCOMPILER_TOKENGROUP_H
 
+#include "ix.h"
 #include "ixcompiler.h"
 #include "ixcompiler.EnumTokenType.h"
 #include "ixcompiler.EnumTokenGroup.h"
@@ -1117,7 +1108,6 @@ EnumTokenGroup TokenGroup_DetermineType( char ch );
 
 ```!c/ixcompiler.TokenGroup.c
 #include "ixcompiler.TokenGroup.h"
-#include "ixcompiler.Platform.h"
 
 struct _TokenGroup
 {
@@ -1390,6 +1380,7 @@ TokenGroup* TokenGroup_copy( const TokenGroup* self )
 #ifndef IXCOMPILER_AST_H
 #define IXCOMPILER_AST_H
 
+#include "ix.h"
 #include "ixcompiler.h"
 
 AST*        AST_new             ( Tokenizer** tokenizer );
@@ -1406,13 +1397,9 @@ const File* AST_getTokenizerFile( const AST*  self );
 #include "ixcompiler.EnumTokenGroup.h"
 #include "ixcompiler.EnumTokenType.h"
 #include "ixcompiler.IxParser.h"
-#include "ixcompiler.Node.h"
-#include "ixcompiler.Platform.h"
-#include "ixcompiler.String.h"
 #include "ixcompiler.Token.h"
 #include "ixcompiler.TokenGroup.h"
 #include "ixcompiler.Tokenizer.h"
-#include "ixcompiler.Tree.h"
 
 struct _AST
 {
@@ -1432,6 +1419,7 @@ static void AST_ParseComplex          ( Node* parent, Tokenizer* tokenizer );
 static void AST_ParseClass            ( Node* parent, Tokenizer* tokenizer );
 static void AST_ParseMemberUntilStop  ( Node* parent, Tokenizer* tokenizer );
 static void AST_ParseUntilStop        ( Node* parent, Tokenizer* tokenizer );
+static void AST_ParseUntilStopOrEndEx ( Node* parent, Tokenizer* tokenizer );
 static void AST_ParseClassBlock       ( Node* parent, Tokenizer* tokenizer );
 static void AST_ParseClassBlockMember ( Node* parent, Tokenizer* tokenizer );
 static void AST_ParseMemberType       ( Node* parent, Tokenizer* tokenizer );
@@ -1820,12 +1808,65 @@ static void AST_ParseMemberUntilStop( Node* parent, Tokenizer* tokenizer )
 ```
 
 ```c/ixcompiler.AST.c
+static void AST_ParseUntilStopOrEndEx( Node* parent, Tokenizer* tokenizer )
+{
+    bool loop = TRUE;
+    while( loop && Tokenizer_hasMoreTokens( tokenizer ) )
+    {
+        const Token*  token = Tokenizer_peekToken( tokenizer );
+        const char*   value = Token_getContent( token );
+        EnumTokenType type  = Token_getTokenType( token );
+
+        if ( STARTBLOCK == type )
+        {
+            loop = FALSE;
+        }
+        else
+        if ( (INFIXOP == type) && (('*' == value[0]) || ('&' == value[0])) )
+        {
+            Node_addChild( parent, (Token**) Give( Tokenizer_nextToken( tokenizer ) ) );
+            loop = FALSE;
+        }
+        else
+        if ( COMMA == type )
+        {
+            Node_addChild( parent, (Token**) Give( Tokenizer_nextToken( tokenizer ) ) );
+            loop = FALSE;
+        }
+        else
+        if ( STOP == type )
+        {
+            Node_addChild( parent, (Token**) Give( Tokenizer_nextToken( tokenizer ) ) );
+            loop = FALSE;
+        }
+        else
+        if ( ENDEXPRESSION == type )
+        {
+            loop = FALSE;
+        }
+        else
+        if ( OFTYPE == type )
+        {
+            Node* child = Node_addChild( parent, (Token**) Give( Tokenizer_nextToken( tokenizer ) ) );
+            AST_ParseMemberUntilStop( child, tokenizer );
+            break;
+        }
+        else
+        {
+            Node_addChild( parent, (Token**) Give( Tokenizer_nextToken( tokenizer ) ) );
+        }
+    }
+}
+```
+
+```c/ixcompiler.AST.c
 static void AST_ParseUntilStop( Node* parent, Tokenizer* tokenizer )
 {
     bool loop = TRUE;
     while( loop && Tokenizer_hasMoreTokens( tokenizer ) )
     {
         const Token*  token = Tokenizer_peekToken( tokenizer );
+        const char*   value = Token_getContent( token );
         EnumTokenType type  = Token_getTokenType( token );
 
         if ( STARTBLOCK == type )
@@ -2328,7 +2369,7 @@ static bool AST_ParseParameter( Node* parent, Tokenizer* tokenizer )
             {
             case OFTYPE:
                 child = Node_addChild( parent, (Token**) Give( Tokenizer_nextToken( tokenizer ) ) );
-                AST_ParseMemberUntilStop( child, tokenizer );
+                AST_ParseUntilStopOrEndEx( child, tokenizer );
                 goto exit;
                 break;
             }
@@ -2595,6 +2636,8 @@ static void AST_ParseExpression( Node* parent, Tokenizer* tokenizer )
 #ifndef IXCOMPILER_ASTCOLLECTION_H
 #define IXCOMPILER_ASTCOLLECTION_H
 
+#include "ix.h"
+
 ASTCollection* ASTCollection_new();
 ASTCollection* ASTCollection_free( ASTCollection** self            );
 void           ASTCollection_add ( ASTCollection*  self, AST** ast );
@@ -2608,8 +2651,6 @@ const AST*     ASTCollection_get      ( const ASTCollection* self, int index );
 ```!c/ixcompiler.ASTCollection.c
 #include "ixcompiler.h"
 #include "ixcompiler.AST.h"
-#include "ixcompiler.Array.h"
-#include "ixcompiler.Platform.h"
 
 struct _ASTCollection
 {
@@ -2623,7 +2664,7 @@ ASTCollection* ASTCollection_new()
     ASTCollection* self = Platform_Alloc( sizeof( ASTCollection ) );
     if ( self )
     {
-        self->ast_collection = Array_new( (Destructor) AST_free );
+        self->ast_collection = Array_new_destructor( (Destructor) AST_free );
     }
     return self;
 }
@@ -2667,6 +2708,8 @@ const AST* ASTCollection_get( const ASTCollection* self, int index )
 #ifndef IXCOMPILER_ASTPRINTER_H
 #define IXCOMPILER_ASTPRINTER_H
 
+#include "ix.h"
+
 void ASTPrinter_Print( const AST* ast );
 
 #endif
@@ -2678,11 +2721,6 @@ void ASTPrinter_Print( const AST* ast );
 #include "ixcompiler.AST.h"
 #include "ixcompiler.EnumTokenGroup.h"
 #include "ixcompiler.Generator.h"
-#include "ixcompiler.Node.h"
-#include "ixcompiler.NodeIterator.h"
-#include "ixcompiler.Platform.h"
-#include "ixcompiler.String.h"
-#include "ixcompiler.Tree.h"
 #include "ixcompiler.Token.h"
 #include "ixcompiler.TokenGroup.h"
 
@@ -2768,6 +2806,7 @@ static void PrintTree( const Node* node, int indent )
 #ifndef IXCOMPILER_IXPARSER_H
 #define IXCOMPILER_IXPARSER_H
 
+#include "ix.h"
 #include "ixcompiler.h"
 
 IxParser*      IxParser_new           ( Tokenizer* tokenizer )                ;
@@ -2782,12 +2821,9 @@ AST*           IxParser_parse         ( IxParser* self )                      ;
 #include "ixcompiler.EnumTokenGroup.h"
 #include "ixcompiler.EnumTokenType.h"
 #include "ixcompiler.IxParser.h"
-#include "ixcompiler.Node.h"
-#include "ixcompiler.Platform.h"
 #include "ixcompiler.Token.h"
 #include "ixcompiler.TokenGroup.h"
 #include "ixcompiler.Tokenizer.h"
-#include "ixcompiler.Tree.h"
 
 struct _IxParser
 {
@@ -2833,6 +2869,7 @@ AST* IxParser_parse( IxParser* self )
 #ifndef IXCOMPILER_IXSOURCEBLOCK_H
 #define IXCOMPILER_IXSOURCEBLOCK_H
 
+#include "ix.h"
 #include "ixcompiler.h"
 
 IxSourceBlock* IxSourceBlock_new( const Node* startBlockNode );
@@ -2844,13 +2881,10 @@ const Array*   IxSourceBlock_getStatements( const IxSourceBlock*  self );
 ```
 
 ```!c/ixcompiler.IxSourceBlock.c
-#include "ixcompiler.Array.h"
+#include "ix.h"
 #include "ixcompiler.EnumTokenType.h"
 #include "ixcompiler.IxSourceBlock.h"
 #include "ixcompiler.IxSourceStatement.h"
-#include "ixcompiler.Node.h"
-#include "ixcompiler.NodeIterator.h"
-#include "ixcompiler.Platform.h"
 #include "ixcompiler.Token.h"
 
 struct _IxSourceBlock
@@ -2868,7 +2902,7 @@ IxSourceBlock* IxSourceBlock_new( const Node* startBlockNode )
     IxSourceBlock* self = Platform_Alloc( sizeof(IxSourceBlock) );
     if ( self )
     {
-        self->statements = Array_new( (Destructor) IxSourceStatement_free );
+        self->statements = Array_new_destructor( (Destructor) IxSourceStatement_free );
 
         IxSourceBlock_parseStatements( self, startBlockNode );        
     }
@@ -2924,6 +2958,7 @@ void IxSourceBlock_parseStatements( IxSourceBlock* self, const Node* startBlock 
 #ifndef IXCOMPILER_IXSOURCECLASS_H
 #define IXCOMPILER_IXSOURCECLASS_H
 
+#include "ix.h"
 #include "ixcompiler.h"
 
 IxSourceClass* IxSourceClass_new( const Node* classNode );
@@ -2937,16 +2972,10 @@ const Array* IxSourceClass_getMembers( const IxSourceClass* self );
 
 ```!c/ixcompiler.IxSourceClass.c
 #include <stdio.h>
-#include "ixcompiler.Array.h"
-#include "ixcompiler.ArrayOfString.h"
-#include "ixcompiler.Console.h"
+#include "ix.h"
 #include "ixcompiler.EnumTokenType.h"
 #include "ixcompiler.IxSourceClass.h"
 #include "ixcompiler.IxSourceMember.h"
-#include "ixcompiler.Node.h"
-#include "ixcompiler.NodeIterator.h"
-#include "ixcompiler.Platform.h"
-#include "ixcompiler.String.h"
 #include "ixcompiler.Token.h"
 
 struct _IxSourceClass
@@ -2975,7 +3004,7 @@ IxSourceClass* IxSourceClass_new( const Node* classModifierNode )
         self->accessModifier = String_new( "" );
         self->className      = String_new( "" );
         self->interfaces     = ArrayOfString_new();
-        self->members        = Array_new( (Destructor) IxSourceMember_free );
+        self->members        = Array_new_destructor( (Destructor) IxSourceMember_free );
 
         parseModifier( self, classModifierNode );
     }
@@ -3104,6 +3133,7 @@ static void parseMember( IxSourceClass* self, const Node* node )
 #ifndef IXCOMPILER_IXSOURCECOMMENT_H
 #define IXCOMPILER_IXSOURCECOMMENT_H
 
+#include "ix.h"
 #include "ixcompiler.h"
 
 IxSourceComment* IxSourceComment_new();
@@ -3114,7 +3144,6 @@ IxSourceComment* IxSourceComment_free( IxSourceComment** self );
 
 ```!c/ixcompiler.IxSourceComment.c
 #include "ixcompiler.IxSourceComment.h"
-#include "ixcompiler.Platform.h"
 
 struct _IxSourceComment
 {
@@ -3163,6 +3192,7 @@ foreach ( <variable name> in <iterator name> )
 #ifndef IXCOMPILER_IXSOURCECONDITIONAL_H
 #define IXCOMPILER_IXSOURCECONDITIONAL_H
 
+#include "ix.h"
 #include "ixcompiler.h"
 
 typedef enum _EnumConditionalType
@@ -3194,12 +3224,7 @@ String*              IxSourceConditional_toString( const IxSourceConditional*  s
 #include "ixcompiler.EnumTokenType.h"
 #include "ixcompiler.IxSourceConditional.h"
 #include "ixcompiler.IxSourceExpression.h"
-#include "ixcompiler.Node.h"
-#include "ixcompiler.NodeIterator.h"
-#include "ixcompiler.Platform.h"
 #include "ixcompiler.Token.h"
-#include "ixcompiler.String.h"
-#include "ixcompiler.StringBuffer.h"
 
 struct _IxSourceConditional
 {
@@ -3421,6 +3446,7 @@ void IxSourceConditional_parseForeach( IxSourceConditional* self, const Node* st
 #ifndef IXCOMPILER_IXSOURCEDECLARATION_H
 #define IXCOMPILER_IXSOURCEDECLARATION_H
 
+#include "ix.h"
 #include "ixcompiler.h"
 
 IxSourceDeclaration* IxSourceDeclaration_new( const Node* varNode );
@@ -3438,10 +3464,6 @@ bool                      IxSourceDeclaration_hasExpression( const IxSourceDecla
 #include "ixcompiler.IxSourceDeclaration.h"
 #include "ixcompiler.IxSourceExpression.h"
 #include "ixcompiler.IxSourceType.h"
-#include "ixcompiler.Node.h"
-#include "ixcompiler.NodeIterator.h"
-#include "ixcompiler.Platform.h"
-#include "ixcompiler.String.h"
 #include "ixcompiler.Token.h"
 
 struct _IxSourceDeclaration
@@ -3580,6 +3602,7 @@ div()
 #ifndef IXCOMPILER_IXSOURCEEXPRESSION_H
 #define IXCOMPILER_IXSOURCEEXPRESSION_H
 
+#include "ix.h"
 #include "ixcompiler.h"
 
 IxSourceExpression* IxSourceExpression_new( const Node* firstNode );
@@ -3601,11 +3624,6 @@ const String*             IxSourceExpression_getPostfixOperator( const IxSourceE
 
 ```!c/ixcompiler.IxExpression.c
 #include "ixcompiler.IxSourceExpression.h"
-#include "ixcompiler.Node.h"
-#include "ixcompiler.NodeIterator.h"
-#include "ixcompiler.Platform.h"
-#include "ixcompiler.String.h"
-#include "ixcompiler.StringBuffer.h"
 #include "ixcompiler.Token.h"
 
 struct _IxSourceExpression
@@ -3877,7 +3895,6 @@ IxSourceFunction* IxSourceFunction_free( IxSourceFunction** self );
 
 ```!c/ixcompiler.IxSourceFunction.c
 #include "ixcompiler.IxSourceFunction.h"
-#include "ixcompiler.Platform.h"
 
 struct _IxSourceFunction
 {
@@ -3935,8 +3952,6 @@ const char*     IxSourceHeader_getText   ( const IxSourceHeader*  self );
 
 ```!c/ixcompiler.IxSourceHeader.c
 #include "ixcompiler.IxSourceHeader.h"
-#include "ixcompiler.Platform.h"
-#include "ixcompiler.String.h"
 
 struct _IxSourceHeader
 {
@@ -3986,8 +4001,6 @@ IxSourceInterface* IxSourceInterface_free( IxSourceInterface** self );
 
 ```!c/ixcompiler.IxSourceInterface.c
 #include "ixcompiler.IxSourceInterface.h"
-#include "ixcompiler.Platform.h"
-#include "ixcompiler.String.h"
 
 struct _IxSourceInterface
 {
@@ -4043,11 +4056,6 @@ const String*       IxSourceMember_getDefaultValue( const IxSourceMember*  self 
 #include "ixcompiler.EnumTokenType.h"
 #include "ixcompiler.IxSourceMember.h"
 #include "ixcompiler.IxSourceType.h"
-#include "ixcompiler.Node.h"
-#include "ixcompiler.NodeIterator.h"
-#include "ixcompiler.Platform.h"
-#include "ixcompiler.String.h"
-#include "ixcompiler.StringBuffer.h"
 #include "ixcompiler.Token.h"
 
 struct _IxSourceMember
@@ -4269,8 +4277,7 @@ const Array*             IxSourceMethod_getStatements    ( const IxSourceMethod*
 ```
 
 ```!c/ixcompiler.IxSourceMethod.c
-#include "ixcompiler.Array.h"
-#include "ixcompiler.Console.h"
+#include "ix.h"
 #include "ixcompiler.EnumTokenType.h"
 #include "ixcompiler.IxSourceBlock.h"
 #include "ixcompiler.IxSourceMethod.h"
@@ -4278,10 +4285,6 @@ const Array*             IxSourceMethod_getStatements    ( const IxSourceMethod*
 #include "ixcompiler.IxSourceSignature.h"
 #include "ixcompiler.IxSourceType.h"
 #include "ixcompiler.IxSourceUnit.h"
-#include "ixcompiler.Node.h"
-#include "ixcompiler.NodeIterator.h"
-#include "ixcompiler.Platform.h"
-#include "ixcompiler.String.h"
 #include "ixcompiler.Token.h"
 
 struct _IxSourceMethod
@@ -4494,10 +4497,6 @@ const String*       IxSourceParameter_getDefaultValue( const IxSourceParameter* 
 #include "ixcompiler.EnumTokenType.h"
 #include "ixcompiler.IxSourceParameter.h"
 #include "ixcompiler.IxSourceType.h"
-#include "ixcompiler.Node.h"
-#include "ixcompiler.NodeIterator.h"
-#include "ixcompiler.Platform.h"
-#include "ixcompiler.String.h"
 #include "ixcompiler.Token.h"
 
 struct _IxSourceParameter
@@ -4663,17 +4662,12 @@ const IxSourceUnit*   IxSourceSignature_getSourceUnit    ( const IxSourceSignatu
 ```
 
 ```!c/ixcompiler.IxSourceSignature.c
-#include "ixcompiler.Array.h"
+#include "ix.h"
 #include "ixcompiler.EnumTokenType.h"
 #include "ixcompiler.IxSourceParameter.h"
 #include "ixcompiler.IxSourceSignature.h"
 #include "ixcompiler.IxSourceType.h"
 #include "ixcompiler.IxSourceUnit.h"
-#include "ixcompiler.Node.h"
-#include "ixcompiler.NodeIterator.h"
-#include "ixcompiler.Platform.h"
-#include "ixcompiler.String.h"
-#include "ixcompiler.StringBuffer.h"
 #include "ixcompiler.Token.h"
 
 struct _IxSourceSignature
@@ -4705,7 +4699,7 @@ IxSourceSignature* IxSourceSignature_new( const IxSourceUnit* sourceUnit, const 
         self->modifier   = String_new( "" );
         self->konst      = String_new( "" );
         self->methodName = String_new( "" );
-        self->parameters = Array_new( (Destructor) IxSourceSignature_free );
+        self->parameters = Array_new_destructor( (Destructor) IxSourceSignature_free );
         self->oftype     = String_new( "" );
         self->returnType = IxSourceType_new( String_new( "" ) );
 
@@ -4964,18 +4958,13 @@ bool                       IxSourceStatement_isExpression  ( const IxSourceState
 ```
 
 ```!c/ixcompiler.IxSourceStatement.c
-#include "ixcompiler.Array.h"
+#include "ix.h"
 #include "ixcompiler.EnumTokenType.h"
 #include "ixcompiler.IxSourceBlock.h"
 #include "ixcompiler.IxSourceConditional.h"
 #include "ixcompiler.IxSourceDeclaration.h"
 #include "ixcompiler.IxSourceExpression.h"
 #include "ixcompiler.IxSourceStatement.h"
-#include "ixcompiler.Node.h"
-#include "ixcompiler.NodeIterator.h"
-#include "ixcompiler.Platform.h"
-#include "ixcompiler.String.h"
-#include "ixcompiler.StringBuffer.h"
 #include "ixcompiler.Token.h"
 
 struct _IxSourceStatement
@@ -5134,7 +5123,6 @@ IxSourceExpression*    IxSourceSubExpression_getExpression( const IxSourceSubExp
 ```!c/ixcompiler.IxSourceSubExpression.c
 #include "ixcompiler.IxSourceExpression.h"
 #include "ixcompiler.IxSourceSubExpression.h"
-#include "ixcompiler.Platform.h"
 
 struct _IxSourceSubExpression
 {
@@ -5204,8 +5192,6 @@ bool          IxSourceType_isReference( const IxSourceType*  self );
 
 ```!c/ixcompiler.IxSourceType.c
 #include "ixcompiler.IxSourceType.h"
-#include "ixcompiler.Platform.h"
-#include "ixcompiler.String.h"
 
 struct _IxSourceType
 {
@@ -5383,23 +5369,13 @@ const Array*                 IxSourceUnit_getMethods       ( const IxSourceUnit*
 ```
 
 ```!c/ixcompiler.IxSourceUnit.c
-#include "ixcompiler.Array.h"
-#include "ixcompiler.ArrayOfString.h"
 #include "ixcompiler.AST.h"
-#include "ixcompiler.Console.h"
 #include "ixcompiler.EnumTokenGroup.h"
 #include "ixcompiler.EnumTokenType.h"
-#include "ixcompiler.File.h"
 #include "ixcompiler.IxSourceClass.h"
 #include "ixcompiler.IxSourceInterface.h"
 #include "ixcompiler.IxSourceMethod.h"
 #include "ixcompiler.IxSourceUnit.h"
-#include "ixcompiler.Node.h"
-#include "ixcompiler.NodeIterator.h"
-#include "ixcompiler.Platform.h"
-#include "ixcompiler.String.h"
-#include "ixcompiler.StringBuffer.h"
-#include "ixcompiler.Tree.h"
 #include "ixcompiler.Token.h"
 #include "ixcompiler.TokenGroup.h"
 
@@ -5548,7 +5524,7 @@ static void initChildren( IxSourceUnit* self, const AST* ast )
 {
     self->copyrightLines = ArrayOfString_new();
     self->licenseLines   = ArrayOfString_new();
-    self->methods        = Array_new( (Destructor) IxSourceMethod_free );
+    self->methods        = Array_new_destructor( (Destructor) IxSourceMethod_free );
 
     const Tree* tree = AST_getTree ( ast  );
     const Node* root = Tree_getRoot( tree );    
@@ -5679,15 +5655,10 @@ const Dictionary*       IxSourceUnitCollection_getSignatures    ( const IxSource
 ```
 
 ```!c/ixcompiler.IxSourceUnitCollection.c
-#include "ixcompiler.Array.h"
-#include "ixcompiler.ArrayOfString.h"
-#include "ixcompiler.Dictionary.h"
 #include "ixcompiler.IxSourceMethod.h"
 #include "ixcompiler.IxSourceSignature.h"
 #include "ixcompiler.IxSourceUnit.h"
 #include "ixcompiler.IxSourceUnitCollection.h"
-#include "ixcompiler.Platform.h"
-#include "ixcompiler.String.h"
 
 struct _IxSourceUnitCollection
 {
@@ -5705,7 +5676,7 @@ IxSourceUnitCollection* IxSourceUnitCollection_new()
     IxSourceUnitCollection* self = Platform_Alloc( sizeof( IxSourceUnitCollection ) );
     if ( self )
     {
-        self->collection     = Array_new( (Destructor) IxSourceUnit_free );
+        self->collection     = Array_new_destructor( (Destructor) IxSourceUnit_free );
         self->copyrightLines = ArrayOfString_new();
         self->licenseLines   = ArrayOfString_new();
         self->resolvedTypes  = Dictionary_new( FALSE, (Destructor) String_free );
@@ -5848,6 +5819,7 @@ const Dictionary* IxSourceUnitCollection_getSignatures( const IxSourceUnitCollec
 #ifndef IXCOMPILER_GENERATOR_H
 #define IXCOMPILER_GENERATOR_H
 
+#include "ix.h"
 #include "ixcompiler.h"
 
 GeneratorFn Generator_FunctionFor( const char* target_language );
@@ -5859,7 +5831,6 @@ GeneratorFn Generator_FunctionFor( const char* target_language );
 #include <stdio.h>
 #include "ixcompiler.Generator.h"
 #include "ixcompiler.GeneratorForC.h"
-#include "ixcompiler.String.h"
 ```
 
 ```c/ixcompiler.Generator.c
@@ -5897,16 +5868,12 @@ const String* CSignature_getParameters          ( const CSignature*  self );
 ```
 
 ```!c/ixcompiler.CSignature.c
-#include "ixcompiler.Array.h"
+#include "ix.h"
 #include "ixcompiler.CSignature.h"
-#include "ixcompiler.Dictionary.h"
 #include "ixcompiler.IxSourceSignature.h"
 #include "ixcompiler.IxSourceParameter.h"
 #include "ixcompiler.IxSourceType.h"
 #include "ixcompiler.IxSourceUnit.h"
-#include "ixcompiler.Platform.h"
-#include "ixcompiler.String.h"
-#include "ixcompiler.StringBuffer.h"
 
 struct _CSignature
 {
@@ -6199,6 +6166,7 @@ static String* CSignature_ToFullCType( const IxSourceType* stype, const Dictiona
 #ifndef IXCOMPILER_CSTATEMENT_H
 #define IXCOMPILER_CSTATEMENT_H
 
+#include "ix.h"
 #include "ixcompiler.h"
 
 CStatement* CStatement_new ( const IxSourceUnit* unit, const IxSourceStatement* anIxStatement, const Dictionary* resolvedTypes );
@@ -6210,16 +6178,13 @@ String*     CStatement_toString( const CStatement*  self );
 ```
 
 ```!c/ixcompiler.CStatement.c
-#include "ixcompiler.Array.h"
+#include "ix.h"
 #include "ixcompiler.CStatement.h"
 #include "ixcompiler.IxSourceDeclaration.h"
 #include "ixcompiler.IxSourceMethod.h"
 #include "ixcompiler.IxSourceStatement.h"
 #include "ixcompiler.IxSourceType.h"
 #include "ixcompiler.IxSourceUnit.h"
-#include "ixcompiler.Platform.h"
-#include "ixcompiler.String.h"
-#include "ixcompiler.StringBuffer.h"
 #include "ixcompiler.Token.h"
 
 struct _CStatement
@@ -6301,7 +6266,7 @@ String* CStatement_toString( const CStatement* self )
 ```c/ixcompiler.CStatement.c
 Array* CStatement_parseTokens( const CStatement* self, const Array* tokens )
 {
-    Array* ret = Array_new( null );
+    Array* ret = Array_new_destructor( null );
 
     int n = Array_getLength( tokens );
     for ( int i=0; i < n; i++ )
@@ -6347,6 +6312,7 @@ Array* CStatement_parseTokens( const CStatement* self, const Array* tokens )
 #ifndef IXCOMPILER_GENERATORFORC_H
 #define IXCOMPILER_GENERATORFORC_H
 
+#include "ix.h"
 #include "ixcompiler.h"
 
 int Generator_FunctionForC( const IxSourceUnitCollection* source_units, const Path* output_path );
@@ -6356,14 +6322,9 @@ int Generator_FunctionForC( const IxSourceUnitCollection* source_units, const Pa
 
 ```!c/ixcompiler.GeneratorForC.c
 #include <stdio.h>
-#include "ixcompiler.Array.h"
-#include "ixcompiler.ArrayOfString.h"
-#include "ixcompiler.Console.h"
+#include "ix.h"
 #include "ixcompiler.CSignature.h"
 #include "ixcompiler.CStatement.h"
-#include "ixcompiler.Dictionary.h"
-#include "ixcompiler.Entry.h"
-#include "ixcompiler.File.h"
 #include "ixcompiler.GeneratorForC.h"
 #include "ixcompiler.IxSourceClass.h"
 #include "ixcompiler.IxSourceMember.h"
@@ -6374,10 +6335,6 @@ int Generator_FunctionForC( const IxSourceUnitCollection* source_units, const Pa
 #include "ixcompiler.IxSourceType.h"
 #include "ixcompiler.IxSourceUnit.h"
 #include "ixcompiler.IxSourceUnitCollection.h"
-#include "ixcompiler.Path.h"
-#include "ixcompiler.Platform.h"
-#include "ixcompiler.String.h"
-#include "ixcompiler.StringBuffer.h"
 
 #define TARGET_HEADER_NAME "/include/"
 #define TARGET_SOURCE_NAME "/c/"
@@ -7020,6 +6977,8 @@ static String* GenerateSourceFileMethodsForSourceUnitFunctionStatements( const I
 #ifndef IXCOMPILER_ARGUMENTS_H
 #define IXCOMPILER_ARGUMENTS_H
 
+#include "ixcompiler.h"
+
 Arguments*     Arguments_new          ( int argc, char** argv );
 Arguments*     Arguments_free         ( Arguments** self );
 bool           Arguments_hasFlag      ( Arguments* self, const char* argument );
@@ -7030,12 +6989,7 @@ FilesIterator* Arguments_filesIterator( Arguments* self );
 ```
 
 ```!c/ixcompiler.Arguments.c
-#include "ixcompiler.h"
 #include "ixcompiler.Arguments.h"
-#include "ixcompiler.Console.h"
-#include "ixcompiler.FilesIterator.h"
-#include "ixcompiler.Platform.h"
-#include "ixcompiler.String.h"
 #include "todo.h"
 
 struct _Arguments
@@ -7397,6 +7351,8 @@ const char* EnumTokenType_asString( EnumTokenType type )
 #ifndef IXCOMPILER_H
 #define IXCOMPILER_H
 
+#include "ix.h"
+
 #define ABORT_DIRECTORY_DOES_NOT_EXIST      "Aborting, output directory does not exist - %s\n"
 #define ABORT_DIRECTORY_IS_NOT_WRITABLE     "Aborting, cannot write to output directory - %s\n"
 #define ABORT_FILE_CANNOT_BE_READ           "Aborting, speciifed file cannot be read - %s\n"
@@ -7411,6 +7367,56 @@ const char* EnumTokenType_asString( EnumTokenType type )
 #define ARGUMENT_TARGET_LANGUAGE "--target-language"
 
 #define LANG_C "C"
+
+
+
+typedef struct _Arguments                       Arguments;
+typedef struct _ArrayOfIxSourceFunction         ArrayOfIxSourceFunction;
+typedef struct _ArrayOfIxSourceMember           ArrayOfIxSourceMember;
+typedef struct _ArrayOfIxSourceMethod           ArrayOfIxSourceMethod;
+typedef struct _ArrayOfIxSourceParameter        ArrayOfIxSourceParameter;
+typedef struct _ArrayOfIxSourceStatement        ArrayOfIxSourceStatement;
+typedef struct _ArrayOfString                   ArrayOfString;
+typedef struct _AST                             AST;
+typedef struct _ASTCollection                   ASTCollection;
+typedef struct _CSignature                      CSignature;
+typedef struct _CStatement                      CStatement;
+typedef struct _Generator                       Generator;
+typedef struct _IxParser                        IxParser;
+typedef struct _IxSourceBlock                   IxSourceBlock;
+typedef struct _IxSourceClass                   IxSourceClass;
+typedef struct _IxSourceComment                 IxSourceComment;
+typedef struct _IxSourceConditional             IxSourceConditional;
+typedef struct _IxSourceDeclaration             IxSourceDeclaration;
+typedef struct _IxSourceExpression              IxSourceExpression;
+typedef struct _IxSourceFunction                IxSourceFunction;
+typedef struct _IxSourceHeader                  IxSourceHeader;
+typedef struct _IxSourceInterface               IxSourceInterface;
+typedef struct _IxSourceMember                  IxSourceMember;
+typedef struct _IxSourceMethod                  IxSourceMethod;
+typedef struct _IxSourceParameter               IxSourceParameter;
+typedef struct _IxSourceSignature               IxSourceSignature;
+typedef struct _IxSourceStatement               IxSourceStatement;
+typedef struct _IxSourceSubExpression           IxSourceSubExpression;
+typedef struct _IxSourceType                    IxSourceType;
+typedef struct _IxSourceUnit                    IxSourceUnit;
+typedef struct _IxSourceUnitCollection          IxSourceUnitCollection;
+typedef struct _Token                           Token;
+typedef struct _TokenGroup                      TokenGroup;
+typedef struct _Tokenizer                       Tokenizer;
+typedef struct _Tree                            Tree;
+
+typedef void* (*Destructor )( void**                                     );
+typedef int   (*GeneratorFn)( const IxSourceUnitCollection*, const Path* );
+
+#endif
+```
+
+## Base
+
+```!include/ix.h
+#ifndef IX_H
+#define IX_H
 
 #ifndef bool
 #define bool int
@@ -7444,104 +7450,98 @@ const char* EnumTokenType_asString( EnumTokenType type )
 #define ANY_STRING void*
 #endif
 
-typedef struct _Arguments                       Arguments;
-typedef struct _Array                           Array;
-typedef struct _ArrayOfIxSourceFunction         ArrayOfIxSourceFunction;
-typedef struct _ArrayOfIxSourceMember           ArrayOfIxSourceMember;
-typedef struct _ArrayOfIxSourceMethod           ArrayOfIxSourceMethod;
-typedef struct _ArrayOfIxSourceParameter        ArrayOfIxSourceParameter;
-typedef struct _ArrayOfIxSourceStatement        ArrayOfIxSourceStatement;
-typedef struct _ArrayOfString                   ArrayOfString;
-typedef struct _AST                             AST;
-typedef struct _ASTCollection                   ASTCollection;
-typedef struct _CSignature                      CSignature;
-typedef struct _CStatement                      CStatement;
-typedef struct _Dictionary                      Dictionary;
-typedef struct _Entry                           Entry;
-typedef struct _File                            File;
-typedef struct _FilesIterator                   FilesIterator;
-typedef struct _Generator                       Generator;
-typedef struct _IxParser                        IxParser;
-typedef struct _IxSourceBlock                   IxSourceBlock;
-typedef struct _IxSourceClass                   IxSourceClass;
-typedef struct _IxSourceComment                 IxSourceComment;
-typedef struct _IxSourceConditional             IxSourceConditional;
-typedef struct _IxSourceDeclaration             IxSourceDeclaration;
-typedef struct _IxSourceExpression              IxSourceExpression;
-typedef struct _IxSourceFunction                IxSourceFunction;
-typedef struct _IxSourceHeader                  IxSourceHeader;
-typedef struct _IxSourceInterface               IxSourceInterface;
-typedef struct _IxSourceMember                  IxSourceMember;
-typedef struct _IxSourceMethod                  IxSourceMethod;
-typedef struct _IxSourceParameter               IxSourceParameter;
-typedef struct _IxSourceSignature               IxSourceSignature;
-typedef struct _IxSourceStatement               IxSourceStatement;
-typedef struct _IxSourceSubExpression           IxSourceSubExpression;
-typedef struct _IxSourceType                    IxSourceType;
-typedef struct _IxSourceUnit                    IxSourceUnit;
-typedef struct _IxSourceUnitCollection          IxSourceUnitCollection;
-typedef struct _Node                            Node;
-typedef struct _NodeIterator                    NodeIterator;
-typedef struct _Object                          Object;
-typedef struct _Path                            Path;
-typedef struct _PushbackReader                  PushbackReader;
-typedef struct _Queue                           Queue;
-typedef struct _String                          String;
-typedef struct _StringBuffer                    StringBuffer;
-typedef struct _Token                           Token;
-typedef struct _TokenGroup                      TokenGroup;
-typedef struct _Tokenizer                       Tokenizer;
-typedef struct _Tree                            Tree;
+#ifndef ANY_STRING
+#define ANY_STRING void*
+#endif
 
-typedef void* (*Destructor )( void**                                     );
-typedef int   (*GeneratorFn)( const IxSourceUnitCollection*, const Path* );
+typedef void* (*Destructor )( void** );
+
+typedef struct _Array           Array;
+typedef struct _ArrayOfString   ArrayOfString;
+typedef struct _Dictionary      Dictionary;
+typedef struct _Entry           Entry;
+typedef struct _File            File;
+typedef struct _FilesIterator   FilesIterator;
+typedef struct _Node            Node;
+typedef struct _NodeIterator    NodeIterator;
+typedef struct _Object          Object;
+typedef struct _Path            Path;
+typedef struct _PushbackReader  PushbackReader;
+typedef struct _Queue           Queue;
+typedef struct _String          String;
+typedef struct _StringBuffer    StringBuffer;
+typedef struct _Tree            Tree;
+
+typedef struct _Token         Token;
+typedef enum   _EnumTokenType EnumTokenType;
 
 void** Give  ( void* pointer );
 void*  Take  ( void* giver   );
 void   Swap  ( ANY one, ANY two );
+
+#include "ix/Array.h"
+#include "ix/ArrayOfString.h"
+#include "ix/Console.h"
+#include "ix/Object.h"
+
+#include "ix/Dictionary.h"
+#include "ix/Entry.h"
+#include "ix/File.h"
+#include "ix/FilesIterator.h"
+#include "ix/Node.h"
+#include "ix/NodeIterator.h"
+#include "ix/Path.h"
+#include "ix/PushbackReader.h"
+#include "ix/Platform.h"
+#include "ix/Queue.h"
+#include "ix/String.h"
+#include "ix/StringBuffer.h"
+#include "ix/Term.h"
+#include "ix/Tree.h"
 
 #endif
 ```
 
 ### Array
 
-```!include/ixcompiler.Array.h
-#ifndef IXCOMPILER_ARRAY_H
-#define IXCOMPILER_ARRAY_H
+```!include/ix/Array.h
+#ifndef IX_ARRAY_H
+#define IX_ARRAY_H
 
-#include "ixcompiler.h"
+#include "ix.h"
 
-Array* Array_new           ( Destructor destructor );
-Array* Array_free          ( Array** self );
-Array* Array_push          ( Array*  self, void** object );
-void*  Array_pop           ( Array*  self );
-void*  Array_shift         ( Array*  self );
-Array* Array_unshift       ( Array*  self, void** object );
-
-int         Array_getLength( const Array* self            );
-const void* Array_getObject( const Array* self, int index );
+Array*      Array_new           ();
+Array*      Array_new_destructor( Destructor destructor );
+Array*      Array_init          ( Array*  self );
+Array*      Array_free          ( Array** self );
+Array*      Array_push          ( Array*  self, void** object );
+void*       Array_pop           ( Array*  self );
+void*       Array_shift         ( Array*  self );
+Array*      Array_unshift       ( Array*  self, void** object );
+int         Array_getLength     ( const Array* self            );
+const void* Array_getObject     ( const Array* self, int index );
 
 int Array_Sizeof();
 
 #endif
 ```
 
-```!c/ixcompiler.Array.c
-#include "ixcompiler.Array.h"
-#include "ixcompiler.Object.h"
-#include "ixcompiler.Platform.h"
+```!c/ix/Array.c
+#include "ix.h"
 
 struct _Array
 {
-    Object     super;
-    Destructor destroy;
-    void**     objects;
-    int        length;
-    int        size;
+    Object        super;
+    Array*(*free)(Array**);
+    Destructor    destroy;
+    void**        objects;
+    int           length;
+    int           size;
+    bool          treatAsObjects;
 };
 ```
 
-```c/ixcompiler.Array.c
+```c/ix/Array.c
 static void Array_expand( Array* self )
 {
     if ( 0 == self->size )
@@ -7568,45 +7568,90 @@ static void Array_expand( Array* self )
 }
 ```
 
-```c/ixcompiler.Array.c
-Array* Array_new( Destructor destructor )
+```c/ix/Array.c
+Array* Array_new()
 {
-    Array* self = Platform_Alloc( sizeof( Array ) );
+    Array* self = Array_init( 0 );
 
     if ( self )
     {
-        self->super.free = (Destructor) Array_free;
-        self->destroy    = destructor;
-        self->objects    = 0;
-        self->length     = 0;
-        self->size       = 0;
+        self->objects        = 0;
+        self->length         = 0;
+        self->size           = 0;
+        self->treatAsObjects = TRUE;
     }
     return self;
 }
 ```
 
-```c/ixcompiler.Array.c
-Array* Array_free( Array** self )
+```c/ix/Array.c
+Array* Array_new_destructor( Destructor destructor )
 {
-    if ( *self )
-    {
-        if ( (*self)->destroy )
-        {
-            void* object;
-            while ( (object = Array_pop( *self )) )
-            {
-                (*self)->destroy( &object );
-            }
-        }
+    Array* self = Array_init( 0 );
 
-        Platform_Free( &(*self)->objects );
-        Platform_Free( self );
+    if ( self )
+    {
+        self->destroy = destructor;
+        self->objects = 0;
+        self->length  = 0;
+        self->size    = 0;
     }
-    return *self;
+    return self;
 }
 ```
 
-```c/ixcompiler.Array.c
+```c/ix/Array.c
+Array* Array_init( Array* self )
+{
+    if ( !self ) self = Platform_Alloc( Array_Sizeof() );
+    if ( self )
+    {
+        Object_init( (Object*) self );
+        self->super.free = (Object*(*)(Object**)) Array_free;
+        self->free = Array_free;
+    }
+    return self;
+}
+```
+
+```c/ix/Array.c
+Array* Array_free( Array** self )
+{
+    if ( self && *self )
+    {
+        if ( Array_free != (*self)->free )
+        {
+            (*self)->free( self );
+        }
+        else
+        {
+            if ( (*self)->treatAsObjects )
+            {
+                Object* object;
+                while ( (object = (Object*) Array_pop( *self ) ) )
+                {
+                    Object_free( &object );
+                }
+            }
+            else
+            if ( (*self)->destroy )
+            {
+                void* object;
+                while ( (object = Array_pop( *self )) )
+                {
+                    (*self)->destroy( &object );
+                }
+            }
+
+            Platform_Free( &(*self)->objects );
+            Platform_Free( self );
+        }
+    }
+    return 0;
+}
+```
+
+```c/ix/Array.c
 Array* Array_push( Array* self, void** object )
 {
     if ( self->length == self->size )
@@ -7621,7 +7666,7 @@ Array* Array_push( Array* self, void** object )
 }
 ```
 
-```c/ixcompiler.Array.c
+```c/ix/Array.c
 void* Array_pop( Array* self )
 {
     void* ret = null;
@@ -7635,7 +7680,7 @@ void* Array_pop( Array* self )
 }
 ```
 
-```c/ixcompiler.Array.c
+```c/ix/Array.c
 void* Array_shift( Array* self )
 {
     if ( self->length )
@@ -7657,7 +7702,7 @@ void* Array_shift( Array* self )
 }
 ```
 
-```c/ixcompiler.Array.c
+```c/ix/Array.c
 Array* Array_unshift( Array* self, void** object )
 {
     if ( self->length == self->size )
@@ -7678,14 +7723,14 @@ Array* Array_unshift( Array* self, void** object )
 }
 ```
 
-```c/ixcompiler.Array.c
+```c/ix/Array.c
 int Array_getLength( const Array* self )
 {
     return self ? self->length : 0;
 }
 ```
 
-```c/ixcompiler.Array.c
+```c/ix/Array.c
 const void* Array_getObject( const Array* self, int index )
 {
     if ( index < self->length )
@@ -7699,13 +7744,18 @@ const void* Array_getObject( const Array* self, int index )
 }
 ```
 
+```c/ix/Array.c
+int Array_Sizeof()
+{
+    return sizeof( Array );
+}
+```
+
 ### ArrayOfString
 
-```!include/ixcompiler.ArrayOfString.h
-#ifndef IXCOMPILER_ARRAYOFSTRING_H
-#define IXCOMPILER_ARRAYOFSTRING_H
-
-#include "ixcompiler.h"
+```!include/ix/ArrayOfString.h
+#ifndef IX_ARRAYOFSTRING_H
+#define IX_ARRAYOFSTRING_H
 
 ArrayOfString* ArrayOfString_new();
 
@@ -7725,12 +7775,8 @@ const String*  ArrayOfString_getObject ( const ArrayOfString*  self, int index )
 #endif
 ```
 
-```!c/ixcompiler.ArrayOfString.c
-#include "ixcompiler.h"
-#include "ixcompiler.Array.h"
-#include "ixcompiler.ArrayOfString.h"
-#include "ixcompiler.Platform.h"
-#include "ixcompiler.String.h"
+```!c/ix/ArrayOfString.c
+#include "ix.h"
 
 struct _ArrayOfString
 {
@@ -7739,13 +7785,13 @@ struct _ArrayOfString
 };
 ```
 
-```c/ixcompiler.ArrayOfString.c
+```c/ix/ArrayOfString.c
 ArrayOfString* ArrayOfString_new()
 {
     ArrayOfString* self = Platform_Alloc( sizeof( ArrayOfString ) );
     if ( self )
     {
-        self->array   = Array_new( (Destructor) String_free );
+        self->array   = Array_new_destructor( (Destructor) String_free );
         self->longest = 0;
     }
 
@@ -7753,7 +7799,7 @@ ArrayOfString* ArrayOfString_new()
 }
 ```
 
-```c/ixcompiler.ArrayOfString.c
+```c/ix/ArrayOfString.c
 ArrayOfString* ArrayOfString_free( ArrayOfString** self )
 {
     if ( *self )
@@ -7766,7 +7812,7 @@ ArrayOfString* ArrayOfString_free( ArrayOfString** self )
 }
 ```
 
-```c/ixcompiler.ArrayOfString.c
+```c/ix/ArrayOfString.c
 void ArrayOfString_push( ArrayOfString* self, ANY_STRING _object )
 {
     String** object = (String**) _object;
@@ -7781,28 +7827,28 @@ void ArrayOfString_push( ArrayOfString* self, ANY_STRING _object )
 }
 ```
 
-```c/ixcompiler.ArrayOfString.c
+```c/ix/ArrayOfString.c
 String* ArrayOfString_pop( ArrayOfString* self )
 {
     return (String*) Array_pop( self->array );
 }
 ```
 
-```c/ixcompiler.ArrayOfString.c
+```c/ix/ArrayOfString.c
 String* ArrayOfString_shift( ArrayOfString* self )
 {
     return (String*) Array_shift( self->array );
 }
 ```
 
-```c/ixcompiler.ArrayOfString.c
+```c/ix/ArrayOfString.c
 void ArrayOfString_unshift( ArrayOfString* self, String** object )
 {
     Array_unshift( self->array, (void**) object );
 }
 ```
 
-```c/ixcompiler.ArrayOfString.c
+```c/ix/ArrayOfString.c
 bool ArrayOfString_contains( const ArrayOfString* self, const String* str )
 {
     int n = Array_getLength( self->array );
@@ -7817,28 +7863,28 @@ bool ArrayOfString_contains( const ArrayOfString* self, const String* str )
 }
 ```
 
-```c/ixcompiler.ArrayOfString.c
+```c/ix/ArrayOfString.c
 int ArrayOfString_getLength( const ArrayOfString* self )
 {
     return Array_getLength( self->array );
 }
 ```
 
-```c/ixcompiler.ArrayOfString.c
+```c/ix/ArrayOfString.c
 int ArrayOfString_getLongest( const ArrayOfString* self )
 {
     return self->longest;
 }
 ```
 
-```c/ixcompiler.ArrayOfString.c
+```c/ix/ArrayOfString.c
 const String* ArrayOfString_getObject( const ArrayOfString* self, int index )
 {
     return (const String*) Array_getObject( self->array, index );
 }
 ```
 
-```c/ixcompiler.ArrayOfString.c
+```c/ix/ArrayOfString.c
 void ArrayOfString_append( ArrayOfString* self, const ArrayOfString* other )
 {
     int n = ArrayOfString_getLength( other );
@@ -7852,7 +7898,7 @@ void ArrayOfString_append( ArrayOfString* self, const ArrayOfString* other )
 }
 ```
 
-```c/ixcompiler.ArrayOfString.c
+```c/ix/ArrayOfString.c
 void ArrayOfString_union( ArrayOfString* self, const ArrayOfString* other )
 {
     int n = ArrayOfString_getLength( other );
@@ -7872,22 +7918,21 @@ void ArrayOfString_union( ArrayOfString* self, const ArrayOfString* other )
 
 ### Console
 
-```!include/ixcompiler.Console.h
-#ifndef IXCOMPILER_CONSOLE_H
-#define IXCOMPILER_CONSOLE_H
+```!include/ix/Console.h
+#ifndef IX_CONSOLE_H
+#define IX_CONSOLE_H
 
 void Console_Write( const char* format, const char* optional );
 
 #endif
 ```
 
-```!c/ixcompiler.Console.c
+```!c/ix/Console.c
 #include <stdio.h>
-#include "ixcompiler.h"
-#include "ixcompiler.Console.h"
+#include "ix.h"
 ```
 
-```c/ixcompiler.Console.c
+```c/ix/Console.c
 void Console_Write( const char* format, const char* optional )
 {
     fprintf( stdout, format, optional );
@@ -7896,11 +7941,11 @@ void Console_Write( const char* format, const char* optional )
 
 ### Dictionary
 
-```!include/ixcompiler.Dictionary.h
-#ifndef IXCOMPILER_DICTIONARY_H
-#define IXCOMPILER_DICTIONARY_H
+```!include/ix/Dictionary.h
+#ifndef IX_DICTIONARY_H
+#define IX_DICTIONARY_H
 
-#include "ixcompiler.h"
+#include "ix.h"
 
 Dictionary* Dictionary_new( bool is_map, Destructor destructor );
 
@@ -7915,12 +7960,8 @@ const Array* Dictionary_getEntries   ( const Dictionary* self );
 #endif
 ```
 
-```!c/ixcompiler.Dictionary.c
-#include "ixcompiler.Array.h"
-#include "ixcompiler.Dictionary.h"
-#include "ixcompiler.Entry.h"
-#include "ixcompiler.Platform.h"
-#include "ixcompiler.String.h"
+```!c/ix/Dictionary.c
+#include "ix.h"
 
 struct _Dictionary
 {
@@ -7932,7 +7973,7 @@ struct _Dictionary
 static const Entry* Dictionary_find( const Dictionary* self, const String* key );
 ```
 
-```c/ixcompiler.Dictionary.c
+```c/ix/Dictionary.c
 Dictionary* Dictionary_new( bool is_map, Destructor destructor )
 {
     Dictionary* self = Platform_Alloc( sizeof( Dictionary ) );
@@ -7940,13 +7981,13 @@ Dictionary* Dictionary_new( bool is_map, Destructor destructor )
     {
         self->destroy = destructor;
         self->isMap   = is_map;
-        self->entries = Array_new( destructor );
+        self->entries = Array_new_destructor( destructor );
     }
     return self;
 }
 ```
 
-```c/ixcompiler.Dictionary.c
+```c/ix/Dictionary.c
 Dictionary* Dictionary_free( Dictionary** self )
 {
     if ( *self )
@@ -7965,7 +8006,7 @@ Dictionary* Dictionary_free( Dictionary** self )
 }
 ```
 
-```c/ixcompiler.Dictionary.c
+```c/ix/Dictionary.c
 bool Dictionary_put( Dictionary* self, String** key, void** value )
 {
     if ( self->isMap && Dictionary_has( self, *key ) )
@@ -7985,7 +8026,7 @@ bool Dictionary_put( Dictionary* self, String** key, void** value )
 }
 ```
 
-```c/ixcompiler.Dictionary.c
+```c/ix/Dictionary.c
 bool Dictionary_put_reference( Dictionary* self, String** key, const void* reference )
 {
     if ( self->isMap && Dictionary_has( self, *key ) )
@@ -8002,14 +8043,14 @@ bool Dictionary_put_reference( Dictionary* self, String** key, const void* refer
 }
 ```
 
-```c/ixcompiler.Dictionary.c
+```c/ix/Dictionary.c
 bool Dictionary_has( const Dictionary* self, const String* key )
 {
     return (null != Dictionary_find( self, key ));
 }
 ```
 
-```c/ixcompiler.Dictionary.c
+```c/ix/Dictionary.c
 const void* Dictionary_get( const Dictionary* self, const String* key )
 {
     const Entry* tmp = Dictionary_find( self, key );
@@ -8018,14 +8059,14 @@ const void* Dictionary_get( const Dictionary* self, const String* key )
 }
 ```
 
-```c/ixcompiler.Dictionary.c
+```c/ix/Dictionary.c
 const Array* Dictionary_getEntries( const Dictionary* self )
 {
     return self->entries;
 }
 ```
 
-```c/ixcompiler.Dictionary.c
+```c/ix/Dictionary.c
 static const Entry* Dictionary_find( const Dictionary* self, const String* key )
 {
     int n = Array_getLength( self->entries );
@@ -8045,11 +8086,11 @@ static const Entry* Dictionary_find( const Dictionary* self, const String* key )
 
 ### Entry
 
-```!include/ixcompiler.Entry.h
-#ifndef IXCOMPILER_ENTRY_H
-#define IXCOMPILER_ENTRY_H
+```!include/ix/Entry.h
+#ifndef IX_ENTRY_H
+#define IX_ENTRY_H
 
-#include "ixcompiler.h"
+#include "ix.h"
 
 Entry* Entry_new           ( String** key, void** val );
 Entry* Entry_new_destructor( String** key, void** val, Destructor destructor );
@@ -8061,10 +8102,8 @@ const void*   Entry_getValue( const Entry*  self );
 #endif
 ```
 
-```!c/ixcompiler.Entry.c
-#include "ixcompiler.Entry.h"
-#include "ixcompiler.Platform.h"
-#include "ixcompiler.String.h"
+```!c/ix/Entry.c
+#include "ix.h"
 
 struct _Entry
 {
@@ -8075,7 +8114,7 @@ struct _Entry
 };
 ```
 
-```c/ixcompiler.Entry.c
+```c/ix/Entry.c
 Entry* Entry_new( String** key, void** val )
 {
     Entry* self = Platform_Alloc( sizeof( Entry ) );
@@ -8088,7 +8127,7 @@ Entry* Entry_new( String** key, void** val )
 }
 ```
 
-```c/ixcompiler.Entry.c
+```c/ix/Entry.c
 Entry* Entry_new_destructor( String** key, void** val, Destructor destructor )
 {
     Entry* self = Platform_Alloc( sizeof( Entry ) );
@@ -8102,7 +8141,7 @@ Entry* Entry_new_destructor( String** key, void** val, Destructor destructor )
 }
 ```
 
-```c/ixcompiler.Entry.c
+```c/ix/Entry.c
 Entry* Entry_free( Entry** self )
 {
     if ( *self )
@@ -8119,14 +8158,14 @@ Entry* Entry_free( Entry** self )
 }
 ```
 
-```c/ixcompiler.Entry.c
+```c/ix/Entry.c
 const String* Entry_getKey( const Entry* self )
 {
     return self->key;
 }
 ```
 
-```c/ixcompiler.Entry.c
+```c/ix/Entry.c
 const void* Entry_getValue( const Entry* self )
 {
     return self->val;
@@ -8135,11 +8174,11 @@ const void* Entry_getValue( const Entry* self )
 
 ### File
 
-```!include/ixcompiler.File.h
-#ifndef IXCOMPILER_FILE_H
-#define IXCOMPILER_FILE_H
+```!include/ix/File.h
+#ifndef IX_FILE_H
+#define IX_FILE_H
 
-#include "ixcompiler.h"
+#include "ix.h"
 
 File*       File_new        ( const char* filepath );
 
@@ -8151,7 +8190,7 @@ bool        File_exists     ( const File*  self );
 #endif
 ```
 
-```!c/ixcompiler.File.c
+```!c/ix/File.c
 #include <stdlib.h>
 #include <stdio.h>
 #include <unistd.h>
@@ -8159,8 +8198,7 @@ bool        File_exists     ( const File*  self );
 #include <sys/stat.h>
 #include <unistd.h>
 #include <fcntl.h>
-#include "ixcompiler.h"
-#include "ixcompiler.File.h"
+#include "ix.h"
 
 struct _File
 {
@@ -8173,7 +8211,7 @@ static bool File_IsReadable   ( const char* filepath );
 static bool File_IsRegularFile( const char* filepath );
 ```
 
-```c/ixcompiler.File.c
+```c/ix/File.c
 File* File_new( const char* filepath )
 {
     File* self = calloc( 1, sizeof( File ) );
@@ -8187,7 +8225,7 @@ File* File_new( const char* filepath )
 }
 ```
 
-```c/ixcompiler.File.c
+```c/ix/File.c
 File* File_free( File** self )
 {
     free( *self ); *self = 0;
@@ -8196,35 +8234,35 @@ File* File_free( File** self )
 }
 ```
 
-```c/ixcompiler.File.c
+```c/ix/File.c
 bool File_canRead( const File* self )
 {
     return self->canRead;
 }
 ```
 
-```c/ixcompiler.File.c
+```c/ix/File.c
 const char* File_getFilePath( const File* self )
 {
     return self->filepath;
 }
 ```
 
-```c/ixcompiler.File.c
+```c/ix/File.c
 bool File_exists( const File* self )
 {
     return self->exists;
 }
 ```
 
-```c/ixcompiler.File.c
+```c/ix/File.c
 bool File_IsReadable( const char* filepath )
 {
     return (F_OK == access( filepath, R_OK ));
 }
 ```
 
-```c/ixcompiler.File.c
+```c/ix/File.c
 bool File_IsRegularFile( const char* filepath )
 {
     struct stat sb;
@@ -8244,9 +8282,9 @@ bool File_IsRegularFile( const char* filepath )
 
 ### Files Iterator
 
-```!include/ixcompiler.FilesIterator.h
-#ifndef IXCOMPILER_FILESITERATOR_H
-#define IXCOMPILER_FILESITERATOR_H
+```!include/ix/FilesIterator.h
+#ifndef IX_FILESITERATOR_H
+#define IX_FILESITERATOR_H
 
 FilesIterator* FilesIterator_new      ( const char** filepaths );
 FilesIterator* FilesIterator_free     ( FilesIterator** self   );
@@ -8256,12 +8294,9 @@ File*          FilesIterator_next     ( FilesIterator*  self   );
 #endif
 ```
 
-```!c/ixcompiler.FilesIterator.c
+```!c/ix/FilesIterator.c
 #include <stdlib.h>
-#include "ixcompiler.h"
-#include "ixcompiler.Console.h"
-#include "ixcompiler.File.h"
-#include "ixcompiler.FilesIterator.h"
+#include "ix.h"
 #include "todo.h"
 
 struct _FilesIterator
@@ -8271,7 +8306,7 @@ struct _FilesIterator
 };
 ```
 
-```c/ixcompiler.FilesIterator.c
+```c/ix/FilesIterator.c
 FilesIterator* FilesIterator_new( const char** filepaths )
 {
     FilesIterator* self = calloc( 1, sizeof( FilesIterator ) );
@@ -8284,7 +8319,7 @@ FilesIterator* FilesIterator_new( const char** filepaths )
 }
 ```
 
-```c/ixcompiler.FilesIterator.c
+```c/ix/FilesIterator.c
 FilesIterator* FilesIterator_free( FilesIterator** self )
 {
     free( *self ); *self = 0;
@@ -8293,7 +8328,7 @@ FilesIterator* FilesIterator_free( FilesIterator** self )
 }
 ```
 
-```c/ixcompiler.FilesIterator.c
+```c/ix/FilesIterator.c
 bool FilesIterator_hasNext( FilesIterator* self )
 {
     if ( null != self->filepaths[self->next] )
@@ -8307,7 +8342,7 @@ bool FilesIterator_hasNext( FilesIterator* self )
 }
 ```
 
-```c/ixcompiler.FilesIterator.c
+```c/ix/FilesIterator.c
 File* FilesIterator_next( FilesIterator* self )
 {
     if ( FilesIterator_hasNext( self ) )
@@ -8323,11 +8358,9 @@ File* FilesIterator_next( FilesIterator* self )
 
 ### Node
 
-```!include/ixcompiler.Node.h
-#ifndef IXCOMPILER_NODE_H
-#define IXCOMPILER_NODE_H
-
-#include "ixcompiler.h"
+```!include/ix/Node.h
+#ifndef IX_NODE_H
+#define IX_NODE_H
 
 Node* Node_new ( Token** token );
 Node* Node_free( Node**  self  );
@@ -8348,16 +8381,9 @@ String*       Node_tokenString ( const Node* self );
 #endif
 ```
 
-```!c/ixcompiler.Node.c
-#include "ixcompiler.h"
-#include "ixcompiler.Array.h"
-#include "ixcompiler.EnumTokenType.h"
-#include "ixcompiler.Node.h"
-#include "ixcompiler.NodeIterator.h"
+```!c/ix/Node.c
+#include "ix.h"
 #include "ixcompiler.Token.h"
-#include "ixcompiler.Platform.h"
-#include "ixcompiler.String.h"
-#include "ixcompiler.StringBuffer.h"
 
 struct _Node
 {
@@ -8368,7 +8394,7 @@ struct _Node
 };
 ```
 
-```c/ixcompiler.Node.c
+```c/ix/Node.c
 Node* Node_new( Token** token )
 {
     Node* self = Platform_Alloc( sizeof( Node ) );
@@ -8376,13 +8402,13 @@ Node* Node_new( Token** token )
     if ( self )
     {
         self->token    = *token; *token = null;
-        self->children = Array_new( (Destructor) Node_free );
+        self->children = Array_new_destructor( (Destructor) Node_free );
     }
     return self;
 }
 ```
 
-```c/ixcompiler.Node.c
+```c/ix/Node.c
 Node* Node_free( Node** self )
 {
     if ( *self )
@@ -8404,21 +8430,21 @@ Node* Node_free( Node** self )
 }
 ```
 
-```c/ixcompiler.Node.c
+```c/ix/Node.c
 void Node_setParent( Node* self, const Node* parent )
 {
     self->parent = parent;
 }
 ```
 
-```c/ixcompiler.Node.c
+```c/ix/Node.c
 void Node_setTag( Node* self, const char* tag )
 {
     self->tag = String_new( tag );
 }
 ```
 
-```c/ixcompiler.Node.c
+```c/ix/Node.c
 Node* Node_addChild( Node* self, Token** token )
 {
     Node* child = Node_new( token );
@@ -8430,7 +8456,7 @@ Node* Node_addChild( Node* self, Token** token )
 }
 ```
 
-```c/ixcompiler.Node.c
+```c/ix/Node.c
 Node* Node_getLastChild( Node* self )
 {
     int last = Array_getLength( self->children ) - 1;
@@ -8439,35 +8465,35 @@ Node* Node_getLastChild( Node* self )
 }
 ```
 
-```c/ixcompiler.Node.c
+```c/ix/Node.c
 const Token* Node_getToken( const Node* self )
 {
     return self->token;
 }
 ```
 
-```c/ixcompiler.Node.c
+```c/ix/Node.c
 const String* Node_getTag( const Node* self )
 {
     return self->tag;
 }
 ```
 
-```c/ixcompiler.Node.c
+```c/ix/Node.c
 bool Node_hasChildren( const Node* self )
 {
     return (0 < Array_getLength( self->children ));
 }
 ```
 
-```c/ixcompiler.Node.c
+```c/ix/Node.c
 NodeIterator* Node_iterator( const Node* self )
 {
     return NodeIterator_new( self->children );
 }
 ```
 
-```c/ixcompiler.Node.c
+```c/ix/Node.c
 String* Node_export( const Node* self )
 {
     String* ret = null;
@@ -8490,7 +8516,7 @@ String* Node_export( const Node* self )
 }
 ```
 
-```c/ixcompiler.Node.c
+```c/ix/Node.c
 String* Node_tokenString ( const Node* self )
 {
     return String_new( Token_getContent( Node_getToken( self ) ) );
@@ -8499,12 +8525,11 @@ String* Node_tokenString ( const Node* self )
 
 ### NodeIterator
 
-```!include/ixcompiler.NodeIterator.h
-#ifndef IXCOMPILER_NODEITERATOR_H
-#define IXCOMPILER_NODEITERATOR_H
+```!include/ix/NodeIterator.h
+#ifndef IX_NODEITERATOR_H
+#define IX_NODEITERATOR_H
 
-#include "ixcompiler.h"
-#include "ixcompiler.EnumTokenType.h"
+#include "ix.h"
 
 NodeIterator* NodeIterator_new                   ( const Array*  nodes );
 NodeIterator* NodeIterator_free                  ( NodeIterator** self );
@@ -8519,14 +8544,11 @@ String*       NodeIterator_nextTokenString       ( NodeIterator*  self );
 #endif
 ```
 
-```!c/ixcompiler.NodeIterator.c
+```!c/ix/NodeIterator.c
+#include "ix.h"
 #include "ixcompiler.h"
-#include "ixcompiler.Array.h"
 #include "ixcompiler.EnumTokenType.h"
 #include "ixcompiler.EnumTokenGroup.h"
-#include "ixcompiler.Node.h"
-#include "ixcompiler.NodeIterator.h"
-#include "ixcompiler.Platform.h"
 #include "ixcompiler.Token.h"
 #include "ixcompiler.TokenGroup.h"
 
@@ -8537,7 +8559,7 @@ struct _NodeIterator
 };
 ```
 
-```c/ixcompiler.NodeIterator.c
+```c/ix/NodeIterator.c
 NodeIterator* NodeIterator_new( const Array* nodes )
 {
     NodeIterator* self = Platform_Alloc( sizeof( NodeIterator ) );
@@ -8550,7 +8572,7 @@ NodeIterator* NodeIterator_new( const Array* nodes )
 }
 ```
 
-```c/ixcompiler.NodeIterator.c
+```c/ix/NodeIterator.c
 NodeIterator* NodeIterator_free( NodeIterator** self )
 {
     if ( *self )
@@ -8564,14 +8586,14 @@ NodeIterator* NodeIterator_free( NodeIterator** self )
 }
 ```
 
-```c/ixcompiler.NodeIterator.c
+```c/ix/NodeIterator.c
 bool NodeIterator_hasNext( NodeIterator* self )
 {
     return (self->next < Array_getLength( self->nodes ));
 }
 ```
 
-```c/ixcompiler.NodeIterator.c
+```c/ix/NodeIterator.c
 bool NodeIterator_hasNonWhitespace( NodeIterator* self )
 {
     bool has_next_nws = FALSE;
@@ -8610,7 +8632,7 @@ bool NodeIterator_hasNonWhitespace( NodeIterator* self )
 }
 ```
 
-```c/ixcompiler.NodeIterator.c
+```c/ix/NodeIterator.c
 bool NodeIterator_hasNonWhitespaceOfType( NodeIterator* self, EnumTokenType type )
 {
     bool has = FALSE;
@@ -8624,21 +8646,21 @@ bool NodeIterator_hasNonWhitespaceOfType( NodeIterator* self, EnumTokenType type
 }
 ```
 
-```c/ixcompiler.NodeIterator.c
+```c/ix/NodeIterator.c
 const Node* NodeIterator_next( NodeIterator* self )
 {
     return (const void*) Array_getObject( self->nodes, self->next++ );
 }
 ```
 
-```c/ixcompiler.NodeIterator.c
+```c/ix/NodeIterator.c
 const Node* NodeIterator_peek( NodeIterator* self )
 {
     return (const void*) Array_getObject( self->nodes, self->next );
 }
 ```
 
-```c/ixcompiler.NodeIterator.c
+```c/ix/NodeIterator.c
 String* NodeIterator_nextTokenString( NodeIterator* self )
 {
     return Node_tokenString( NodeIterator_next( self ) );
@@ -8647,38 +8669,82 @@ String* NodeIterator_nextTokenString( NodeIterator* self )
 
 ### Object
 
-```!include/ixcompiler.Object.h
-#ifndef IXCOMPILER_OBJECT_H
-#define IXCOMPILER_OBJECT_H
+```!include/ix/Object.h
+#ifndef IX_OBJECT_H
+#define IX_OBJECT_H
 
-#include "ixcompiler.h"
+#include "ix.h"
 
 struct _Object
 {
-    Destructor free;
+    Object*(*free)(Object**);
 };
 
-int Object_Sizeof();
+Object* Object_new ();
+Object* Object_init( Object*  self );
+Object* Object_free( Object** self );
+
+int     Object_Sizeof();
 
 #endif
 ```
 
-```!c/ixcompiler.Object.c
-#include "ixcompiler.Object.h"
+```!c/ix/Object.c
+#include "ix.h"
 ```
 
-```c/ixcompiler.Object.c
+```c/ix/Object.c
+Object* Object_new()
+{
+    Object* self = Object_init( 0 );
+
+    return self;
+}
+```
+
+```c/ix/Object.c
+Object* Object_init( Object* self )
+{
+    if ( !self ) self = Platform_Alloc( Object_Sizeof() );
+    if ( self )
+    {
+        self->free = Object_free;
+    }
+    return self;
+}
+```
+
+```c/ix/Object.c
+Object* Object_free( Object** self )
+{
+    if ( self && *self )
+    {
+        if ( Object_free != (*self)->free )
+        {
+            (*self)->free( self );
+        }
+        else
+        {
+            Platform_Free( *self );
+        }
+    }
+    return 0;
+}
+```
+
+```c/ix/Object.c
 int Object_Sizeof()
 {
     return sizeof(Object);
 }
 ```
 
+
 ### Path
 
-```!include/ixcompiler.Path.h
-#ifndef IXCOMPILER_PATH_H
-#define IXCOMPILER_PATH_H
+```!include/ix/Path.h
+#ifndef IX_PATH_H
+#define IX_PATH_H
 
 Path* Path_new( const char* target );
 
@@ -8691,12 +8757,9 @@ Path*       Path_getParent  ( const Path*  self );
 #endif
 ```
 
-```!c/ixcompiler.Path.c
+```!c/ix/Path.c
 #include <stdlib.h>
-#include "ixcompiler.h"
-#include "ixcompiler.Path.h"
-#include "ixcompiler.Platform.h"
-#include "ixcompiler.String.h"
+#include "ix.h"
 
 struct _Path
 {
@@ -8706,7 +8769,7 @@ struct _Path
 };
 ```
 
-```c/ixcompiler.Path.c
+```c/ix/Path.c
 Path* Path_new( const char* target )
 {
     Path* self = calloc( 1, sizeof( Path ) );
@@ -8721,7 +8784,7 @@ Path* Path_new( const char* target )
 }
 ```
 
-```c/ixcompiler.Path.c
+```c/ix/Path.c
 Path* Path_free( Path** self )
 {
     free( (*self)->path );
@@ -8731,28 +8794,28 @@ Path* Path_free( Path** self )
 }
 ```
 
-```c/ixcompiler.Path.c
+```c/ix/Path.c
 bool Path_exists( const Path* self )
 {
     return self->exists;
 }
 ```
 
-```c/ixcompiler.Path.c
+```c/ix/Path.c
 bool Path_canWrite( const Path* self )
 {
     return self->canWrite;
 }
 ```
 
-```c/ixcompiler.Path.c
+```c/ix/Path.c
 const char* Path_getFullPath( const Path* self )
 {
     return self->path;
 }
 ```
 
-```c/ixcompiler.Path.c
+```c/ix/Path.c
 Path* Path_getParent( const Path* self )
 {
     Path* ret  = null;
@@ -8782,9 +8845,9 @@ Path* Path_getParent( const Path* self )
 
 ### PushbackReader
 
-```!include/ixcompiler.PushbackReader.h
-#ifndef IXCOMPILER_PUSHBACKREADER_H
-#define IXCOMPILER_PUSHBACKREADER_H
+```!include/ix/PushbackReader.h
+#ifndef IX_PUSHBACKREADER_H
+#define IX_PUSHBACKREADER_H
 
 PushbackReader* PushbackReader_new     ( const char*      filepath );
 PushbackReader* PushbackReader_free    ( PushbackReader** self     );
@@ -8794,12 +8857,8 @@ PushbackReader* PushbackReader_pushback( PushbackReader*  self     );
 #endif
 ```
 
-```!c/ixcompiler.PushbackReader.c
-#include "ixcompiler.h"
-#include "ixcompiler.File.h"
-#include "ixcompiler.Platform.h"
-#include "ixcompiler.PushbackReader.h"
-#include "ixcompiler.String.h"
+```!c/ix/PushbackReader.c
+#include "ix.h"
 
 struct _PushbackReader
 {
@@ -8809,7 +8868,7 @@ struct _PushbackReader
 };
 ```
 
-```c/ixcompiler.PushbackReader.c
+```c/ix/PushbackReader.c
 PushbackReader* PushbackReader_new( const char* filepath )
 {
     PushbackReader* self = Platform_Alloc( sizeof( PushbackReader ) );
@@ -8837,7 +8896,7 @@ PushbackReader* PushbackReader_new( const char* filepath )
 }
 ```
 
-```c/ixcompiler.PushbackReader.c
+```c/ix/PushbackReader.c
 PushbackReader* PushbackReader_free( PushbackReader** self )
 {
     Platform_Free( &(*self)->content );
@@ -8847,14 +8906,14 @@ PushbackReader* PushbackReader_free( PushbackReader** self )
 }
 ```
 
-```c/ixcompiler.PushbackReader.c
+```c/ix/PushbackReader.c
 int PushbackReader_read( PushbackReader* self )
 {
     return (self && (self->head < self->length)) ? self->content[self->head++] : 0;
 }
 ```
 
-```c/ixcompiler.PushbackReader.c
+```c/ix/PushbackReader.c
 PushbackReader* PushbackReader_pushback( PushbackReader* self )
 {
     self->head--;
@@ -8862,9 +8921,9 @@ PushbackReader* PushbackReader_pushback( PushbackReader* self )
 }
 ```.. Queue
 
-```!include/ixcompiler.Queue.h
-#ifndef IXCOMPILER_QUEUE_H
-#define IXCOMPILER_QUEUE_H
+```!include/ix/Queue.h
+#ifndef IX_QUEUE_H
+#define IX_QUEUE_H
 
 Queue*      Queue_new       ( Destructor destroy );
 Queue*      Queue_free      ( Queue** self );
@@ -8878,11 +8937,8 @@ int         Queue_getLength ( Queue* self );
 #endif
 ```
 
-```!c/ixcompiler.Queue.c
-#include "ixcompiler.h"
-#include "ixcompiler.Array.h"
-#include "ixcompiler.Platform.h"
-#include "ixcompiler.Queue.h"
+```!c/ix/Queue.c
+#include "ix.h"
 
 struct _Queue
 {
@@ -8891,20 +8947,20 @@ struct _Queue
 };
 ```
 
-```c/ixcompiler.Queue.c
+```c/ix/Queue.c
 Queue* Queue_new( Destructor destroy )
 {
     Queue* self = Platform_Alloc( sizeof( Queue ) );
 
     if ( self )
     {
-        self->inner = Array_new( destroy );
+        self->inner = Array_new_destructor( destroy );
     }
     return self;
 }
 ```
 
-```c/ixcompiler.Queue.c
+```c/ix/Queue.c
 Queue* Queue_free( Queue** self )
 {
     Array_free( &(*self)->inner );
@@ -8914,7 +8970,7 @@ Queue* Queue_free( Queue** self )
 }
 ```
 
-```c/ixcompiler.Queue.c
+```c/ix/Queue.c
 Queue* Queue_addHead( Queue* self, void** object )
 {
     Array_unshift( self->inner, object );
@@ -8923,7 +8979,7 @@ Queue* Queue_addHead( Queue* self, void** object )
 }
 ```
 
-```c/ixcompiler.Queue.c
+```c/ix/Queue.c
 Queue* Queue_addTail( Queue* self, void** object )
 {
     Array_push( self->inner, object );
@@ -8932,21 +8988,21 @@ Queue* Queue_addTail( Queue* self, void** object )
 }
 ```
 
-```c/ixcompiler.Queue.c
+```c/ix/Queue.c
 void* Queue_removeHead( Queue* self )
 {
     return Array_shift( self->inner );
 }
 ```
 
-```c/ixcompiler.Queue.c
+```c/ix/Queue.c
 const void* Queue_getHead( Queue* self )
 {
     return Array_getObject( self->inner, 0 );
 }
 ```
 
-```c/ixcompiler.Queue.c
+```c/ix/Queue.c
 const void* Queue_getTail( Queue* self )
 {
     int last = Array_getLength( self->inner );
@@ -8961,7 +9017,7 @@ const void* Queue_getTail( Queue* self )
 }
 ```
 
-```c/ixcompiler.Queue.c
+```c/ix/Queue.c
 int Queue_getLength( Queue* self )
 {
     return Array_getLength( self->inner );
@@ -8970,9 +9026,9 @@ int Queue_getLength( Queue* self )
 
 ### String
 
-```!include/ixcompiler.String.h
-#ifndef IXCOMPILER_STRING_H
-#define IXCOMPILER_STRING_H
+```!include/ix/String.h
+#ifndef IX_STRING_H
+#define IX_STRING_H
 
 String*        String_new           ( const char* content );
 String*        String_free          (       String** self );
@@ -8998,13 +9054,9 @@ char*          String_Convert( String** string );
 #endif
 ```
 
-```!c/ixcompiler.String.c
+```!c/ix/String.c
 #include <string.h>
-#include "ixcompiler.h"
-#include "ixcompiler.ArrayOfString.h"
-#include "ixcompiler.Platform.h"
-#include "ixcompiler.String.h"
-#include "ixcompiler.StringBuffer.h"
+#include "ix.h"
 
 struct _String
 {
@@ -9015,7 +9067,7 @@ struct _String
 String* String_new_keep( char** keep );
 ```
 
-```c/ixcompiler.String.c
+```c/ix/String.c
 String* String_new( const char* content )
 {
     String* self = Platform_Alloc( sizeof(String) );
@@ -9028,7 +9080,7 @@ String* String_new( const char* content )
 }
 ```
 
-```c/ixcompiler.String.c
+```c/ix/String.c
 String* String_new_keep( char** keep )
 {
     String* self = Platform_Alloc( sizeof(String) );
@@ -9041,7 +9093,7 @@ String* String_new_keep( char** keep )
 }
 ```
 
-```c/ixcompiler.String.c
+```c/ix/String.c
 String* String_free( String** self )
 {
     if ( *self )
@@ -9053,49 +9105,49 @@ String* String_free( String** self )
 }
 ```
 
-```c/ixcompiler.String.c
+```c/ix/String.c
 const char* String_content( const String* self )
 {
     return self->content;
 }
 ```
 
-```c/ixcompiler.String.c
+```c/ix/String.c
 int String_getLength( const String* self )
 {
     return self->length;
 }
 ```
 
-```c/ixcompiler.String.c
+```c/ix/String.c
 String* String_copy( const String* self )
 {
     return String_new( self->content );
 }
 ```
 
-```c/ixcompiler.String.c
+```c/ix/String.c
 String* String_cat( const String* self, const String* other )
 {
     return String_cat_chars( self, other->content );
 }
 ```
 
-```c/ixcompiler.String.c
+```c/ix/String.c
 String* String_cat_chars( const String* self, const char* chars )
 {
     return String_Cat( self->content, chars );
 }
 ```
 
-```c/ixcompiler.String.c
+```c/ix/String.c
 bool String_equals( const String* self, const String* other )
 {
     return String_Equals( self->content, other->content );
 }
 ```
 
-```c/ixcompiler.String.c
+```c/ix/String.c
 bool String_equals_chars( const String* self, const char* chars )
 {
     if ( self && chars )
@@ -9110,21 +9162,21 @@ bool String_equals_chars( const String* self, const char* chars )
 }
 ```
 
-```c/ixcompiler.String.c
+```c/ix/String.c
 bool String_contains( const String* self, const String* other )
 {
     return String_contains_chars( self, String_content( other ) );
 }
 ```
 
-```c/ixcompiler.String.c
+```c/ix/String.c
 bool String_contains_chars( const String* self, const char* chars )
 {
     return (NULL != strstr( String_content( self ), chars ));
 }
 ```
 
-```c/ixcompiler.String.c
+```c/ix/String.c
 ArrayOfString* String_split( const String* self, char separator )
 {
     ArrayOfString* strings = ArrayOfString_new();
@@ -9162,7 +9214,7 @@ ArrayOfString* String_split( const String* self, char separator )
 }
 ```
 
-```c/ixcompiler.String.c
+```c/ix/String.c
 String* String_toUpperCase( const String* self )
 {
     String* ret = null;
@@ -9187,7 +9239,7 @@ String* String_toUpperCase( const String* self )
 }
 ```
 
-```c/ixcompiler.String.c
+```c/ix/String.c
 String* String_replace( const String* self, char ch, char with )
 {
     String* ret = null;
@@ -9206,7 +9258,7 @@ String* String_replace( const String* self, char ch, char with )
 }
 ```
 
-```c/ixcompiler.String.c
+```c/ix/String.c
 String* String_Cat( const char* s1, const char* s2 )
 {
     int len1 = String_Length( s1 );
@@ -9233,7 +9285,7 @@ String* String_Cat( const char* s1, const char* s2 )
 }
 ```
 
-```c/ixcompiler.String.c
+```c/ix/String.c
 char* String_Copy( const char* s )
 {
     int   len  = String_Length( s ) + 2;
@@ -9243,7 +9295,7 @@ char* String_Copy( const char* s )
 }
 ```
 
-```c/ixcompiler.String.c
+```c/ix/String.c
 bool String_Equals( const char* string1, const char* string2 )
 {
     if ( (NULL == string1) || (NULL == string2) )
@@ -9257,14 +9309,14 @@ bool String_Equals( const char* string1, const char* string2 )
 }
 ```
 
-```c/ixcompiler.String.c
+```c/ix/String.c
 int String_Length( const char* s )
 {
     return strlen( s );
 }
 ```
 
-```c/ixcompiler.String.c
+```c/ix/String.c
 char* String_Convert( String** string )
 {
     char* tmp = (*string)->content; (*string)->content = null;
@@ -9276,9 +9328,9 @@ char* String_Convert( String** string )
 ```
 ### StringBuffer
 
-```!include/ixcompiler.StringBuffer.h
-#ifndef IXCOMPILER_STRINGBUFFER_H
-#define IXCOMPILER_STRINGBUFFER_H
+```!include/ix/StringBuffer.h
+#ifndef IX_STRINGBUFFER_H
+#define IX_STRINGBUFFER_H
 
 StringBuffer* StringBuffer_new                       ();
 StringBuffer* StringBuffer_free                      ( StringBuffer** self                                                );
@@ -9295,11 +9347,8 @@ String*       StringBuffer_ConvertToString( StringBuffer** sb );
 #endif
 ```
 
-```!c/ixcompiler.StringBuffer.c
-#include "ixcompiler.h"
-#include "ixcompiler.Platform.h"
-#include "ixcompiler.String.h"
-#include "ixcompiler.StringBuffer.h"
+```!c/ix/StringBuffer.c
+#include "ix.h"
 
 struct _StringBuffer
 {
@@ -9311,7 +9360,7 @@ struct _StringBuffer
 String* StringBuffer_nullString = null;
 ```
 
-```c/ixcompiler.StringBuffer.c
+```c/ix/StringBuffer.c
 StringBuffer* StringBuffer_new()
 {
     StringBuffer* self = Platform_Alloc( sizeof( StringBuffer ) );
@@ -9325,7 +9374,7 @@ StringBuffer* StringBuffer_new()
 }
 ```
 
-```c/ixcompiler.StringBuffer.c
+```c/ix/StringBuffer.c
 StringBuffer* StringBuffer_free( StringBuffer** self )
 {
     if ( *self )
@@ -9338,7 +9387,7 @@ StringBuffer* StringBuffer_free( StringBuffer** self )
 }
 ```
 
-```c/ixcompiler.StringBuffer.c
+```c/ix/StringBuffer.c
 StringBuffer* StringBuffer_append_char( StringBuffer* self, char ch )
 {
     char suffix[2] = { ch , '\0' };
@@ -9347,7 +9396,7 @@ StringBuffer* StringBuffer_append_char( StringBuffer* self, char ch )
 }
 ```
 
-```c/ixcompiler.StringBuffer.c
+```c/ix/StringBuffer.c
 StringBuffer* StringBuffer_append( StringBuffer* self, const const char* suffix )
 {
     self->length += String_Length( suffix );
@@ -9360,7 +9409,7 @@ StringBuffer* StringBuffer_append( StringBuffer* self, const const char* suffix 
 }
 ```
 
-```c/ixcompiler.StringBuffer.c
+```c/ix/StringBuffer.c
 StringBuffer* StringBuffer_appendLine_prefix_optional( StringBuffer* self, const char* prefix, String** optional )
 {
     if ( prefix && String_Length( prefix ) )
@@ -9378,28 +9427,28 @@ StringBuffer* StringBuffer_appendLine_prefix_optional( StringBuffer* self, const
 }
 ```
 
-```c/ixcompiler.StringBuffer.c
+```c/ix/StringBuffer.c
 const char* StringBuffer_content( const StringBuffer* self )
 {
     return self->content;
 }
 ```
 
-```c/ixcompiler.StringBuffer.c
+```c/ix/StringBuffer.c
 bool StringBuffer_isEmpty( const StringBuffer* self )
 {
     return (0 == String_Length( self->content ));
 }
 ```
 
-```c/ixcompiler.StringBuffer.c
+```c/ix/StringBuffer.c
 String* StringBuffer_toString( const StringBuffer* self )
 {
     return String_new( StringBuffer_content( self ) );
 }
 ```
 
-```c/ixcompiler.StringBuffer.c
+```c/ix/StringBuffer.c
 String* StringBuffer_ConvertToString( StringBuffer** sb )
 {
     String* ret = String_new( (*sb)->content );
@@ -9411,7 +9460,7 @@ String* StringBuffer_ConvertToString( StringBuffer** sb )
 ### Take
 
 ```!c/ixcompiler.Take.c
-#include "ixcompiler.h"
+#include "ix.h"
 
 static void* stash[100];
 ```
@@ -9453,9 +9502,9 @@ void Swap( ANY _one, ANY _two )
 }
 ```
 
-```!include/ixcompiler.Term.h
-#ifndef IXCOMPILER_TERM_H
-#define IXCOMPILER_TERM_H
+```!include/ix/Term.h
+#ifndef IX_TERM_H
+#define IX_TERM_H
 
 #define COLOR_NORMAL   "\033[00m"
 #define COLOR_BOLD     "\033[01m"
@@ -9473,9 +9522,9 @@ void Term_Colour( void* stream, const char* color );
 #endif
 ```
 
-```!c/ixcompiler.Term.c
+```!c/ix/Term.c
 #include <stdio.h>
-#include "ixcompiler.Term.h"
+#include "ix.h"
 
 void Term_Colour( void* stream, const char* color )
 {
@@ -9484,11 +9533,9 @@ void Term_Colour( void* stream, const char* color )
 ```
 ### Tree
 
-```!include/ixcompiler.Tree.h
-#ifndef IXCOMPILER_TREE_H
-#define IXCOMPILER_TREE_H
-
-#include "ixcompiler.h"
+```!include/ix/Tree.h
+#ifndef IX_TREE_H
+#define IX_TREE_H
 
 Tree* Tree_new();
 Tree* Tree_free   ( Tree** self );
@@ -9499,11 +9546,8 @@ const Node* Tree_getRoot( const Tree* self );
 #endif
 ```
 
-```!c/ixcompiler.Tree.c
-#include "ixcompiler.h"
-#include "ixcompiler.Node.h"
-#include "ixcompiler.Platform.h"
-#include "ixcompiler.Tree.h"
+```!c/ix/Tree.c
+#include "ix.h"
 
 struct _Tree
 {
@@ -9511,7 +9555,7 @@ struct _Tree
 };
 ```
 
-```c/ixcompiler.Tree.c
+```c/ix/Tree.c
 Tree* Tree_new()
 {
     Tree* self = Platform_Alloc( sizeof( Tree ) );
@@ -9519,7 +9563,7 @@ Tree* Tree_new()
 }
 ```
 
-```c/ixcompiler.Tree.c
+```c/ix/Tree.c
 Tree* Tree_free( Tree** self )
 {
     if ( *self )
@@ -9531,23 +9575,23 @@ Tree* Tree_free( Tree** self )
 }
 ```
 
-```c/ixcompiler.Tree.c
+```c/ix/Tree.c
 void Tree_setRoot( Tree* self, Node** node )
 {
     self->root = *node; *node = null;
 }
 ```
 
-```c/ixcompiler.Tree.c
+```c/ix/Tree.c
 const Node* Tree_getRoot( const Tree* self )
 {
     return self->root;
 }
 ```
 
-```!include/ixcompiler.Platform.h
-#ifndef IXCOMPILER_PLATFORM_H
-#define IXCOMPILER_PLATFORM_H
+```!include/ix/Platform.h
+#ifndef IX_PLATFORM_H
+#define IX_PLATFORM_H
 
 void* Platform_Alloc                 ( int size_of );
 void* Platform_Array                 ( int num, int size_of );
@@ -9570,7 +9614,7 @@ bool  Platform_Path_Create           ( const Path* path     );
 #endif
 ```
 
-```!c/posix/ixcompiler.Platform.c
+```!c/ix/posix/Platform.c
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
@@ -9580,27 +9624,24 @@ bool  Platform_Path_Create           ( const Path* path     );
 #include <fcntl.h>
 #include <linux/limits.h>
 
-#include "ixcompiler.h"
-#include "ixcompiler.Platform.h"
-#include "ixcompiler.Path.h"
-#include "ixcompiler.String.h"
+#include "ix.h"
 ```
 
-```c/posix/ixcompiler.Platform.c
+```c/ix/posix/Platform.c
 void* Platform_Alloc( int size_of )
 {
     return calloc( 1, size_of );
 }
 ```
 
-```c/posix/ixcompiler.Platform.c
+```c/ix/posix/Platform.c
 void* Platform_Array( int num, int size_of )
 {
     return calloc( num, size_of );
 }
 ```
 
-```c/posix/ixcompiler.Platform.c
+```c/ix/posix/Platform.c
 void* Platform_Free( void* mem )
 {
     void** obj = (void**) mem;
@@ -9611,14 +9652,14 @@ void* Platform_Free( void* mem )
 }
 ```
 
-```c/posix/ixcompiler.Platform.c
+```c/ix/posix/Platform.c
 void Platform_Exit( int status )
 {
     exit( status );
 }
 ```
 
-```c/posix/ixcompiler.Platform.c
+```c/ix/posix/Platform.c
 bool Platform_File_WriteContents( const char* location, const char* content, bool force )
 {
     bool success = FALSE;
@@ -9636,7 +9677,7 @@ bool Platform_File_WriteContents( const char* location, const char* content, boo
 }
 ```
 
-```c/posix/ixcompiler.Platform.c
+```c/ix/posix/Platform.c
 char* Platform_File_GetContents( const char* location )
 {
     char* content = null;
@@ -9659,7 +9700,7 @@ char* Platform_File_GetContents( const char* location )
 }
 ```
 
-```c/posix/ixcompiler.Platform.c
+```c/ix/posix/Platform.c
 bool Platform_Location_Exists( const char* location )
 {
     struct stat sb;
@@ -9668,7 +9709,7 @@ bool Platform_Location_Exists( const char* location )
 }
 ```
 
-```c/posix/ixcompiler.Platform.c
+```c/ix/posix/Platform.c
 char* Platform_Location_FullPath( const char* location )
 {
     char* ret = calloc( PATH_MAX, sizeof( char ) );
@@ -9692,7 +9733,7 @@ char* Platform_Location_FullPath( const char* location )
 }
 ```
 
-```c/posix/ixcompiler.Platform.c
+```c/ix/posix/Platform.c
 bool Platform_Location_IsDirectory( const char* location )
 {
     struct stat sb;
@@ -9710,14 +9751,14 @@ bool Platform_Location_IsDirectory( const char* location )
 }
 ```
 
-```c/posix/ixcompiler.Platform.c
+```c/ix/posix/Platform.c
 bool Platform_Location_IsReadable( const char* location )
 {
     return (F_OK == access( location, R_OK ));
 }
 ```
 
-```c/posix/ixcompiler.Platform.c
+```c/ix/posix/Platform.c
 bool Platform_Location_IsRegularFile( const char* location )
 {
     struct stat sb;
@@ -9735,14 +9776,14 @@ bool Platform_Location_IsRegularFile( const char* location )
 }
 ```
 
-```c/posix/ixcompiler.Platform.c
+```c/ix/posix/Platform.c
 bool Platform_Location_IsWritable( const char* location )
 {
     return (F_OK == access( location, W_OK ));
 }
 ```
 
-```c/posix/ixcompiler.Platform.c
+```c/ix/posix/Platform.c
 bool Platform_Path_Create( const Path* path )
 {
     bool success = FALSE;

@@ -44,6 +44,7 @@ static void AST_ParseComplex          ( Node* parent, Tokenizer* tokenizer );
 static void AST_ParseClass            ( Node* parent, Tokenizer* tokenizer );
 static void AST_ParseMemberUntilStop  ( Node* parent, Tokenizer* tokenizer );
 static void AST_ParseUntilStop        ( Node* parent, Tokenizer* tokenizer );
+static void AST_ParseUntilStopOrEndEx ( Node* parent, Tokenizer* tokenizer );
 static void AST_ParseClassBlock       ( Node* parent, Tokenizer* tokenizer );
 static void AST_ParseClassBlockMember ( Node* parent, Tokenizer* tokenizer );
 static void AST_ParseMemberType       ( Node* parent, Tokenizer* tokenizer );
@@ -432,12 +433,65 @@ static void AST_ParseMemberUntilStop( Node* parent, Tokenizer* tokenizer )
 ~
 
 ~c/ixcompiler.AST.c~
+static void AST_ParseUntilStopOrEndEx( Node* parent, Tokenizer* tokenizer )
+{
+    bool loop = TRUE;
+    while( loop && Tokenizer_hasMoreTokens( tokenizer ) )
+    {
+        const Token*  token = Tokenizer_peekToken( tokenizer );
+        const char*   value = Token_getContent( token );
+        EnumTokenType type  = Token_getTokenType( token );
+
+        if ( STARTBLOCK == type )
+        {
+            loop = FALSE;
+        }
+        else
+        if ( (INFIXOP == type) && (('*' == value[0]) || ('&' == value[0])) )
+        {
+            Node_addChild( parent, (Token**) Give( Tokenizer_nextToken( tokenizer ) ) );
+            loop = FALSE;
+        }
+        else
+        if ( COMMA == type )
+        {
+            Node_addChild( parent, (Token**) Give( Tokenizer_nextToken( tokenizer ) ) );
+            loop = FALSE;
+        }
+        else
+        if ( STOP == type )
+        {
+            Node_addChild( parent, (Token**) Give( Tokenizer_nextToken( tokenizer ) ) );
+            loop = FALSE;
+        }
+        else
+        if ( ENDEXPRESSION == type )
+        {
+            loop = FALSE;
+        }
+        else
+        if ( OFTYPE == type )
+        {
+            Node* child = Node_addChild( parent, (Token**) Give( Tokenizer_nextToken( tokenizer ) ) );
+            AST_ParseMemberUntilStop( child, tokenizer );
+            break;
+        }
+        else
+        {
+            Node_addChild( parent, (Token**) Give( Tokenizer_nextToken( tokenizer ) ) );
+        }
+    }
+}
+~
+
+~c/ixcompiler.AST.c~
 static void AST_ParseUntilStop( Node* parent, Tokenizer* tokenizer )
 {
     bool loop = TRUE;
     while( loop && Tokenizer_hasMoreTokens( tokenizer ) )
     {
         const Token*  token = Tokenizer_peekToken( tokenizer );
+        const char*   value = Token_getContent( token );
         EnumTokenType type  = Token_getTokenType( token );
 
         if ( STARTBLOCK == type )
@@ -940,7 +994,7 @@ static bool AST_ParseParameter( Node* parent, Tokenizer* tokenizer )
             {
             case OFTYPE:
                 child = Node_addChild( parent, (Token**) Give( Tokenizer_nextToken( tokenizer ) ) );
-                AST_ParseMemberUntilStop( child, tokenizer );
+                AST_ParseUntilStopOrEndEx( child, tokenizer );
                 goto exit;
                 break;
             }
